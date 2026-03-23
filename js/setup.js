@@ -8,29 +8,54 @@ var createContext = React.createContext;
 // ── htm binding ─────────────────────────────────────────────────────
 var html = htm.bind(React.createElement);
 
-// ── localStorage-backed storage API ─────────────────────────────────
-window.storage = {
-  get: async function(k) {
-    try { var v = localStorage.getItem(k); return v ? { key: k, value: v } : null; }
-    catch(e) { return null; }
-  },
-  set: async function(k, v) {
-    try { localStorage.setItem(k, v); return { key: k, value: v }; }
-    catch(e) { return null; }
-  }
-};
-
-// ── Storage helpers (used by all views) ─────────────────────────────
+// ── Firebase + localStorage hybrid db ───────────────────────────────
+// If window.FIREBASE_URL is set (from settings), uses Firebase.
+// Falls back to localStorage for offline / unconfigured use.
 var db = {
-  get: async function(k) {
+  _url: null, // set by app.js once settings load: db._url = settings.firebase
+
+  _fb: async function(method, key, body) {
+    if (!db._url) return null;
+    var base = db._url.replace(/\/$/, '') + '/' + key + '.json';
+    var opts = { method: method, headers: { 'Content-Type': 'application/json' } };
+    if (body !== undefined) opts.body = JSON.stringify(body);
     try {
-      var d = await window.storage.get(k);
-      return d ? JSON.parse(d.value) : null;
+      var res = await fetch(base, opts);
+      if (!res.ok) return null;
+      return await res.json();
     } catch(e) { return null; }
   },
-  set: async function(k, v) {
-    try { await window.storage.set(k, JSON.stringify(v)); }
-    catch(e) {}
+
+  get: async function(key) {
+    // Try Firebase first
+    if (db._url) {
+      var val = await db._fb('GET', key);
+      if (val !== null && val !== undefined) return val;
+      // null from Firebase = key doesn't exist (not an error)
+      return null;
+    }
+    // Fallback: localStorage
+    try {
+      var s = localStorage.getItem(key);
+      return s ? JSON.parse(s) : null;
+    } catch(e) { return null; }
+  },
+
+  set: async function(key, value) {
+    // Write to Firebase if configured
+    if (db._url) {
+      await db._fb('PUT', key, value);
+    }
+    // Always also write localStorage as a local cache / fallback
+    try { localStorage.setItem(key, JSON.stringify(value)); } catch(e) {}
+  },
+
+  // Lang stored locally only (per-browser preference)
+  getLang: async function() {
+    try { var s = localStorage.getItem('wc26_lang'); return s ? JSON.parse(s) : null; } catch(e) { return null; }
+  },
+  setLang: async function(v) {
+    try { localStorage.setItem('wc26_lang', JSON.stringify(v)); } catch(e) {}
   }
 };
 
@@ -39,8 +64,6 @@ var LangCtx = createContext({ lang: 'es', t: {}, setLang: function(){} });
 function useLang() { return useContext(LangCtx); }
 
 // ── Flag image component ─────────────────────────────────────────────
-// Uses flagcdn.com for reliable cross-platform rendering.
-// Falls back to emoji text if team not in CC map.
 function FlagImg(p) {
   var code = CC && CC[p.team];
   if (!code) return html`<span style=${{fontSize:13}}>${fl(p.team)}</span>`;

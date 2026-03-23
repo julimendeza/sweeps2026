@@ -29,12 +29,19 @@ function AdminView(p) {
     { id:"results",  l:t.results   },
     { id:"parts",    l:t.partTab   },
     { id:"email",    l:t.emailTab  },
+    { id:"data",     l:"\ud83d\udcbe Data"     },
     { id:"settings", l:t.settingsTab }
   ];
 
   return html`<div className="fade" style=${{ maxWidth:780, margin:"0 auto", padding:"24px 16px 60px" }}>
-    <h2 className="bb" style=${{ fontSize:26, marginBottom:18 }}>\ud83d\udee0 ${t.adminTitle}</h2>
-
+    <div style=${{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:18}}>
+      <h2 className="bb" style=${{ fontSize:26, margin:0 }}>\ud83d\udee0 ${t.adminTitle}</h2>
+      <div style=${{display:"flex",alignItems:"center",gap:6,fontSize:11,
+        color:p.dbStatus==="firebase"?"#4ade80":"rgba(255,255,255,.35)"}}>
+        <span style=${{width:7,height:7,borderRadius:"50%",background:p.dbStatus==="firebase"?"#4ade80":"rgba(255,255,255,.25)",display:"inline-block"}}></span>
+        ${p.dbStatus==="firebase"?"Firebase":"Local only"}
+      </div>
+    </div>
 
     <div style=${{ display:"flex", gap:5, flexWrap:"wrap", marginBottom:18 }}>
       ${tabs.map(function(tx){
@@ -51,6 +58,7 @@ function AdminView(p) {
     ${tab==="results"  && html`<${AdminResults}  results=${p.results}       saveResults=${p.saveResults}/>`}
     ${tab==="parts"    && html`<${AdminParts}    participants=${p.participants} results=${p.results} settings=${p.settings} saveParticipants=${p.saveParticipants}/>`}
     ${tab==="email"    && html`<${AdminEmail}    participants=${p.participants} results=${p.results} settings=${p.settings} saveSettings=${p.saveSettings}/>`}
+    ${tab==="data"     && html`<${AdminData}     participants=${p.participants} results=${p.results} settings=${p.settings} saveParticipants=${p.saveParticipants} saveResults=${p.saveResults} saveSettings=${p.saveSettings}/>`}
     ${tab==="settings" && html`<${AdminSettings} settings=${p.settings}     saveSettings=${p.saveSettings}/>`}
   </div>`;
 }
@@ -374,6 +382,127 @@ function AdminEmail(p) {
   </div>`;
 }
 
+// - Admin Data tab (export / import / Firebase) -
+function AdminData(p) {
+  var lctx=useLang(); var t=lctx.t;
+  var msgState=useState(""); var msg=msgState[0], setMsg=msgState[1];
+  var importErrState=useState(""); var importErr=importErrState[0], setImportErr=importErrState[1];
+
+  function setStatus(m, isErr) {
+    if(isErr) setImportErr(m); else setMsg(m);
+    setTimeout(function(){ setMsg(""); setImportErr(""); }, 4000);
+  }
+
+  // ── Export ──────────────────────────────────────────────────────
+  function exportData() {
+    var snapshot = {
+      exportedAt: new Date().toISOString(),
+      version: 2,
+      participants: p.participants,
+      results:      p.results,
+      settings:     p.settings
+    };
+    var blob = new Blob([JSON.stringify(snapshot, null, 2)], {type:"application/json"});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = "quiniela2026_backup_" + new Date().toISOString().slice(0,10) + ".json";
+    a.click();
+    URL.revokeObjectURL(url);
+    setStatus("Downloaded!");
+  }
+
+  // ── Import ──────────────────────────────────────────────────────
+  async function importData(file) {
+    setImportErr("");
+    try {
+      var text = await file.text();
+      var data = JSON.parse(text);
+      if (!data.participants || !Array.isArray(data.participants)) {
+        setStatus("Invalid file — missing participants array.", true); return;
+      }
+      if (data.participants) await p.saveParticipants(data.participants);
+      if (data.results)      await p.saveResults(data.results);
+      if (data.settings)     await p.saveSettings(data.settings);
+      setStatus("Imported " + data.participants.filter(function(x){return x.id!=="claude_bot";}).length + " participants successfully!");
+    } catch(e) {
+      setStatus("Import failed: " + e.message, true);
+    }
+  }
+
+  // ── Push to Firebase ────────────────────────────────────────────
+  async function pushToFirebase() {
+    if (!db._url) { setStatus("Firebase not configured — add URL in Settings first.", true); return; }
+    try {
+      await Promise.all([
+        db._fb("PUT", "wc26_p", p.participants),
+        db._fb("PUT", "wc26_r", p.results),
+        db._fb("PUT", "wc26_s", p.settings),
+      ]);
+      setStatus("All data pushed to Firebase!");
+    } catch(e) {
+      setStatus("Firebase push failed: " + e.message, true);
+    }
+  }
+
+  var human = p.participants.filter(function(x){return x.id!=="claude_bot";});
+
+  return html`<div style=${{maxWidth:520}}>
+
+    <${Card} sx=${{marginBottom:16}}>
+      <div style=${{fontWeight:700,fontSize:14,marginBottom:4}}>Current data</div>
+      <div style=${{fontSize:13,color:"rgba(255,255,255,.45)",lineHeight:1.9}}>
+        ${human.length} participants &nbsp;·&nbsp;
+        ${Object.keys(p.results.groups||{}).length} group results entered &nbsp;·&nbsp;
+        ${Object.keys(p.results.ko||{}).length} KO results entered
+      </div>
+    </${Card}>
+
+    <div style=${{display:"flex",flexDirection:"column",gap:10,marginBottom:20}}>
+
+      <div style=${{background:"rgba(74,222,128,.07)",border:"1px solid rgba(74,222,128,.2)",borderRadius:12,padding:"14px 16px"}}>
+        <div style=${{fontWeight:700,fontSize:13,color:"#4ade80",marginBottom:6}}>Export backup</div>
+        <div style=${{fontSize:12,color:"rgba(255,255,255,.4)",marginBottom:10}}>
+          Downloads all participants, results and settings as a JSON file.
+          Do this before any risky change.
+        </div>
+        <${Btn} onClick=${exportData} sx=${{padding:"9px 20px"}}>Download backup</${Btn}>
+      </div>
+
+      <div style=${{background:"rgba(59,130,246,.07)",border:"1px solid rgba(59,130,246,.2)",borderRadius:12,padding:"14px 16px"}}>
+        <div style=${{fontWeight:700,fontSize:13,color:"#93c5fd",marginBottom:6}}>Import backup</div>
+        <div style=${{fontSize:12,color:"rgba(255,255,255,.4)",marginBottom:10}}>
+          Restore from a previously exported JSON file. This overwrites current data.
+        </div>
+        <label style=${{display:"inline-flex",alignItems:"center",gap:8,cursor:"pointer",
+          padding:"9px 20px",borderRadius:10,background:"rgba(59,130,246,.15)",
+          border:"1px solid rgba(59,130,246,.3)",fontSize:13,fontWeight:600,color:"#93c5fd",
+          fontFamily:"'DM Sans',sans-serif"}}>
+          Choose file
+          <input type="file" accept=".json" style=${{display:"none"}}
+            onChange=${function(e){ if(e.target.files[0]) importData(e.target.files[0]); }}/>
+        </label>
+        ${importErr&&html`<div style=${{marginTop:8,fontSize:12,color:"#f87171"}}>${importErr}</div>`}
+      </div>
+
+      <div style=${{background:"rgba(245,158,11,.07)",border:"1px solid rgba(245,158,11,.2)",borderRadius:12,padding:"14px 16px"}}>
+        <div style=${{fontWeight:700,fontSize:13,color:"#fbbf24",marginBottom:6}}>Firebase sync</div>
+        <div style=${{fontSize:12,color:"rgba(255,255,255,.4)",marginBottom:10}}>
+          Push all local data to Firebase now. Use this after migrating from localStorage or after an import.
+          Configure the Firebase URL in Settings first.
+        </div>
+        <${Btn} onClick=${pushToFirebase} v=${db._url?"primary":"secondary"} sx=${{padding:"9px 20px"}}>
+          ${db._url?"Push all data to Firebase":"Firebase not configured"}
+        </${Btn}>
+      </div>
+
+    </div>
+
+    ${msg&&html`<div style=${{padding:"10px 14px",borderRadius:10,background:"rgba(74,222,128,.1)",
+      border:"1px solid rgba(74,222,128,.3)",fontSize:13,color:"#4ade80"}}>${msg}</div>`}
+  </div>`;
+}
+
 // - Admin Settings tab -
 function AdminSettings(p) {
   var lctx=useLang();var t=lctx.t;var lang=lctx.lang;
@@ -410,6 +539,17 @@ function AdminSettings(p) {
         onInput=${function(e){ setLoc(function(prev){ return Object.assign({},prev,{adminPw:e.target.value}); }); }}
         placeholder="New password"/>
     </${Field}>
+    <${Field} label="Firebase Database URL">
+      <input type="url" value=${loc.firebase||""}
+        onInput=${function(e){ setLoc(function(prev){ return Object.assign({},prev,{firebase:e.target.value.trim()}); }); }}
+        placeholder="https://your-project-default-rtdb.firebaseio.com"
+        style=${{ fontFamily:"monospace", fontSize:12 }}/>
+    </${Field}>
+    <div style=${{fontSize:11,color:"rgba(255,255,255,.3)",marginBottom:16,lineHeight:1.7}}>
+      Optional. Create a free Firebase Realtime Database at console.firebase.google.com,
+      set rules to public read/write, paste the URL above and save. All data will
+      then sync across all users automatically. Leave blank to use local storage only.
+    </div>
     <${Field} label=${t.adminEmailSettings}>
       <input type="email" value=${loc.adminEmail||""}
         onInput=${function(e){ setLoc(function(prev){ return Object.assign({},prev,{adminEmail:e.target.value}); }); }}

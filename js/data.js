@@ -132,6 +132,7 @@ var DEF = {
   entryFee:   40,
   currency:   "AUD",
   adminEmail: "",
+  firebase:   "https://quiniela2026-jema-default-rtdb.asia-southeast1.firebasedatabase.app",
   scoring: {
     groupResult: 3,
     groupGoalA:  1,

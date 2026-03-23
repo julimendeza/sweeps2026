@@ -47,9 +47,9 @@ function Nav(p) {
           fontFamily:"'DM Sans',sans-serif", marginLeft:4,
           display:"flex", alignItems:"center", gap:6
         }}>
-          <img src=${"https://flagcdn.com/20x15/"+(lang==="en"?"es":"gb")+".png"} width="20" height="15"
+          <img src=${"https://flagcdn.com/20x15/"+(lang==="en"?"gb":"es")+".png"} width="20" height="15"
             style=${{borderRadius:2,border:"1px solid rgba(255,255,255,.15)",verticalAlign:"middle"}}/>
-          ${lang === "en" ? "ES" : "EN"}
+          ${lang === "en" ? "EN" : "ES"}
         </button>
       </div>
     </div>
