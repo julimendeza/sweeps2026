@@ -128,7 +128,7 @@ function AdminResults(p) {
         var mdMatches=GMS[activeG].slice(md*2,md*2+2);
         return html`<div key=${md}>
           <div style=${{fontSize:10,fontWeight:700,color:"rgba(255,255,255,.25)",letterSpacing:".08em",
-            margin:"${md===0?'0':'14px'} 0 5px",textTransform:"uppercase"}}>Matchday ${md+1}</div>
+            marginTop:md===0?0:14,marginBottom:5,textTransform:"uppercase"}}>Matchday ${md+1}</div>
           ${mdMatches.map(function(m){
             return html`<${MRow} key=${m.id} match=${m}
               hv=${loc.groups&&loc.groups[m.id]&&loc.groups[m.id].h||""}
