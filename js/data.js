@@ -57,14 +57,73 @@ GROUPS.forEach(function(g) {
 var ALL_MATCHES = GROUPS.reduce(function(a, g) { return a.concat(GMS[g]); }, []);
 
 // ── Knockout round definitions ───────────────────────────────────────
-var KODEFS = [
-  { id: "r32",      pick: 32 },
-  { id: "r16",      pick: 16 },
-  { id: "qf",       pick: 8  },
-  { id: "sf",       pick: 4  },
-  { id: "final",    pick: 2  },
-  { id: "champion", pick: 1  },
-  { id: "thirdWin", pick: 1  }
+// ── R32 fixture definitions (FIFA matches 73-88) ─────────────────────
+// Slot types: pos=1 winner, pos=2 runner-up, pos=3 best-3rd (slot key)
+var R32_FIXTURES = [
+  {id:"r32_0",  num:73,  home:{pos:2,g:"A"},       away:{pos:2,g:"B"}          },
+  {id:"r32_1",  num:74,  home:{pos:1,g:"E"},        away:{pos:3,slot:"WE"}      },
+  {id:"r32_2",  num:75,  home:{pos:1,g:"F"},        away:{pos:2,g:"C"}          },
+  {id:"r32_3",  num:76,  home:{pos:1,g:"C"},        away:{pos:2,g:"F"}          },
+  {id:"r32_4",  num:77,  home:{pos:1,g:"I"},        away:{pos:3,slot:"WI"}      },
+  {id:"r32_5",  num:78,  home:{pos:2,g:"E"},        away:{pos:2,g:"I"}          },
+  {id:"r32_6",  num:79,  home:{pos:1,g:"A"},        away:{pos:3,slot:"WA"}      },
+  {id:"r32_7",  num:80,  home:{pos:1,g:"L"},        away:{pos:3,slot:"WL"}      },
+  {id:"r32_8",  num:81,  home:{pos:1,g:"D"},        away:{pos:3,slot:"WD"}      },
+  {id:"r32_9",  num:82,  home:{pos:1,g:"G"},        away:{pos:3,slot:"WG"}      },
+  {id:"r32_10", num:83,  home:{pos:2,g:"K"},        away:{pos:2,g:"L"}          },
+  {id:"r32_11", num:84,  home:{pos:1,g:"H"},        away:{pos:2,g:"J"}          },
+  {id:"r32_12", num:85,  home:{pos:1,g:"B"},        away:{pos:3,slot:"WB"}      },
+  {id:"r32_13", num:86,  home:{pos:1,g:"J"},        away:{pos:2,g:"H"}          },
+  {id:"r32_14", num:87,  home:{pos:1,g:"K"},        away:{pos:3,slot:"WK"}      },
+  {id:"r32_15", num:88,  home:{pos:2,g:"D"},        away:{pos:2,g:"G"}          },
+];
+
+// Which groups each best-3rd slot can draw from (Annex C constraints)
+var BEST3_SLOTS = {
+  WA:{validGroups:"CEFHI",  r32id:"r32_6" },
+  WB:{validGroups:"EFGIJ",  r32id:"r32_12"},
+  WD:{validGroups:"BEFIJ",  r32id:"r32_8" },
+  WE:{validGroups:"ABCDF",  r32id:"r32_1" },
+  WG:{validGroups:"AEHIJ",  r32id:"r32_9" },
+  WI:{validGroups:"CDFGH",  r32id:"r32_4" },
+  WK:{validGroups:"DEIJL",  r32id:"r32_14"},
+  WL:{validGroups:"EHIJK",  r32id:"r32_7" },
+};
+
+// KO bracket cascade: which two R32/R16/QF winners meet in the next round
+var KO_BRACKET = {
+  r16:[
+    {id:"r16_0",num:89, home:"r32_0", away:"r32_1"},
+    {id:"r16_1",num:90, home:"r32_2", away:"r32_3"},
+    {id:"r16_2",num:91, home:"r32_4", away:"r32_5"},
+    {id:"r16_3",num:92, home:"r32_6", away:"r32_7"},
+    {id:"r16_4",num:93, home:"r32_8", away:"r32_9"},
+    {id:"r16_5",num:94, home:"r32_10",away:"r32_11"},
+    {id:"r16_6",num:95, home:"r32_12",away:"r32_13"},
+    {id:"r16_7",num:96, home:"r32_14",away:"r32_15"},
+  ],
+  qf:[
+    {id:"qf_0",num:97,  home:"r16_0",away:"r16_1"},
+    {id:"qf_1",num:98,  home:"r16_2",away:"r16_3"},
+    {id:"qf_2",num:99,  home:"r16_4",away:"r16_5"},
+    {id:"qf_3",num:100, home:"r16_6",away:"r16_7"},
+  ],
+  sf:[
+    {id:"sf_0",num:101,home:"qf_0",away:"qf_1"},
+    {id:"sf_1",num:102,home:"qf_2",away:"qf_3"},
+  ],
+  final:{id:"final",num:104,home:"sf_0",away:"sf_1"},
+  s3rd: {id:"s3rd", num:103,homeLose:"sf_0",awayLose:"sf_1"},
+};
+
+// Round definitions for UI tabs (in order)
+var KO_ROUNDS = [
+  {id:"r32",label:"Round of 32",  count:16, fixtures:R32_FIXTURES},
+  {id:"r16",label:"Round of 16",  count:8,  fixtures:KO_BRACKET.r16},
+  {id:"qf", label:"Quarter-Finals",count:4, fixtures:KO_BRACKET.qf},
+  {id:"sf", label:"Semi-Finals",  count:2,  fixtures:KO_BRACKET.sf},
+  {id:"final",label:"Final",      count:1,  fixtures:[KO_BRACKET.final]},
+  {id:"s3rd", label:"3rd Place",  count:1,  fixtures:[KO_BRACKET.s3rd]},
 ];
 
 // ── App defaults ─────────────────────────────────────────────────────
@@ -91,8 +150,9 @@ var DEF = {
 };
 
 // ── Empty prediction / result templates ─────────────────────────────
-var EP = { groups: {}, r16: [], qf: [], sf: [], final: [], champion: "", thirdWin: "", koScores: {} };
-var ER = { groups: {}, r32: [], r16: [], qf: [], sf: [], final: [], champion: "", thirdWin: "" };
+// ko: object of KO match scores, e.g. { "r32_0": {h:"2",a:"1"}, "r16_0": {h:"1",a:"1",winner:"home"} }
+var EP = { groups: {}, ko: {} };
+var ER = { groups: {}, ko: {} };
 
 // ── Claude's pre-seeded predictions ─────────────────────────────────
 var CLAUDE_ENTRY = {
@@ -124,22 +184,6 @@ var CLAUDE_ENTRY = {
     final:    ["Spain","France"],
     champion: "Spain",
     thirdWin: "Brazil",
-    koScores: {
-      // Round of 32 (winner score first)
-      lR32_0:"3-0", lR32_1:"2-1", lR32_2:"2-0", lR32_3:"2-1",
-      lR32_4:"2-1", lR32_5:"2-1", lR32_6:"2-0", lR32_7:"1-0",
-      rR32_0:"3-0", rR32_1:"2-0", rR32_2:"2-0", rR32_3:"1-0",
-      rR32_4:"2-0", rR32_5:"1-0", rR32_6:"1-0", rR32_7:"2-0",
-      // Round of 16
-      lR16_0:"2-0", lR16_1:"2-1", lR16_2:"2-1", lR16_3:"1-0",
-      rR16_0:"3-0", rR16_1:"2-0", rR16_2:"2-1", rR16_3:"2-0",
-      // Quarter-Finals
-      lQF_0:"2-1", lQF_1:"2-0",
-      rQF_0:"2-0", rQF_1:"1-0",
-      // Semi-Finals
-      lSF_0:"2-1", rSF_0:"2-0",
-      // Final and 3rd place
-      final:"1-0", s3rd:"3-2"
-    }
+    ko: {}
   }
 };

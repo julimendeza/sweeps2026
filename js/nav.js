@@ -25,7 +25,7 @@ function Nav(p) {
 
       <button onClick=${function(){ setView("home"); }} className="bb" style=${{
         background:"none", border:"none", color:"#f59e0b", fontSize:18, cursor:"pointer"
-      }}>\u26bd Polla 2026</button>
+      }}>\u26bd Quiniela 2026</button>
 
 
       <div style=${{ display:"flex", gap:3, alignItems:"center" }}>
@@ -44,8 +44,13 @@ function Nav(p) {
           padding:"4px 10px", borderRadius:7, fontSize:12, fontWeight:700,
           cursor:"pointer", border:"1.5px solid rgba(255,255,255,.15)",
           background:"rgba(255,255,255,.07)", color:"rgba(255,255,255,.7)",
-          fontFamily:"'DM Sans',sans-serif", marginLeft:4
-        }}>${lang === "en" ? "\ud83c\uddea\ud83c\uddf8 ES" : "\ud83c\uddec\ud83c\udde7 EN"}</button>
+          fontFamily:"'DM Sans',sans-serif", marginLeft:4,
+          display:"flex", alignItems:"center", gap:6
+        }}>
+          <img src=${"https://flagcdn.com/20x15/"+(lang==="en"?"es":"gb")+".png"} width="20" height="15"
+            style=${{borderRadius:2,border:"1px solid rgba(255,255,255,.15)",verticalAlign:"middle"}}/>
+          ${lang === "en" ? "ES" : "EN"}
+        </button>
       </div>
     </div>
   </nav>`;

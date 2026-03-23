@@ -1,4 +1,4 @@
-// ── Primitive components ─────────────────────────────────────────────
+// - Primitive components -
 
 var btnBase = {
   borderRadius: 10, fontWeight: 600, fontSize: 14,
@@ -51,7 +51,7 @@ function SI(p) {
     placeholder="?"/>`;
 }
 
-// ── Match score row ──────────────────────────────────────────────────
+// - Match score row -
 function MRow(p) {
   var lang=useLang().lang;
   var res = p.res, hv = p.hv || "", av = p.av || "";
@@ -71,7 +71,7 @@ function MRow(p) {
     </div>
     <div style=${{ display:"flex", alignItems:"center", gap:4, flexShrink:0 }}>
       <${SI} val=${hv} onChange=${p.onH}/>
-      <span style=${{ color:"rgba(255,255,255,.2)", fontSize:10 }}>—</span>
+      <span style=${{ color:"rgba(255,255,255,.2)", fontSize:10 }}>-</span>
       <${SI} val=${av} onChange=${p.onA}/>
     </div>
     <div style=${{ flex:1, display:"flex", alignItems:"center", gap:5, overflow:"hidden" }}>
@@ -85,7 +85,7 @@ function MRow(p) {
   </div>`;
 }
 
-// ── Live group standings table ───────────────────────────────────────
+// - Live group standings table -
 function StandingsTable(p) {
   var lang=useLang().lang;
   var t    = useLang().t;
@@ -167,7 +167,7 @@ function StandingsTable(p) {
   </div>`;
 }
 
-// ── Group tab row ────────────────────────────────────────────────────
+// - Group tab row -
 function GroupTabs(p) {
   return html`<div style=${{ display:"flex", gap:4, flexWrap:"wrap", marginBottom:12 }}>
     ${GROUPS.map(function(g) {
@@ -183,7 +183,7 @@ function GroupTabs(p) {
   </div>`;
 }
 
-// ── Multi-team chip picker ───────────────────────────────────────────
+// - Multi-team chip picker -
 function MultiPick(p) {
   var lang=useLang().lang;
   var t = useLang().t;
@@ -225,7 +225,7 @@ function MultiPick(p) {
   </div>`;
 }
 
-// ── Single-team chip picker ──────────────────────────────────────────
+// - Single-team chip picker -
 function SinglePick(p) {
   var lang=useLang().lang;
   var options = p.options, selected = p.selected, results = p.results;
@@ -256,37 +256,96 @@ function SinglePick(p) {
 
 
 
-// ── Build properly ordered bracket halves ─────────────────────────────
-function buildOrderedHalves(r32src, r16src, qfSrc, sfSrc, finSrc, ch) {
-  function dd(a){var s={};return(a||[]).filter(function(x){return x&&!s[x]&&(s[x]=1);});}
-  var sf=dd(sfSrc), qf=dd(qfSrc), r16=dd(r16src), r32=dd(r32src), fin=dd(finSrc);
-  var ru=fin.find(function(t){return t!==ch;})||null;
-  var sfL=sf.filter(function(t){return fin.indexOf(t)<0;});
-  var qfL=qf.filter(function(t){return sf.indexOf(t)<0;});
-  var r16L=r16.filter(function(t){return qf.indexOf(t)<0;});
-  var r32L=r32.filter(function(t){return r16.indexOf(t)<0;});
-  var lSF=[ch||null,sfL[0]||null];
-  var rSF=[ru||null,sfL[1]||null];
-  var lQF=[ch||null,qfL[0]||null,sfL[0]||null,qfL[1]||null];
-  var rQF=[ru||null,qfL[2]||null,sfL[1]||null,qfL[3]||null];
-  function mk8(qfH,lose){var r=[];for(var i=0;i<4;i++){r.push(qfH[i]||null);r.push(lose[i]||null);}return r;}
-  function mk16(r16H,oth){var r=[];for(var i=0;i<8;i++){r.push(r16H[i]||null);r.push(oth[i]||null);}return r;}
-  var lR16=mk8(lQF,r16L.slice(0,4));
-  var rR16=mk8(rQF,r16L.slice(4,8));
-  var lR32=mk16(lR16,r32L.slice(0,8));
-  var rR32=mk16(rR16,r32L.slice(8,16));
-  return {lR32:lR32,lR16:lR16,lQF:lQF,lSF:lSF,rSF:rSF,rQF:rQF,rR16:rR16,rR32:rR32,
-          ch:ch,ru:ru,thirds:sfL,fin:fin};
+// - Build properly ordered bracket halves -
+
+// - KO Match Row (score entry for knockout matches) -
+function KOMatchRow(p) {
+  var lctx=useLang(); var t=lctx.t; var lang=lctx.lang;
+  var match=p.match; // { id, home, away, score, winner, loser }
+  var sc=p.sc||{}; // current prediction score object { h, a, winner }
+  var onChange=p.onChange;
+  var isResult=p.isResult; // admin mode
+  var resMatch=p.resMatch; // actual result match object (for highlighting)
+
+  var homeTeam=match.home, awayTeam=match.away;
+  var h=sc.h!==undefined?sc.h:'', a=sc.a!==undefined?sc.a:'';
+  var isDraw=(h!==''&&a!==''&&+h===+a);
+  var predictedWinner=koWinner(sc);
+  var actualWinner=resMatch?resMatch.winner:null;
+
+  // Status for highlighting
+  var status=null;
+  if(actualWinner&&predictedWinner) {
+    status=(predictedWinner===actualWinner)?'correct':'wrong';
+  }
+
+  var borderCol = status==='correct'?'rgba(74,222,128,.4)':status==='wrong'?'rgba(248,113,113,.3)':'rgba(255,255,255,.1)';
+  var bgCol     = status==='correct'?'rgba(74,222,128,.06)':status==='wrong'?'rgba(248,113,113,.04)':'rgba(255,255,255,.04)';
+
+  function setH(v){ onChange(Object.assign({},sc,{h:v.replace(/\D/g,'').slice(0,2)})); }
+  function setA(v){ onChange(Object.assign({},sc,{a:v.replace(/\D/g,'').slice(0,2)})); }
+  function setW(v){ onChange(Object.assign({},sc,{winner:v})); }
+
+  return html`<div style=${{
+    display:'flex',alignItems:'center',gap:6,padding:'8px 10px',
+    borderRadius:10,marginBottom:5,
+    background:bgCol,border:'1.5px solid '+borderCol,transition:'all .15s'
+  }}>
+    <div style=${{flex:1,display:'flex',alignItems:'center',justifyContent:'flex-end',gap:5,overflow:'hidden'}}>
+      ${homeTeam
+        ? html`<span style=${{fontSize:11,fontWeight:predictedWinner===homeTeam?600:400,
+            color:predictedWinner===homeTeam?'rgba(255,255,255,.9)':'rgba(255,255,255,.65)',
+            overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>${teamName(homeTeam,lang)}</span>
+           <${FlagImg} team=${homeTeam}/>`
+        : html`<span style=${{fontSize:10,color:'rgba(255,255,255,.25)',fontStyle:'italic'}}>TBD</span>`
+      }
+    </div>
+
+    <div style=${{display:'flex',alignItems:'center',gap:3,flexShrink:0}}>
+      <input type="number" min="0" max="20" className="si" value=${h}
+        onChange=${function(e){setH(e.target.value);}} placeholder="?"/>
+      <span style=${{color:'rgba(255,255,255,.2)',fontSize:10}}>-</span>
+      <input type="number" min="0" max="20" className="si" value=${a}
+        onChange=${function(e){setA(e.target.value);}} placeholder="?"/>
+    </div>
+
+    <div style=${{flex:1,display:'flex',alignItems:'center',gap:5,overflow:'hidden'}}>
+      ${awayTeam
+        ? html`<${FlagImg} team=${awayTeam}/>
+           <span style=${{fontSize:11,fontWeight:predictedWinner===awayTeam?600:400,
+            color:predictedWinner===awayTeam?'rgba(255,255,255,.9)':'rgba(255,255,255,.65)',
+            overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>${teamName(awayTeam,lang)}</span>`
+        : html`<span style=${{fontSize:10,color:'rgba(255,255,255,.25)',fontStyle:'italic'}}>TBD</span>`
+      }
+    </div>
+
+    ${isDraw&&homeTeam&&awayTeam&&html`<div style=${{display:'flex',gap:3,flexShrink:0}}>
+      <button onClick=${function(){setW('home');}} style=${{
+        padding:'2px 7px',borderRadius:5,fontSize:9,fontWeight:700,cursor:'pointer',
+        border:'1px solid '+(sc.winner==='home'?'rgba(74,222,128,.6)':'rgba(255,255,255,.15)'),
+        background:sc.winner==='home'?'rgba(74,222,128,.15)':'transparent',
+        color:sc.winner==='home'?'#4ade80':'rgba(255,255,255,.4)',
+        fontFamily:"'DM Sans',sans-serif"
+      }}>H</button>
+      <button onClick=${function(){setW('away');}} style=${{
+        padding:'2px 7px',borderRadius:5,fontSize:9,fontWeight:700,cursor:'pointer',
+        border:'1px solid '+(sc.winner==='away'?'rgba(74,222,128,.6)':'rgba(255,255,255,.15)'),
+        background:sc.winner==='away'?'rgba(74,222,128,.15)':'transparent',
+        color:sc.winner==='away'?'#4ade80':'rgba(255,255,255,.4)',
+        fontFamily:"'DM Sans',sans-serif"
+      }}>A</button>
+    </div>`}
+  </div>`;
 }
 
-// ── Bracket column with inline match scores ───────────────────────────
+// - Bracket team column -
 function BCol(p) {
   var lang=useLang().lang;
   var teams=p.teams, next=p.next||[], H=p.H, PW=p.PW, PH=p.PH, scores=p.scores||{};
   var n=teams.length;
   var slotH=H/n;
-  function isAdv(team){return team && next.filter(Boolean).length>0 && next.indexOf(team)>=0;}
-  function isElim(team){return team && next.filter(Boolean).length>0 && next.indexOf(team)<0;}
+  function isAdv(team){return team&&next.filter(Boolean).length>0&&next.indexOf(team)>=0;}
+  function isElim(team){return team&&next.filter(Boolean).length>0&&next.indexOf(team)<0;}
 
   return html`<div style=${{display:'flex',flexDirection:'column',alignItems:'center',flexShrink:0,width:PW+'px'}}>
     <div style=${{fontSize:9,fontWeight:700,color:'rgba(255,255,255,.35)',letterSpacing:'.05em',marginBottom:6,textAlign:'center',whiteSpace:'nowrap'}}>${p.label}</div>
@@ -305,7 +364,7 @@ function BCol(p) {
           ${team
             ? html`
               <${FlagImg} team=${team} dim=${e}/>
-              <span style=${{fontSize:9,fontWeight:a?600:400,flex:1,minWidth:0,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',marginLeft:3,
+              <span style=${{fontSize:8,fontWeight:a?600:400,flex:1,minWidth:0,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',marginLeft:2,
                 color:a?'#4ade80':e?'rgba(255,255,255,.35)':'rgba(255,255,255,.75)'}}>${teamName(team,lang)}</span>
               ${score&&html`<span style=${{flexShrink:0,fontSize:8,fontWeight:800,background:'rgba(245,158,11,.3)',
                 border:'1px solid rgba(245,158,11,.6)',borderRadius:3,padding:'0 3px',
@@ -319,108 +378,7 @@ function BCol(p) {
   </div>`;
 }
 
-// ── Scores summary table ──────────────────────────────────────────────
-function BracketScoreTable(p) {
-  var lang=useLang().lang;
-  var t=useLang().t;
-  var B=p.B, ks=p.ks, ch=p.ch, ru=p.ru, thirds=p.thirds, thirdWin=p.thirdWin;
-  if(!ks||Object.keys(ks).length===0) return null;
-
-  // Build list of all matches we have scores for
-  var rounds=[
-    {label:t.r32,       emoji:'\u26a1', matches:
-      [0,1,2,3,4,5,6,7].map(function(pi){
-        var kL='lR32_'+pi, kR='rR32_'+pi;
-        var res=[];
-        if(ks[kL]&&B.lR32[pi*2]!==undefined)res.push({home:B.lR32[pi*2]||'?',away:B.lR32[pi*2+1]||'?',score:ks[kL],winner:B.lR32[pi*2]});
-        if(ks[kR]&&B.rR32[pi*2]!==undefined)res.push({home:B.rR32[pi*2]||'?',away:B.rR32[pi*2+1]||'?',score:ks[kR],winner:B.rR32[pi*2]});
-        return res;
-      }).flat()
-    },
-    {label:t.r16,       emoji:'\ud83d\udd25', matches:
-      [0,1,2,3,4,5,6,7].map(function(pi){
-        var kL='lR16_'+pi, kR='rR16_'+pi;
-        var res=[];
-        if(ks[kL]&&B.lR16[pi*2]!==undefined)res.push({home:B.lR16[pi*2]||'?',away:B.lR16[pi*2+1]||'?',score:ks[kL],winner:B.lR16[pi*2]});
-        if(ks[kR]&&B.rR16[pi*2]!==undefined)res.push({home:B.rR16[pi*2]||'?',away:B.rR16[pi*2+1]||'?',score:ks[kR],winner:B.rR16[pi*2]});
-        return res;
-      }).flat()
-    },
-    {label:t.qf,        emoji:'\ud83d\udd25', matches:
-      [0,1,2,3].map(function(pi){
-        var kL='lQF_'+pi, kR='rQF_'+pi;
-        var res=[];
-        if(ks[kL]&&B.lQF[pi*2]!==undefined)res.push({home:B.lQF[pi*2]||'?',away:B.lQF[pi*2+1]||'?',score:ks[kL],winner:B.lQF[pi*2]});
-        if(ks[kR]&&B.rQF[pi*2]!==undefined)res.push({home:B.rQF[pi*2]||'?',away:B.rQF[pi*2+1]||'?',score:ks[kR],winner:B.rQF[pi*2]});
-        return res;
-      }).flat()
-    },
-    {label:t.sf,        emoji:'\u2b50', matches:[
-      ks.lSF_0&&B.lSF.length>=2&&{home:B.lSF[0]||'?', away:B.lSF[1]||'?', score:ks.lSF_0, winner:B.lSF[0]},
-      ks.rSF_0&&B.rSF.length>=2&&{home:B.rSF[0]||'?', away:B.rSF[1]||'?', score:ks.rSF_0, winner:B.rSF[0]}
-    ]},
-    {label:t.thirdMatch,emoji:'\ud83e\udd49', matches:[
-      ks.s3rd&&thirds.length>=2&&{home:thirdWin||thirds[0],away:thirdWin===thirds[0]?thirds[1]:thirds[0],score:ks.s3rd,winner:thirdWin}
-    ]},
-    {label:t.final,     emoji:'\ud83c\udfc6', matches:[
-      ks.final&&{home:ch, away:ru, score:ks.final, winner:ch}
-    ]}
-  ];
-
-  var hasAny=rounds.some(function(r){return r.matches.filter(Boolean).length>0;});
-  if(!hasAny) return null;
-
-  return html`<div style=${{marginTop:18}}>
-    <div style=${{fontSize:12,fontWeight:700,color:'rgba(255,255,255,.5)',marginBottom:10,letterSpacing:'.05em'}}>
-      \u26bd Predicted scores
-    </div>
-    ${rounds.map(function(rd){
-      var ms=rd.matches.filter(Boolean);
-      if(!ms.length) return null;
-      return html`<div key=${rd.label} style=${{marginBottom:12}}>
-        <div style=${{fontSize:10,fontWeight:700,color:'rgba(255,255,255,.35)',marginBottom:5}}>
-          ${rd.emoji} ${rd.label}
-        </div>
-        <div style=${{display:'flex',flexDirection:'column',gap:4}}>
-          ${ms.map(function(m,mi){
-            if(!m) return null;
-            var parts=(m.score||'').split('-');
-            var hs=parts[0]?parts[0].trim():'?', as=parts[1]?parts[1].trim():'?';
-            var homeWin=m.winner===m.home, awayWin=m.winner===m.away;
-            return html`<div key=${mi} style=${{
-              display:'grid',gridTemplateColumns:'1fr auto 1fr',
-              alignItems:'center',gap:8,
-              background:'rgba(255,255,255,.04)',border:'1px solid rgba(255,255,255,.08)',
-              borderRadius:8,padding:'7px 12px'
-            }}>
-              <div style=${{display:'flex',alignItems:'center',justifyContent:'flex-end',gap:5,overflow:'hidden'}}>
-                <span style=${{fontSize:11,fontWeight:homeWin?500:400,
-                  color:homeWin?'rgba(255,255,255,.9)':'rgba(255,255,255,.45)',
-                  overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>${m.home?teamName(m.home,lang):'TBD'}</span>
-                ${m.home&&html`<${FlagImg} team=${m.home} dim=${!homeWin}/>`}
-              </div>
-              <div style=${{display:'flex',alignItems:'center',gap:4,flexShrink:0}}>
-                <span style=${{fontWeight:800,fontSize:15,minWidth:14,textAlign:'right',
-                  color:homeWin?'#fbbf24':'rgba(255,255,255,.5)'}}>${hs}</span>
-                <span style=${{color:'rgba(255,255,255,.2)',fontSize:11}}>-</span>
-                <span style=${{fontWeight:800,fontSize:15,minWidth:14,textAlign:'left',
-                  color:awayWin?'#fbbf24':'rgba(255,255,255,.5)'}}>${as}</span>
-              </div>
-              <div style=${{display:'flex',alignItems:'center',gap:5,overflow:'hidden'}}>
-                ${m.away&&html`<${FlagImg} team=${m.away} dim=${!awayWin}/>`}
-                <span style=${{fontSize:11,fontWeight:awayWin?500:400,
-                  color:awayWin?'rgba(255,255,255,.9)':'rgba(255,255,255,.45)',
-                  overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>${m.away?teamName(m.away,lang):'TBD'}</span>
-              </div>
-            </div>`;
-          })}
-        </div>
-      </div>`;
-    })}
-  </div>`;
-}
-
-// ── Bracket connector SVG ─────────────────────────────────────────────
+// - Bracket connector SVG -
 function BConn(p) {
   var outer=p.outer,inner=p.inner,dir=p.dir,H=p.H,CW=p.CW;
   var stk='rgba(255,255,255,.15)';
@@ -442,7 +400,6 @@ function BConn(p) {
   </svg>`;
 }
 
-// ── SF → Final connector ──────────────────────────────────────────────
 function BFinalConn(p) {
   var H=p.H,CW=p.CW,dir=p.dir,stk='rgba(255,255,255,.15)';
   var c1=H/4,c2=3*H/4,mid=H/2;
@@ -456,114 +413,135 @@ function BFinalConn(p) {
   </svg>`;
 }
 
-// ── Full mirrored bracket ─────────────────────────────────────────────
+// - Full mirrored bracket (driven by cascadeKO) -
 function BracketView(p) {
-  var lang=useLang().lang;
-  var t=useLang().t;
+  var lctx=useLang(); var t=lctx.t; var lang=lctx.lang;
   var preds=p.preds;
-  if(!preds)return html`<div style=${{textAlign:'center',padding:'60px 20px',color:'rgba(255,255,255,.3)'}}>${t.bracketNoPreds}</div>`;
+  if(!preds) return html`<div style=${{textAlign:'center',padding:'60px 20px',color:'rgba(255,255,255,.3)'}}>${t.bracketNoPreds}</div>`;
 
-  var r32src=preds.groups?getR32(preds.groups).teams:(preds.r32||[]);
-  var B=buildOrderedHalves(r32src,preds.r16||[],preds.qf||[],preds.sf||[],preds.final||[],preds.champion||'');
-  var ch=B.ch,ru=B.ru,thirds=B.thirds.filter(Boolean),thirdWin=preds.thirdWin||'';
-  var ks=preds.koScores||{};
+  var C = useMemo(function(){
+    return cascadeKO(preds.groups, preds.ko||{});
+  }, [preds]);
 
-  var H=512,PH=20,PW=158,CW=20;
+  var ch=C.champion, ru=null;
+  if(C.finalTeams&&C.finalTeams.length>0) ru=C.finalTeams.find(function(x){return x!==ch;})||null;
+  var thirds=C.thirdTeams||[];
+  var thirdWin=C.thirdWin;
 
-  // Extract per-column score objects from koScores
-  // Convention: ks keys are "colName_pairIdx" e.g. "lSF_0", "lQF_1", "final", "s3rd"
-  function colScores(colKey){
-    var out={};
-    Object.keys(ks).forEach(function(k){
-      var prefix=colKey+'_';
-      if(k.indexOf(prefix)===0){
-        var idx=parseInt(k.slice(prefix.length),10);
-        out[idx]=ks[k];
-      }
+  var H=512, PH=20, PW=160, CW=20;
+
+  // Build flat team arrays for each column half
+  // Each round: pairs of [home,away] from fixtures in order
+  // Left half = first 8 R32 fixtures, Right half = last 8
+  function colFromFixtures(fixtures, resultMap, half) {
+    var half8 = half==='left' ? fixtures.slice(0,8) : fixtures.slice(8);
+    var out = [];
+    half8.forEach(function(f){
+      var r = resultMap[f.id];
+      out.push(r&&r.home||null);
+      out.push(r&&r.away||null);
     });
     return out;
   }
 
-  var nextMap={lR32:'lR16',lR16:'lQF',lQF:'lSF',lSF:null,rSF:null,rQF:'rSF',rR16:'rQF',rR32:'rR16'};
-
-  function col(key,label){
-    var nextKey=nextMap[key];
-    var next=nextKey?B[nextKey]:(key==='lSF'?[ch]:(key==='rSF'?[ru]:[]));
-    return html`<${BCol} label=${label} teams=${B[key]} next=${next||[]}
-      scores=${colScores(key)} H=${H} PW=${PW} PH=${PH}/>`;
+  function colFromKO(fixtures, resultMap, half) {
+    var n=fixtures.length, h=n/2;
+    var half_f = half==='left' ? fixtures.slice(0,h) : fixtures.slice(h);
+    var out=[];
+    half_f.forEach(function(f){
+      var r=resultMap[f.id];
+      out.push(r&&r.home||null);
+      out.push(r&&r.away||null);
+    });
+    return out;
   }
-  function cn(a,b,d){return html`<${BConn} outer=${B[a]} inner=${B[b]} dir=${d} H=${H} CW=${CW}/>`;}
-  function fc(d){return html`<${BFinalConn} H=${H} CW=${CW} dir=${d}/>`;}
 
-  var lbl=t;
+  var lR32 = colFromFixtures(R32_FIXTURES, C.r32, 'left');
+  var rR32 = colFromFixtures(R32_FIXTURES, C.r32, 'right');
+  var lR16 = colFromKO(KO_BRACKET.r16, C.r16, 'left');
+  var rR16 = colFromKO(KO_BRACKET.r16, C.r16, 'right');
+  var lQF  = colFromKO(KO_BRACKET.qf,  C.qf,  'left');
+  var rQF  = colFromKO(KO_BRACKET.qf,  C.qf,  'right');
+  var lSF  = [C.sf['sf_0']&&C.sf['sf_0'].home||null, C.sf['sf_0']&&C.sf['sf_0'].away||null];
+  var rSF  = [C.sf['sf_1']&&C.sf['sf_1'].home||null, C.sf['sf_1']&&C.sf['sf_1'].away||null];
+
+  // Advancing team lists per half for highlighting
+  var lR32adv = C.r16teams.slice(0, C.r16teams.length/2);
+  var rR32adv = C.r16teams.slice(C.r16teams.length/2);
+  var lR16adv = C.qfteams.slice(0, C.qfteams.length/2);
+  var rR16adv = C.qfteams.slice(C.qfteams.length/2);
+  var lQFadv  = C.sfteams.slice(0, C.sfteams.length/2);
+  var rQFadv  = C.sfteams.slice(C.sfteams.length/2);
+  var lSFadv  = C.finalTeams.slice(0,1);
+  var rSFadv  = C.finalTeams.slice(1,2);
+
+  function col(label, teams, adv) {
+    return html`<${BCol} label=${label} teams=${teams} next=${adv} H=${H} PW=${PW} PH=${PH} scores=${{}}/>`;
+  }
+  function cn(outer, inner, dir) {
+    return html`<${BConn} outer=${outer} inner=${inner} dir=${dir} H=${H} CW=${CW}/>`;
+  }
+  function fc(dir) {
+    return html`<${BFinalConn} H=${H} CW=${CW} dir=${dir}/>`;
+  }
 
   return html`<div>
-    <div className="bscroll" style=${{paddingTop:4,paddingBottom:12}}>
+    <div class="bscroll" style=${{paddingTop:4,paddingBottom:12}}>
       <div style=${{display:'flex',alignItems:'flex-start',gap:0,minWidth:'1700px'}}>
 
-        ${col('lR32', lbl.r32)}  ${cn('lR32','lR16','lr')}
-        ${col('lR16', lbl.r16)}  ${cn('lR16','lQF','lr')}
-        ${col('lQF',  lbl.qf)}   ${cn('lQF','lSF','lr')}
-        ${col('lSF',  lbl.sf)}   ${fc('lr')}
+        ${col(t.r32, lR32, lR32adv)}
+        ${cn(lR32, lR16, 'lr')}
+        ${col(t.r16, lR16, lR16adv)}
+        ${cn(lR16, lQF, 'lr')}
+        ${col(t.qf,  lQF,  lQFadv)}
+        ${cn(lQF, lSF, 'lr')}
+        ${col(t.sf,  lSF,  lSFadv)}
+        ${fc('lr')}
 
         <div style=${{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',
-          height:H+'px',width:'165px',flexShrink:0,padding:'0 8px'}}>
-
-          <div style=${{fontSize:9,fontWeight:700,color:'rgba(245,158,11,.7)',marginBottom:5,textAlign:'center',letterSpacing:'.06em'}}>\ud83c\udfc6 ${lbl.champion}</div>
-
+          height:H+'px',width:'170px',flexShrink:0,padding:'0 8px'}}>
+          <div style=${{fontSize:9,fontWeight:700,color:'rgba(245,158,11,.7)',marginBottom:5,textAlign:'center',letterSpacing:'.06em'}}>${'\ud83c\udfc6'} ${t.champion}</div>
           <div style=${{padding:'8px 10px',borderRadius:10,textAlign:'center',width:'100%',marginBottom:4,
             background:ch?'rgba(245,158,11,.15)':'rgba(255,255,255,.04)',
             border:'2px solid '+(ch?'rgba(245,158,11,.5)':'rgba(255,255,255,.1)')}}>
             ${ch
-              ? html`<${FlagImg} team=${ch}/>
-                     <div style=${{fontWeight:700,color:'#fbbf24',fontSize:12,marginTop:3}}>${teamName(ch,lang)}</div>`
-              : html`<div style=${{fontSize:9,color:'rgba(255,255,255,.25)',fontStyle:'italic',padding:'4px 0'}}>TBD</div>`
-            }
+              ? html`<${FlagImg} team=${ch}/><div style=${{fontWeight:700,color:'#fbbf24',fontSize:12,marginTop:3}}>${teamName(ch,lang)}</div>`
+              : html`<div style=${{fontSize:9,color:'rgba(255,255,255,.25)',fontStyle:'italic',padding:'4px 0'}}>TBD</div>`}
           </div>
-
-          ${ks.final&&html`<div style=${{
-            display:'flex',alignItems:'center',gap:4,
+          ${C.final&&C.final.score&&html`<div style=${{display:'flex',alignItems:'center',gap:4,
             background:'rgba(245,158,11,.14)',border:'1px solid rgba(245,158,11,.3)',
-            borderRadius:6,padding:'3px 10px',marginBottom:8,width:'100%',justifyContent:'center'
-          }}>
+            borderRadius:6,padding:'3px 10px',marginBottom:8,width:'100%',justifyContent:'center'}}>
             <span style=${{fontSize:9,color:'rgba(255,255,255,.5)'}}>${ch?teamName(ch,lang):'?'}</span>
-            <span style=${{fontWeight:800,fontSize:14,color:'#fbbf24',letterSpacing:2}}>${ks.final}</span>
+            <span style=${{fontWeight:800,fontSize:14,color:'#fbbf24',letterSpacing:2}}>${C.final.score.h}-${C.final.score.a}</span>
             <span style=${{fontSize:9,color:'rgba(255,255,255,.5)'}}>${ru?teamName(ru,lang):'?'}</span>
           </div>`}
-
-          ${thirds.length>0&&html`<div style=${{width:'100%'}}>
-            <div style=${{fontSize:9,fontWeight:700,color:'rgba(180,83,9,.7)',textAlign:'center',marginBottom:4}}>\ud83e\udd49 3rd Place</div>
-            <div style=${{display:'flex',flexDirection:'column',gap:3}}>
-              ${thirds.slice(0,2).map(function(t3){
-                var isW=t3===thirdWin;
-                return html`<div key=${t3} style=${{display:'flex',alignItems:'center',gap:5,padding:'3px 6px',borderRadius:5,
-                  background:isW?'rgba(180,83,9,.15)':'rgba(255,255,255,.04)',
-                  border:'1px solid '+(isW?'rgba(180,83,9,.4)':'rgba(255,255,255,.08)')}}>
-                  <${FlagImg} team=${t3}/>
-                  <span style=${{fontSize:9,flex:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',
-                    color:isW?'#fb923c':'rgba(255,255,255,.5)'}}>${teamName(t3,lang)}</span>
-                  ${isW&&html`<span style=${{fontSize:8,color:'#fb923c'}}>\u2605</span>`}
-                </div>`;
-              })}
-            </div>
-            ${ks.s3rd&&html`<div style=${{
-              display:'flex',alignItems:'center',gap:4,
-              background:'rgba(180,83,9,.1)',border:'1px solid rgba(180,83,9,.25)',
-              borderRadius:5,padding:'2px 8px',marginTop:4,justifyContent:'center'
-            }}>
-              <span style=${{fontWeight:700,fontSize:12,color:'#fb923c',letterSpacing:2}}>${ks.s3rd}</span>
-            </div>`}
+          ${thirds.filter(Boolean).length>0&&html`<div style=${{width:'100%'}}>
+            <div style=${{fontSize:9,fontWeight:700,color:'rgba(180,83,9,.7)',textAlign:'center',marginBottom:4}}>${'\ud83e\udd49'} 3rd</div>
+            ${thirds.slice(0,2).filter(Boolean).map(function(t3){
+              var isW=t3===thirdWin;
+              return html`<div key=${t3} style=${{display:'flex',alignItems:'center',gap:5,padding:'3px 6px',borderRadius:5,marginBottom:3,
+                background:isW?'rgba(180,83,9,.15)':'rgba(255,255,255,.04)',
+                border:'1px solid '+(isW?'rgba(180,83,9,.4)':'rgba(255,255,255,.08)')}}>
+                <${FlagImg} team=${t3}/>
+                <span style=${{fontSize:9,flex:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',
+                  color:isW?'#fb923c':'rgba(255,255,255,.5)'}}>${teamName(t3,lang)}</span>
+                ${isW&&html`<span style=${{fontSize:8,color:'#fb923c'}}>${'-'}</span>`}
+              </div>`;
+            })}
           </div>`}
         </div>
 
-        ${fc('rl')}   ${col('rSF',  lbl.sf)}
-        ${cn('rQF','rSF','rl')}  ${col('rQF',  lbl.qf)}
-        ${cn('rR16','rQF','rl')} ${col('rR16', lbl.r16)}
-        ${cn('rR32','rR16','rl')} ${col('rR32', lbl.r32)}
+        ${fc('rl')}
+        ${col(t.sf,  rSF,  rSFadv)}
+        ${cn(rQF, rSF, 'rl')}
+        ${col(t.qf,  rQF,  rQFadv)}
+        ${cn(rR16, rQF, 'rl')}
+        ${col(t.r16, rR16, rR16adv)}
+        ${cn(rR32, rR16, 'rl')}
+        ${col(t.r32, rR32, rR32adv)}
 
       </div>
     </div>
-    <p style=${{fontSize:10,color:'rgba(255,255,255,.22)',marginTop:6,textAlign:'center'}}>${lbl.bracketSub}</p>
-    <${BracketScoreTable} B=${B} ks=${ks} ch=${ch} ru=${ru} thirds=${thirds} thirdWin=${thirdWin}/>
+    <p style=${{fontSize:10,color:'rgba(255,255,255,.22)',marginTop:6,textAlign:'center'}}>${t.bracketSub}</p>
   </div>`;
 }

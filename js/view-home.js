@@ -1,20 +1,21 @@
-// ── Home / landing page ──────────────────────────────────────────────
+// - Home / landing page -
 function HomeView(p) {
   var lctx=useLang();var t=lctx.t;var lang=lctx.lang;
   var participants = p.participants, results = p.results, settings = p.settings, setView = p.setView;
 
+  var rC = useMemo(function(){ return cascadeKO(results.groups, results.ko||{}); }, [results]);
   var ranked = useMemo(function(){
     return participants
       .map(function(x){ return Object.assign({}, x, calcScore(x.preds, results, settings.scoring)); })
-      .sort(function(a, b){ return cmpTb(a, b, results); });
-  }, [participants, results, settings]);
+      .sort(function(a, b){ return cmpTb(a, b, rC); });
+  }, [participants, results, settings, rC]);
 
   var human = participants.filter(function(x){ return x.id !== "claude_bot"; });
   var total = human.length * settings.entryFee;
 
   var chCounts = {};
   human.forEach(function(x){
-    if (x.preds && x.preds.champion) chCounts[x.preds.champion] = (chCounts[x.preds.champion] || 0) + 1;
+    var xC=cascadeKO(x.preds&&x.preds.groups,x.preds&&x.preds.ko||{}); if(xC.champion) chCounts[xC.champion]=(chCounts[xC.champion]||0)+1;
   });
   var topCh = Object.entries(chCounts).sort(function(a,b){ return b[1] - a[1]; });
 
@@ -139,7 +140,7 @@ function HomeView(p) {
   </div>`;
 }
 
-// ── Bracket page (select participant → show their bracket + group stage) ───────────
+// - Bracket page (select participant - show their bracket + group stage) -
 function BracketPage(p) {
   var lctx=useLang();var t=lctx.t;var lang=lctx.lang;
   var participants = p.participants;
@@ -212,7 +213,7 @@ function BracketPage(p) {
       ${me ? html`<div>
         <${Card} sx=${{ marginBottom:14 }}>
           <div style=${{ fontSize:12, fontWeight:600, color:"rgba(255,255,255,.4)", marginBottom:12, letterSpacing:".04em" }}>
-            GROUP ${activeG} — ${TBG[activeG].map(function(tm){return teamName(tm,lang);}).join(" \u00b7 ")}
+            GROUP ${activeG} - ${TBG[activeG].map(function(tm){return teamName(tm,lang);}).join(" \u00b7 ")}
           </div>
           ${GMS[activeG].map(function(m){
             var pred = me.preds && me.preds.groups && me.preds.groups[m.id];
@@ -230,9 +231,9 @@ function BracketPage(p) {
                 minWidth:64, justifyContent:"center" }}>
                 ${hasScore
                   ? html`<span style=${{ fontWeight:800, fontSize:16, color:"#fbbf24" }}>${pred.h}</span>
-                         <span style=${{ color:"rgba(255,255,255,.3)", fontSize:12 }}>—</span>
+                         <span style=${{ color:"rgba(255,255,255,.3)", fontSize:12 }}>-</span>
                          <span style=${{ fontWeight:800, fontSize:16, color:"#fbbf24" }}>${pred.a}</span>`
-                  : html`<span style=${{ fontSize:12, color:"rgba(255,255,255,.25)", fontStyle:"italic" }}>?—?</span>`
+                  : html`<span style=${{ fontSize:12, color:"rgba(255,255,255,.25)", fontStyle:"italic" }}>?-?</span>`
                 }
               </div>
               <span style=${{ flex:1, textAlign:"left", fontSize:13, fontWeight:500 }}>${m.away} ${fl(m.away)}</span>

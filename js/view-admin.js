@@ -1,4 +1,4 @@
-// ── Admin panel (password protected) ────────────────────────────────
+// - Admin panel (password protected) -
 function AdminView(p) {
   var lctx=useLang();var t=lctx.t;var lang=lctx.lang;
   var authState = useState(false); var auth    = authState[0],  setAuth    = authState[1];
@@ -20,7 +20,7 @@ function AdminView(p) {
         onInput=${function(e){ setPw(e.target.value); }}
         onKeyDown=${function(e){ if(e.key==="Enter") tryAuth(); }}
         placeholder="Password" style=${{ marginBottom:12 }}/>
-      ${authErr && html`<p style=${{ color:"#f87171", fontSize:13, marginBottom:12 }}>${authErr}</p>`}
+      ${authErr && React.createElement('p', {style:{color:'#f87171',fontSize:13,marginBottom:12}}, authErr)}
       <${Btn} onClick=${tryAuth} full=${true} sx=${{ padding:"13px", fontSize:15 }}>Enter</${Btn}>
     </${Card}>
   </div>`;
@@ -55,116 +55,129 @@ function AdminView(p) {
   </div>`;
 }
 
-// ── Admin Results tab ────────────────────────────────────────────────
+// - Admin Results tab -
 function AdminResults(p) {
-  var lctx=useLang();var t=lctx.t;var lang=lctx.lang;
-  var locState = useState(Object.assign({}, ER,
-    { groups: Object.assign({}, p.results.groups || {}) },
-    Object.fromEntries(Object.entries(p.results).filter(function(e){ return e[0] !== "groups"; }))
-  ));
-  var loc = locState[0], setLoc = locState[1];
-  var secState = useState("groups"); var sec      = secState[0], setSec      = secState[1];
-  var gState   = useState("A");      var activeG  = gState[0],  setActiveG  = gState[1];
-  var koState  = useState("r16");    var activeKO = koState[0], setActiveKO = koState[1];
-  var msgState = useState("");       var msg      = msgState[0], setMsg     = msgState[1];
+  var lctx=useLang(); var t=lctx.t; var lang=lctx.lang;
+  var locState=useState({
+    groups: Object.assign({}, p.results.groups||{}),
+    ko:     Object.assign({}, p.results.ko||{})
+  });
+  var loc=locState[0], setLoc=locState[1];
+  var secState=useState("groups"); var sec=secState[0],      setSec=secState[1];
+  var gState  =useState("A");      var activeG=gState[0],    setActiveG=gState[1];
+  var koState =useState("r32");    var activeKO=koState[0],  setActiveKO=koState[1];
+  var msgState=useState("");       var msg=msgState[0],      setMsg=msgState[1];
 
-  var r32info = useMemo(function(){ return getR32(loc.groups); }, [loc.groups]);
+  var r32info=useMemo(function(){return getR32(loc.groups);}, [loc.groups]);
+  var C=useMemo(function(){return cascadeKO(loc.groups,loc.ko||{});}, [loc]);
+  var gIdx=GROUPS.indexOf(activeG);
+  var koRoundDef=KO_ROUNDS.find(function(r){return r.id===activeKO;})||KO_ROUNDS[0];
+  var koIdx=KO_ROUNDS.findIndex(function(r){return r.id===activeKO;});
 
-  async function save() { await p.saveResults(loc); setMsg(t.savedOk); setTimeout(function(){ setMsg(""); }, 2000); }
+  async function save(){await p.saveResults(loc);setMsg(t.savedOk);setTimeout(function(){setMsg("");},2000);}
 
-  function setGR(id, side, v) {
+  function setGR(id,side,v){
     setLoc(function(prev){
-      var ng = Object.assign({}, prev.groups);
-      ng[id] = Object.assign({}, ng[id] || {}); ng[id][side] = v;
-      return Object.assign({}, prev, { groups: ng });
+      var ng=Object.assign({},prev.groups);
+      ng[id]=Object.assign({},ng[id]||{});ng[id][side]=v;
+      return Object.assign({},prev,{groups:ng});
+    });
+  }
+  function setKOR(matchId,val){
+    setLoc(function(prev){
+      var nk=Object.assign({},prev.ko||{});
+      if(val===null){delete nk[matchId];}
+      else{nk[matchId]=Object.assign({},nk[matchId]||{},val);}
+      return Object.assign({},prev,{ko:nk});
     });
   }
 
-  var koRounds = [
-    { id:"r16",      label:t.r16,      pick:16, emoji:"\ud83d\udd25" },
-    { id:"qf",       label:t.qf,       pick:8,  emoji:"\u2b50" },
-    { id:"sf",       label:t.sf,       pick:4,  emoji:"\ud83c\udfc6" },
-    { id:"final",    label:t.final,    pick:2,  emoji:"\ud83e\udd47" },
-    { id:"champion", label:t.champion, pick:1,  emoji:"\ud83e\udd47" },
-    { id:"thirdWin", label:t.thirdWin, pick:1,  emoji:"\ud83e\udd49" }
-  ];
-  var koDef   = koRounds.find(function(r){ return r.id === activeKO; }) || koRounds[0];
-  var options = getCascadeOpts(loc, activeKO, r32info.teams);
-  var gIdx    = GROUPS.indexOf(activeG);
-
   return html`<div>
-    <div style=${{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
-      <p style=${{ fontSize:13, color:"rgba(255,255,255,.4)" }}>${t.enterRes}</p>
-      <div style=${{ display:"flex", alignItems:"center", gap:10 }}>
-        ${msg && html`<span style=${{ color:"#4ade80", fontSize:13 }}>${msg}</span>`}
-        <${Btn} onClick=${save} sx=${{ padding:"8px 18px", fontSize:14 }}>${t.saveBtn}</${Btn}>
+    <div style=${{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
+      <p style=${{fontSize:13,color:"rgba(255,255,255,.4)"}}>${t.enterRes}</p>
+      <div style=${{display:"flex",alignItems:"center",gap:10}}>
+        ${msg&&html`<span style=${{color:"#4ade80",fontSize:13}}>${msg}</span>`}
+        <${Btn} onClick=${save} sx=${{padding:"8px 18px",fontSize:14}}>${t.saveBtn}</${Btn}>
       </div>
     </div>
 
-
-    <div style=${{ display:"flex", gap:8, marginBottom:16 }}>
+    <div style=${{display:"flex",gap:8,marginBottom:16}}>
       ${[{id:"groups",l:t.groupsS},{id:"knockout",l:t.knockoutS}].map(function(s){
-        return html`<button key=${s.id} onClick=${function(){ setSec(s.id); }} style=${{
-          flex:1, padding:"10px 16px", borderRadius:10, cursor:"pointer",
-          border:"2px solid " + (sec===s.id ? "#f59e0b" : "rgba(255,255,255,.1)"),
-          background: sec===s.id ? "rgba(245,158,11,.1)" : "rgba(255,255,255,.03)",
-          fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:13,
-          color: sec===s.id ? "#fbbf24" : "rgba(255,255,255,.6)"
+        return html`<button key=${s.id} onClick=${function(){setSec(s.id);}} style=${{
+          flex:1,padding:"10px 16px",borderRadius:10,cursor:"pointer",
+          border:"2px solid "+(sec===s.id?"#f59e0b":"rgba(255,255,255,.1)"),
+          background:sec===s.id?"rgba(245,158,11,.1)":"rgba(255,255,255,.03)",
+          fontFamily:"'DM Sans',sans-serif",fontWeight:600,fontSize:13,
+          color:sec===s.id?"#fbbf24":"rgba(255,255,255,.6)"
         }}>${s.l}</button>`;
       })}
     </div>
 
-    ${sec === "groups" && html`<${Card}>
+    ${sec==="groups"&&html`<${Card}>
       <${GroupTabs} active=${activeG} onChange=${setActiveG} preds=${loc} isResult=${true}/>
-      <div style=${{ fontSize:11, color:"rgba(255,255,255,.3)", marginBottom:8 }}>${t.groupLabel} ${activeG}: ${TBG[activeG].map(function(tm){return teamName(tm,lang);}).join(" \u00b7 ")}</div>
+      <div style=${{fontSize:11,color:"rgba(255,255,255,.3)",marginBottom:8}}>${t.groupLabel} ${activeG}: ${TBG[activeG].map(function(tm){return teamName(tm,lang);}).join(" - ")}</div>
       ${GMS[activeG].map(function(m){
         return html`<${MRow} key=${m.id} match=${m}
-          hv=${loc.groups && loc.groups[m.id] && loc.groups[m.id].h || ""}
-          av=${loc.groups && loc.groups[m.id] && loc.groups[m.id].a || ""}
-          onH=${function(v){ setGR(m.id,"h",v); }} onA=${function(v){ setGR(m.id,"a",v); }}/>`;
+          hv=${loc.groups&&loc.groups[m.id]&&loc.groups[m.id].h||""}
+          av=${loc.groups&&loc.groups[m.id]&&loc.groups[m.id].a||""}
+          onH=${function(v){setGR(m.id,"h",v);}} onA=${function(v){setGR(m.id,"a",v);}}/>`;
       })}
       <${StandingsTable} group=${activeG} preds=${loc.groups} allPreds=${loc.groups}/>
-      <div style=${{ display:"flex", justifyContent:"space-between", marginTop:14 }}>
-        <${Btn} v="secondary" disabled=${gIdx===0} onClick=${function(){ setActiveG(GROUPS[gIdx-1]); }} sx=${{ padding:"7px 14px", fontSize:13 }}>\u2190 ${GROUPS[gIdx-1]||""}</${Btn}>
-        <${Btn} v="secondary" disabled=${gIdx===11} onClick=${function(){ setActiveG(GROUPS[gIdx+1]); }} sx=${{ padding:"7px 14px", fontSize:13 }}>${GROUPS[gIdx+1]||""} \u2192</${Btn}>
+      <div style=${{display:"flex",justifyContent:"space-between",marginTop:14}}>
+        <${Btn} v="secondary" disabled=${gIdx===0} onClick=${function(){setActiveG(GROUPS[gIdx-1]);}} sx=${{padding:"7px 14px",fontSize:13}}>- ${GROUPS[gIdx-1]||""}</${Btn}>
+        <${Btn} v="secondary" disabled=${gIdx===11} onClick=${function(){setActiveG(GROUPS[gIdx+1]);}} sx=${{padding:"7px 14px",fontSize:13}}>${GROUPS[gIdx+1]||""} -</${Btn}>
       </div>
     </${Card}>`}
 
-    ${sec === "knockout" && html`<${Card}>
-      ${r32info.complete
-        ? html`<div style=${{ marginBottom:12, padding:"8px 12px", background:"rgba(74,222,128,.07)", borderRadius:10, border:"1px solid rgba(74,222,128,.2)", fontSize:11, color:"#4ade80" }}>${t.r32ok}: ${r32info.teams.join(", ")}</div>`
-        : html`<div style=${{ marginBottom:12, padding:"8px 12px", background:"rgba(245,158,11,.07)", borderRadius:10, border:"1px solid rgba(245,158,11,.2)", fontSize:11, color:"rgba(245,158,11,.8)" }}>${t.r32missing} (${r32info.groupsDone}/12)</div>`
-      }
-      <div style=${{ display:"flex", gap:4, flexWrap:"wrap", marginBottom:14 }}>
-        ${koRounds.map(function(r){
-          var filled = r.pick===1 ? !!loc[r.id] : (loc[r.id]||[]).length===r.pick;
-          return html`<button key=${r.id} onClick=${function(){ setActiveKO(r.id); }} style=${{
-            padding:"5px 10px", borderRadius:8, fontSize:12, fontWeight:700, cursor:"pointer",
-            border:"1.5px solid " + (activeKO===r.id ? "#f59e0b" : filled ? "rgba(74,222,128,.4)" : "rgba(255,255,255,.1)"),
-            background: activeKO===r.id ? "#f59e0b" : filled ? "rgba(74,222,128,.08)" : "transparent",
-            color:      activeKO===r.id ? "#000"    : filled ? "#4ade80" : "rgba(255,255,255,.5)",
+    ${sec==="knockout"&&html`<${Card}>
+      <div style=${{marginBottom:10,padding:"8px 12px",borderRadius:10,fontSize:11,
+        background:r32info.complete?"rgba(74,222,128,.07)":"rgba(245,158,11,.07)",
+        border:"1px solid "+(r32info.complete?"rgba(74,222,128,.2)":"rgba(245,158,11,.2)"),
+        color:r32info.complete?"#4ade80":"rgba(245,158,11,.8)"}}>
+        ${r32info.complete?"- "+t.r32ok:"- "+t.r32missing+" ("+r32info.groupsDone+"/12)"}
+      </div>
+      <div style=${{display:"flex",gap:4,flexWrap:"wrap",marginBottom:14}}>
+        ${KO_ROUNDS.map(function(rd){
+          var filled=Object.keys(loc.ko||{}).filter(function(k){
+            return rd.fixtures.some(function(f){return f.id===k;});
+          }).length;
+          var total=rd.fixtures.length;
+          var done=filled===total&&total>0;
+          return html`<button key=${rd.id} onClick=${function(){setActiveKO(rd.id);}} style=${{
+            padding:"5px 10px",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer",
+            border:"1.5px solid "+(activeKO===rd.id?"#f59e0b":done?"rgba(74,222,128,.4)":"rgba(255,255,255,.1)"),
+            background:activeKO===rd.id?"#f59e0b":done?"rgba(74,222,128,.08)":"transparent",
+            color:activeKO===rd.id?"#000":done?"#4ade80":"rgba(255,255,255,.5)",
             fontFamily:"'DM Sans',sans-serif"
-          }}>${r.emoji}${filled&&activeKO!==r.id?" \u2713":""} ${r.label}</button>`;
+          }}>${done&&activeKO!==rd.id?"- ":""}${rd.label} (${filled}/${total})</button>`;
         })}
       </div>
-      <div style=${{ marginBottom:14, paddingBottom:12, borderBottom:"1px solid rgba(255,255,255,.08)" }}>
-        <h3 className="bb" style=${{ fontSize:20 }}>${koDef.emoji} ${koDef.label}</h3>
+      <div style=${{marginBottom:12,paddingBottom:10,borderBottom:"1px solid rgba(255,255,255,.08)"}}>
+        <h3 class="bb" style=${{fontSize:18}}>${koRoundDef.label}</h3>
       </div>
-      ${activeKO==="thirdWin" && (function(){
-        var tm = (loc.sf||[]).filter(function(x){ return (loc.final||[]).indexOf(x)<0; });
-        return tm.length>=2 && html`<div style=${{ marginBottom:12, padding:"8px 12px", background:"rgba(255,255,255,.04)", borderRadius:10, fontSize:12, color:"rgba(255,255,255,.5)" }}>
-          ${t.thirdAuto} ${fl(tm[0])} ${tm[0]} vs ${fl(tm[1])} ${tm[1]}
-        </div>`;
-      })()}
-      ${koDef.pick===1
-        ? html`<${SinglePick} options=${options} selected=${loc[activeKO]||""} onChange=${function(v){ setLoc(function(prev){ var n=Object.assign({},prev);n[activeKO]=v;return n; }); }}/>`
-        : html`<${MultiPick}  options=${options} selected=${loc[activeKO]||[]} onChange=${function(v){ setLoc(function(prev){ var n=Object.assign({},prev);n[activeKO]=v;return n; }); }} pick=${koDef.pick}/>`
-      }
+      ${koRoundDef.fixtures.map(function(f){
+        var matchObj=null;
+        if(f.id==="final")      matchObj=C.final;
+        else if(f.id==="s3rd")  matchObj=C.s3rd;
+        else if(C.r32&&C.r32[f.id]) matchObj=C.r32[f.id];
+        else if(C.r16&&C.r16[f.id]) matchObj=C.r16[f.id];
+        else if(C.qf&&C.qf[f.id])   matchObj=C.qf[f.id];
+        else if(C.sf&&C.sf[f.id])   matchObj=C.sf[f.id];
+        var sc=loc.ko&&loc.ko[f.id]||{};
+        var disp={id:f.id,home:matchObj&&matchObj.home||null,away:matchObj&&matchObj.away||null};
+        return html`<${KOMatchRow} key=${f.id} match=${disp} sc=${sc} isResult=${true}
+          onChange=${function(val){setKOR(f.id,val);}}/>`;
+      })}
+      <div style=${{display:"flex",gap:10,marginTop:14}}>
+        ${koIdx>0&&html`<${Btn} v="secondary" onClick=${function(){setActiveKO(KO_ROUNDS[koIdx-1].id);}} sx=${{padding:"9px 14px",fontSize:13}}>- ${KO_ROUNDS[koIdx-1].label}</${Btn}>`}
+        ${koIdx<KO_ROUNDS.length-1&&html`<${Btn} onClick=${function(){setActiveKO(KO_ROUNDS[koIdx+1].id);}} sx=${{flex:"1",padding:"11px"}}>- ${KO_ROUNDS[koIdx+1].label}</${Btn}>`}
+      </div>
     </${Card}>`}
   </div>`;
 }
 
-// ── Admin Participants tab ───────────────────────────────────────────
+
+// - Admin Participants tab -
 function AdminParts(p) {
   var lctx=useLang();var t=lctx.t;var lang=lctx.lang;
   var ranked = useMemo(function(){
@@ -213,7 +226,7 @@ function AdminParts(p) {
   </div>`;
 }
 
-// ── Admin Email tab ──────────────────────────────────────────────────
+// - Admin Email tab -
 function AdminEmail(p) {
   var lctx=useLang();var t=lctx.t;var lang=lctx.lang;
   var cfgState    = useState(Object.assign({}, p.settings.ejs));
@@ -309,17 +322,17 @@ function AdminEmail(p) {
           ? html`<p><strong>Hey dear football friends,</strong></p>
               <p>The 2026 FIFA World Cup is just around the corner! Predict group stage scores (app auto-calculates who qualifies for the Round of 32), then pick teams advancing each knockout round.</p>
               <p>\ud83d\udc49 <strong>[SWEEPSTAKE WEBSITE LINK]</strong></p>
-              <p>Register: <strong>${p.settings.currency} ${p.settings.entryFee}</strong> → Pay Aaron Bolanos (BSB: 064158 / Acc: 11153291) · Deadline: <strong>June 10, 2026</strong>.</p>
+              <p>Register: <strong>${p.settings.currency} ${p.settings.entryFee}</strong> - Pay Aaron Bolanos (BSB: 064158 / Acc: 11153291) - Deadline: <strong>June 10, 2026</strong>.</p>
               <p>More players = bigger prize! Please share with friends.</p>
-              <p><strong>Good luck! \u26bd\ud83c\udfc6 — Julian</strong></p>`
+              <p><strong>Good luck! \u26bd\ud83c\udfc6 - Julian</strong></p>`
           : html`<p><strong>Hello everyone!</strong></p>
               <p>Here are the WC 2026 Sweepstake predictions. Please save this email as a record.</p>
-              <p>We are <strong>${human.length} participants</strong> → <strong>${p.settings.currency} ${total}</strong> raised.</p>
+              <p>We are <strong>${human.length} participants</strong> - <strong>${p.settings.currency} ${total}</strong> raised.</p>
               <p>\ud83e\udd47 1st (50%): <strong>${p.settings.currency} ${Math.floor(total*.5)}</strong><br/>
                  \ud83e\udd48 2nd (25%): <strong>${p.settings.currency} ${Math.floor(total*.25)}</strong><br/>
                  \ud83e\udd49 3rd (15%): <strong>${p.settings.currency} ${Math.floor(total*.15)}</strong></p>
               ${topCh && html`<p><strong>${topCh[1]} people</strong> have <strong>${topCh[0]}</strong> as champion.</p>`}
-              <p><strong>GOOD LUCK! \u26bd\ud83c\udfc6 — Julian</strong></p>`
+              <p><strong>GOOD LUCK! \u26bd\ud83c\udfc6 - Julian</strong></p>`
         }
       </div>
     </${Card}>
@@ -361,7 +374,7 @@ function AdminEmail(p) {
   </div>`;
 }
 
-// ── Admin Settings tab ───────────────────────────────────────────────
+// - Admin Settings tab -
 function AdminSettings(p) {
   var lctx=useLang();var t=lctx.t;var lang=lctx.lang;
   var locState = useState(Object.assign({}, p.settings, { scoring: Object.assign({}, p.settings.scoring) }));

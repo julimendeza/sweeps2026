@@ -106,7 +106,7 @@ var T = {
   },
 
   es: {
-    title:      "POLLA MUNDIAL 2026",
+    title:      "QUINIELA MUNDIAL 2026",
     sub:        "Southamerican Football Friends Sweepstake \u00b7 USA \u00b7 Canad\u00e1 \u00b7 M\u00e9xico \u00b7 11 Jun \u2013 19 Jul 2026",
     predict:    "Predecir",
     table:      "\ud83c\udfc5 Tabla",
@@ -205,7 +205,7 @@ var T = {
     tiebreak:   "Desempate: 1. Campe\u00f3n \u00b7 2. Subcampe\u00f3n \u00b7 3. 3er lugar \u00b7 4. Pts Final+3ro \u00b7 5. Pts SF \u00b7 6. Sorteo",
     adminFee:   "Admin 10%",
     downloadPDF:"Descargar mis predicciones (PDF)",
-    pdfTitle:   "Polla Mundial 2026 \u2014 Predicciones",
+    pdfTitle:   "Quiniela Mundial 2026 \u2014 Predicciones",
     adminNotifSent: "Admin notificado \u2713",
     adminNotifFail: "Email admin fall\u00f3 (revisa la configuraci\u00f3n)"
   }

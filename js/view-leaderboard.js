@@ -1,15 +1,16 @@
-// ── Leaderboard / standings view ─────────────────────────────────────
+// - Leaderboard / standings view -
 function LeaderboardView(p) {
   var lctx=useLang();var t=lctx.t;var lang=lctx.lang;
   var participants = p.participants;
   var results      = p.results;
   var settings     = p.settings;
 
+  var rC = useMemo(function(){ return cascadeKO(results.groups, results.ko||{}); }, [results]);
   var ranked = useMemo(function(){
     return participants
       .map(function(x){ return Object.assign({}, x, calcScore(x.preds, results, settings.scoring)); })
-      .sort(function(a, b){ return cmpTb(a, b, results); });
-  }, [participants, results, settings]);
+      .sort(function(a, b){ return cmpTb(a, b, rC); });
+  }, [participants, results, settings, rC]);
 
   var expState = useState(null);
   var exp = expState[0], setExp = expState[1];
@@ -62,7 +63,7 @@ function LeaderboardView(p) {
 
           ${ranked.map(function(px, i){
             var isOpen = exp === px.id;
-            var ch     = px.preds && px.preds.champion;
+            var pxC=cascadeKO(px.preds&&px.preds.groups,px.preds&&px.preds.ko||{}); var ch=pxC.champion;
             var chHit  = ch && results.champion && ch === results.champion;
 
             return html`<div key=${px.id}>
