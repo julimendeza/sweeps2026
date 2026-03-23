@@ -465,18 +465,42 @@ function BracketView(p) {
   var lSF  = [C.sf['sf_0']&&C.sf['sf_0'].home||null, C.sf['sf_0']&&C.sf['sf_0'].away||null];
   var rSF  = [C.sf['sf_1']&&C.sf['sf_1'].home||null, C.sf['sf_1']&&C.sf['sf_1'].away||null];
 
-  // Advancing team lists per half for highlighting
-  var lR32adv = C.r16teams.slice(0, C.r16teams.length/2);
-  var rR32adv = C.r16teams.slice(C.r16teams.length/2);
-  var lR16adv = C.qfteams.slice(0, C.qfteams.length/2);
-  var rR16adv = C.qfteams.slice(C.qfteams.length/2);
-  var lQFadv  = C.sfteams.slice(0, C.sfteams.length/2);
-  var rQFadv  = C.sfteams.slice(C.sfteams.length/2);
-  var lSFadv  = C.finalTeams.slice(0,1);
-  var rSFadv  = C.finalTeams.slice(1,2);
+  // Advancing team lists — who won each match in each column
+  // r32teams = R32 winners (advance to R16), r16teams = R16 winners (advance to QF), etc.
+  var lR32adv = C.r32teams.slice(0, 8);   // winners of fixtures 0-7
+  var rR32adv = C.r32teams.slice(8);      // winners of fixtures 8-15
+  var lR16adv = C.r16teams.slice(0, 4);   // winners of r16 0-3
+  var rR16adv = C.r16teams.slice(4);      // winners of r16 4-7
+  var lQFadv  = C.qfteams.slice(0, 2);
+  var rQFadv  = C.qfteams.slice(2);
+  // SF advancing: winner of each SF goes to the Final
+  var lSFadv  = C.sf['sf_0']&&C.sf['sf_0'].winner ? [C.sf['sf_0'].winner] : [];
+  var rSFadv  = C.sf['sf_1']&&C.sf['sf_1'].winner ? [C.sf['sf_1'].winner] : [];
 
-  function col(label, teams, adv) {
-    return html`<${BCol} label=${label} teams=${teams} next=${adv} H=${H} PW=${PW} PH=${PH} scores=${{}}/>`;
+  // Build score map for each column — keyed by pair index
+  // e.g. lR32 pair 0 = r32_0, pair 1 = r32_1, ...
+  function scoreMap(matchIds) {
+    var out = {};
+    matchIds.forEach(function(id, i) {
+      var sc = preds.ko && preds.ko[id];
+      if (sc && sc.h !== '' && sc.h !== undefined) {
+        out[i] = sc.h + '-' + sc.a;
+      }
+    });
+    return out;
+  }
+
+  var lR32ids = ['r32_0','r32_1','r32_2','r32_3','r32_4','r32_5','r32_6','r32_7'];
+  var rR32ids = ['r32_8','r32_9','r32_10','r32_11','r32_12','r32_13','r32_14','r32_15'];
+  var lR16ids = ['r16_0','r16_1','r16_2','r16_3'];
+  var rR16ids = ['r16_4','r16_5','r16_6','r16_7'];
+  var lQFids  = ['qf_0','qf_1'];
+  var rQFids  = ['qf_2','qf_3'];
+  var lSFids  = ['sf_0'];
+  var rSFids  = ['sf_1'];
+
+  function col(label, teams, adv, matchIds) {
+    return html`<${BCol} label=${label} teams=${teams} next=${adv} H=${H} PW=${PW} PH=${PH} scores=${scoreMap(matchIds)}/>`;
   }
   function cn(outer, inner, dir) {
     return html`<${BConn} outer=${outer} inner=${inner} dir=${dir} H=${H} CW=${CW}/>`;
@@ -489,13 +513,13 @@ function BracketView(p) {
     <div class="bscroll" style=${{paddingTop:4,paddingBottom:12}}>
       <div style=${{display:'flex',alignItems:'flex-start',gap:0,minWidth:'1700px'}}>
 
-        ${col(t.r32, lR32, lR32adv)}
+        ${col(t.r32, lR32, lR32adv, lR32ids)}
         ${cn(lR32, lR16, 'lr')}
-        ${col(t.r16, lR16, lR16adv)}
+        ${col(t.r16, lR16, lR16adv, lR16ids)}
         ${cn(lR16, lQF, 'lr')}
-        ${col(t.qf,  lQF,  lQFadv)}
+        ${col(t.qf,  lQF,  lQFadv, lQFids)}
         ${cn(lQF, lSF, 'lr')}
-        ${col(t.sf,  lSF,  lSFadv)}
+        ${col(t.sf,  lSF,  lSFadv, lSFids)}
         ${fc('lr')}
 
         <div style=${{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',
@@ -532,16 +556,91 @@ function BracketView(p) {
         </div>
 
         ${fc('rl')}
-        ${col(t.sf,  rSF,  rSFadv)}
+        ${col(t.sf,  rSF,  rSFadv, rSFids)}
         ${cn(rQF, rSF, 'rl')}
-        ${col(t.qf,  rQF,  rQFadv)}
+        ${col(t.qf,  rQF,  rQFadv, rQFids)}
         ${cn(rR16, rQF, 'rl')}
-        ${col(t.r16, rR16, rR16adv)}
+        ${col(t.r16, rR16, rR16adv, rR16ids)}
         ${cn(rR32, rR16, 'rl')}
-        ${col(t.r32, rR32, rR32adv)}
+        ${col(t.r32, rR32, rR32adv, rR32ids)}
 
       </div>
     </div>
     <p style=${{fontSize:10,color:'rgba(255,255,255,.22)',marginTop:6,textAlign:'center'}}>${t.bracketSub}</p>
+    <${BracketScoreTable} C=${C} ko=${preds.ko||{}} lang=${lang} t=${t}/>
+  </div>`;
+}
+
+// - Bracket scores table below the bracket -
+function BracketScoreTable(p) {
+  var C=p.C, ko=p.ko, lang=p.lang, t=p.t;
+  if(!ko||Object.keys(ko).length===0) return null;
+
+  // Build match rows for each round
+  function mkRows(fixtures, resultMap) {
+    return fixtures.map(function(f){
+      var r=resultMap[f.id];
+      var sc=ko[f.id];
+      if(!sc||sc.h===undefined||sc.h==='') return null;
+      var w=koWinner(sc);
+      return {id:f.id,home:r&&r.home||null,away:r&&r.away||null,
+              h:sc.h,a:sc.a,winner:w==='home'?r&&r.home:w==='away'?r&&r.away:null};
+    }).filter(Boolean);
+  }
+
+  var rounds=[
+    {label:t.r32,  rows:mkRows(R32_FIXTURES,C.r32)},
+    {label:t.r16,  rows:mkRows(KO_BRACKET.r16,C.r16)},
+    {label:t.qf,   rows:mkRows(KO_BRACKET.qf,C.qf)},
+    {label:t.sf,   rows:mkRows(KO_BRACKET.sf,C.sf)},
+  ];
+  // Final and 3rd
+  if(ko['s3rd']&&ko['s3rd'].h!==undefined&&ko['s3rd'].h!==''){
+    var sc3=ko['s3rd'];
+    var w3=koWinner(sc3);
+    rounds.push({label:t.thirdMatch,rows:[{id:'s3rd',home:C.s3rd&&C.s3rd.home,away:C.s3rd&&C.s3rd.away,h:sc3.h,a:sc3.a,winner:w3==='home'?C.s3rd&&C.s3rd.home:w3==='away'?C.s3rd&&C.s3rd.away:null}]});
+  }
+  if(ko['final']&&ko['final'].h!==undefined&&ko['final'].h!==''){
+    var scf=ko['final'];
+    var wf=koWinner(scf);
+    rounds.push({label:t.final,rows:[{id:'final',home:C.final&&C.final.home,away:C.final&&C.final.away,h:scf.h,a:scf.a,winner:wf==='home'?C.final&&C.final.home:wf==='away'?C.final&&C.final.away:null}]});
+  }
+
+  var hasAny=rounds.some(function(r){return r.rows.length>0;});
+  if(!hasAny) return null;
+
+  return html`<div style=${{marginTop:20,borderTop:'1px solid rgba(255,255,255,.07)',paddingTop:16}}>
+    <div style=${{fontSize:12,fontWeight:700,color:'rgba(255,255,255,.4)',marginBottom:12}}>
+      Predicted scores
+    </div>
+    ${rounds.filter(function(r){return r.rows.length>0;}).map(function(rd){
+      return html`<div key=${rd.label} style=${{marginBottom:14}}>
+        <div style=${{fontSize:10,fontWeight:700,color:'rgba(255,255,255,.3)',marginBottom:6,textTransform:'uppercase',letterSpacing:'.06em'}}>${rd.label}</div>
+        <div style=${{display:'flex',flexDirection:'column',gap:4}}>
+          ${rd.rows.map(function(m){
+            var hw=m.winner===m.home, aw=m.winner===m.away;
+            return html`<div key=${m.id} style=${{
+              display:'grid',gridTemplateColumns:'1fr auto 1fr',alignItems:'center',gap:8,
+              background:'rgba(255,255,255,.04)',border:'1px solid rgba(255,255,255,.07)',
+              borderRadius:8,padding:'6px 12px'
+            }}>
+              <div style=${{display:'flex',alignItems:'center',justifyContent:'flex-end',gap:5,overflow:'hidden'}}>
+                <span style=${{fontSize:11,fontWeight:hw?600:400,color:hw?'rgba(255,255,255,.9)':'rgba(255,255,255,.45)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>${m.home?teamName(m.home,lang):'TBD'}</span>
+                ${m.home&&html`<${FlagImg} team=${m.home} dim=${!hw}/>`}
+              </div>
+              <div style=${{display:'flex',alignItems:'center',gap:4,flexShrink:0}}>
+                <span style=${{fontWeight:800,fontSize:15,minWidth:14,textAlign:'right',color:hw?'#fbbf24':'rgba(255,255,255,.5)'}}>${m.h}</span>
+                <span style=${{color:'rgba(255,255,255,.2)',fontSize:11}}>-</span>
+                <span style=${{fontWeight:800,fontSize:15,minWidth:14,textAlign:'left',color:aw?'#fbbf24':'rgba(255,255,255,.5)'}}>${m.a}</span>
+              </div>
+              <div style=${{display:'flex',alignItems:'center',gap:5,overflow:'hidden'}}>
+                ${m.away&&html`<${FlagImg} team=${m.away} dim=${!aw}/>`}
+                <span style=${{fontSize:11,fontWeight:aw?600:400,color:aw?'rgba(255,255,255,.9)':'rgba(255,255,255,.45)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>${m.away?teamName(m.away,lang):'TBD'}</span>
+              </div>
+            </div>`;
+          })}
+        </div>
+      </div>`;
+    })}
   </div>`;
 }
