@@ -184,6 +184,37 @@ var CLAUDE_ENTRY = {
     final:    ["Spain","France"],
     champion: "Spain",
     thirdWin: "Brazil",
-    ko: {}
+    ko: {
+      // Round of 32 (home score first, winner advances)
+      // r32_0: Mexico vs Canada        r32_1: Germany vs Playoff A
+      // r32_2: Netherlands vs Morocco  r32_3: Brazil vs Japan
+      // r32_4: France vs Australia     r32_5: Ecuador vs Norway
+      // r32_6: S.Korea vs Scotland     r32_7: England vs Senegal
+      // r32_8: USA vs Playoff B        r32_9: Belgium vs Ivory Coast
+      // r32_10: Colombia vs Croatia    r32_11: Spain vs Austria
+      // r32_12: Switzerland vs Iran    r32_13: Argentina vs Uruguay
+      // r32_14: Portugal vs Algeria    r32_15: Paraguay vs Egypt
+      r32_0:{h:"2",a:"1"}, r32_1:{h:"3",a:"0"}, r32_2:{h:"2",a:"1"}, r32_3:{h:"3",a:"0"},
+      r32_4:{h:"3",a:"0"}, r32_5:{h:"0",a:"2"}, r32_6:{h:"2",a:"1"}, r32_7:{h:"2",a:"0"},
+      r32_8:{h:"2",a:"1"}, r32_9:{h:"2",a:"1"}, r32_10:{h:"2",a:"1"},r32_11:{h:"3",a:"0"},
+      r32_12:{h:"2",a:"1"},r32_13:{h:"2",a:"1"},r32_14:{h:"2",a:"0"},r32_15:{h:"2",a:"1"},
+      // Round of 16
+      // r16_0: Mexico vs Germany       r16_1: Netherlands vs Brazil
+      // r16_2: France vs Norway        r16_3: S.Korea vs England
+      // r16_4: USA vs Belgium          r16_5: Colombia vs Spain
+      // r16_6: Switzerland vs Argentina r16_7: Portugal vs Paraguay
+      r16_0:{h:"1",a:"2"}, r16_1:{h:"1",a:"2"}, r16_2:{h:"2",a:"0"}, r16_3:{h:"1",a:"2"},
+      r16_4:{h:"2",a:"1"}, r16_5:{h:"1",a:"2"}, r16_6:{h:"0",a:"2"}, r16_7:{h:"2",a:"0"},
+      // Quarter-Finals
+      // qf_0: Germany vs Brazil        qf_1: France vs England
+      // qf_2: USA vs Spain             qf_3: Argentina vs Portugal
+      qf_0:{h:"1",a:"2"}, qf_1:{h:"2",a:"0"}, qf_2:{h:"0",a:"2"}, qf_3:{h:"2",a:"1"},
+      // Semi-Finals
+      // sf_0: Brazil vs France         sf_1: Spain vs Argentina
+      sf_0:{h:"1",a:"2"}, sf_1:{h:"2",a:"1"},
+      // Final: Spain vs France → Spain wins 1-0
+      // 3rd place: Brazil vs Argentina → Brazil wins 3-2
+      final:{h:"1",a:"0"}, s3rd:{h:"3",a:"2"}
+    }
   }
 };

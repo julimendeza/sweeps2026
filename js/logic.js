@@ -148,10 +148,14 @@ function cascadeKO(groupPreds, koScores) {
 
   function resolveSlot(slot) {
     if (!slot) return null;
-    var st = standings[slot.g];
-    if (!st) return null;
-    if (slot.pos === 1) return st[0] ? st[0].team : null;
-    if (slot.pos === 2) return st[1] ? st[1].team : null;
+    if (slot.pos === 1) {
+      var st1 = standings[slot.g];
+      return st1 && st1[0] ? st1[0].team : null;
+    }
+    if (slot.pos === 2) {
+      var st2 = standings[slot.g];
+      return st2 && st2[1] ? st2[1].team : null;
+    }
     if (slot.pos === 3) {
       var grp = b3[slot.slot];
       if (!grp) return null;
