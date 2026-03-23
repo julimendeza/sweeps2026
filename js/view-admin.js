@@ -124,11 +124,18 @@ function AdminResults(p) {
     ${sec==="groups"&&html`<${Card}>
       <${GroupTabs} active=${activeG} onChange=${setActiveG} preds=${loc} isResult=${true}/>
       <div style=${{fontSize:11,color:"rgba(255,255,255,.3)",marginBottom:8}}>${t.groupLabel} ${activeG}: ${TBG[activeG].map(function(tm){return teamName(tm,lang);}).join(" - ")}</div>
-      ${GMS[activeG].map(function(m){
-        return html`<${MRow} key=${m.id} match=${m}
-          hv=${loc.groups&&loc.groups[m.id]&&loc.groups[m.id].h||""}
-          av=${loc.groups&&loc.groups[m.id]&&loc.groups[m.id].a||""}
-          onH=${function(v){setGR(m.id,"h",v);}} onA=${function(v){setGR(m.id,"a",v);}}/>`;
+      ${[0,1,2].map(function(md){
+        var mdMatches=GMS[activeG].slice(md*2,md*2+2);
+        return html`<div key=${md}>
+          <div style=${{fontSize:10,fontWeight:700,color:"rgba(255,255,255,.25)",letterSpacing:".08em",
+            margin:"${md===0?'0':'14px'} 0 5px",textTransform:"uppercase"}}>Matchday ${md+1}</div>
+          ${mdMatches.map(function(m){
+            return html`<${MRow} key=${m.id} match=${m}
+              hv=${loc.groups&&loc.groups[m.id]&&loc.groups[m.id].h||""}
+              av=${loc.groups&&loc.groups[m.id]&&loc.groups[m.id].a||""}
+              onH=${function(v){setGR(m.id,"h",v);}} onA=${function(v){setGR(m.id,"a",v);}}/>`;
+          })}
+        </div>`;
       })}
       <${StandingsTable} group=${activeG} preds=${loc.groups} allPreds=${loc.groups}/>
       <div style=${{display:"flex",justifyContent:"space-between",marginTop:14}}>

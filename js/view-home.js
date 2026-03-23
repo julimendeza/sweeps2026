@@ -215,28 +215,35 @@ function BracketPage(p) {
           <div style=${{ fontSize:12, fontWeight:600, color:"rgba(255,255,255,.4)", marginBottom:12, letterSpacing:".04em" }}>
             GROUP ${activeG} - ${TBG[activeG].map(function(tm){return teamName(tm,lang);}).join(" \u00b7 ")}
           </div>
-          ${GMS[activeG].map(function(m){
-            var pred = me.preds && me.preds.groups && me.preds.groups[m.id];
-            var hasScore = pred && pred.h !== "" && pred.h !== undefined;
-            return html`<div key=${m.id} style=${{
-              display:"flex", alignItems:"center", gap:8, padding:"9px 12px",
-              borderRadius:10, marginBottom:5,
-              background:"rgba(255,255,255,.04)", border:"1px solid rgba(255,255,255,.08)"
-            }}>
-              <span style=${{ flex:1, textAlign:"right", fontSize:13, fontWeight:500 }}>${fl(m.home)} ${m.home}</span>
-              <div style=${{ display:"flex", alignItems:"center", gap:6, flexShrink:0,
-                padding:"4px 12px", borderRadius:8,
-                background: hasScore ? "rgba(245,158,11,.12)" : "rgba(255,255,255,.06)",
-                border: "1px solid " + (hasScore ? "rgba(245,158,11,.3)" : "rgba(255,255,255,.1)"),
-                minWidth:64, justifyContent:"center" }}>
-                ${hasScore
-                  ? html`<span style=${{ fontWeight:800, fontSize:16, color:"#fbbf24" }}>${pred.h}</span>
-                         <span style=${{ color:"rgba(255,255,255,.3)", fontSize:12 }}>-</span>
-                         <span style=${{ fontWeight:800, fontSize:16, color:"#fbbf24" }}>${pred.a}</span>`
-                  : html`<span style=${{ fontSize:12, color:"rgba(255,255,255,.25)", fontStyle:"italic" }}>?-?</span>`
-                }
-              </div>
-              <span style=${{ flex:1, textAlign:"left", fontSize:13, fontWeight:500 }}>${m.away} ${fl(m.away)}</span>
+          ${[0,1,2].map(function(md){
+            var mdMatches=GMS[activeG].slice(md*2,md*2+2);
+            return html`<div key=${md}>
+              <div style=${{fontSize:10,fontWeight:700,color:"rgba(255,255,255,.25)",letterSpacing:".08em",
+                marginTop:md===0?0:12,marginBottom:5,textTransform:"uppercase"}}>Matchday ${md+1}</div>
+              ${mdMatches.map(function(m){
+                var pred=me.preds&&me.preds.groups&&me.preds.groups[m.id];
+                var hasScore=pred&&pred.h!==""&&pred.h!==undefined;
+                return html`<div key=${m.id} style=${{
+                  display:"flex", alignItems:"center", gap:8, padding:"9px 12px",
+                  borderRadius:10, marginBottom:5,
+                  background:"rgba(255,255,255,.04)", border:"1px solid rgba(255,255,255,.08)"
+                }}>
+                  <span style=${{ flex:1, textAlign:"right", fontSize:13, fontWeight:500 }}>${fl(m.home)} ${m.home}</span>
+                  <div style=${{ display:"flex", alignItems:"center", gap:6, flexShrink:0,
+                    padding:"4px 12px", borderRadius:8,
+                    background: hasScore ? "rgba(245,158,11,.12)" : "rgba(255,255,255,.06)",
+                    border: "1px solid " + (hasScore ? "rgba(245,158,11,.3)" : "rgba(255,255,255,.1)"),
+                    minWidth:64, justifyContent:"center" }}>
+                    ${hasScore
+                      ? html`<span style=${{ fontWeight:800, fontSize:16, color:"#fbbf24" }}>${pred.h}</span>
+                             <span style=${{ color:"rgba(255,255,255,.3)", fontSize:12 }}>-</span>
+                             <span style=${{ fontWeight:800, fontSize:16, color:"#fbbf24" }}>${pred.a}</span>`
+                      : html`<span style=${{ fontSize:12, color:"rgba(255,255,255,.25)", fontStyle:"italic" }}>?-?</span>`
+                    }
+                  </div>
+                  <span style=${{ flex:1, textAlign:"left", fontSize:13, fontWeight:500 }}>${m.away} ${fl(m.away)}</span>
+                </div>`;
+              })}
             </div>`;
           })}
         </${Card}>
