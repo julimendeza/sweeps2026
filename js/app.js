@@ -12,17 +12,22 @@ function App() {
   useEffect(function(){
     (async function(){
       try {
-        // Load settings first to get Firebase URL
+        // Auto-connect Firebase immediately using DEF.firebase (no settings needed)
+        if (DEF.firebase) {
+          db._url = DEF.firebase;
+          setDbStatus("firebase");
+        }
+
+        // Load settings (may override firebase URL if admin changed it)
         var ss = await db.get("wc26_s");
         var mergedSettings = Object.assign({}, DEF, ss||{}, {
           scoring: Object.assign({}, DEF.scoring, (ss&&ss.scoring)||{})
         });
         setS(mergedSettings);
 
-        // Wire up Firebase URL if configured
-        if (mergedSettings.firebase) {
+        // Re-wire Firebase if settings override the default URL
+        if (mergedSettings.firebase && mergedSettings.firebase !== DEF.firebase) {
           db._url = mergedSettings.firebase;
-          setDbStatus("firebase");
         }
 
         // Now load remaining data (from Firebase or localStorage)

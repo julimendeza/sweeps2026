@@ -311,3 +311,146 @@ async function generateTCPDF(settings, lang) {
     alert("PDF generation failed: " + e.message);
   }
 }
+
+// ── Player predictions PDF ───────────────────────────────────────────
+async function generatePredsPDF(preds, name, email, lang) {
+  var jsPDF = window.jspdf && window.jspdf.jsPDF;
+  if (!jsPDF) { alert("PDF library not loaded."); return; }
+  var es = lang === "es";
+  try {
+    var doc = new jsPDF({ unit:"mm", format:"a4" });
+    var W=210, M=16, cW=W-M*2, y=20;
+
+    function ln(txt,size,bold,rgb){
+      size=size||10; rgb=rgb||[220,230,240];
+      doc.setFontSize(size); doc.setFont("helvetica",bold?"bold":"normal");
+      doc.setTextColor(rgb[0],rgb[1],rgb[2]);
+      if(y>275){doc.addPage();y=20;}
+      var lines=doc.splitTextToSize(txt,cW);
+      doc.text(lines,M,y); y+=lines.length*(size*0.42+1.2)+1;
+    }
+    function rule(rgb){
+      rgb=rgb||[40,55,80];
+      doc.setDrawColor(rgb[0],rgb[1],rgb[2]);
+      doc.line(M,y,W-M,y); y+=4;
+    }
+
+    // Dark background
+    doc.setFillColor(8,15,28);
+    doc.rect(0,0,W,297,"F");
+
+    // Header bar
+    doc.setFillColor(245,158,11);
+    doc.rect(0,0,W,26,"F");
+    doc.setFontSize(16);doc.setFont("helvetica","bold");doc.setTextColor(0,0,0);
+    doc.text((es?"QUINIELA MUNDIAL 2026":"WORLD CUP 2026 SWEEPSTAKE"),M,11);
+    doc.setFontSize(9);doc.setFont("helvetica","normal");
+    doc.text((es?"Predicciones de: ":"Predictions by: ")+name+" - "+email,M,19);
+    y=34;
+
+    // Group stage
+    ln(es?"FASE DE GRUPOS":"GROUP STAGE",12,true,[245,158,11]);
+    y+=2; rule([40,60,90]);
+
+    var C=cascadeKO(preds.groups,preds.ko||{});
+
+    GROUPS.forEach(function(g){
+      ln("Group "+g+":  "+TBG[g].join("  -  "),9,true,[120,160,210]);
+      var mdLabels=["MD1","MD2","MD3"];
+      [0,1,2].forEach(function(md){
+        GMS[g].slice(md*2,md*2+2).forEach(function(m){
+          var pr=preds.groups&&preds.groups[m.id];
+          var sc=(pr&&pr.h!==undefined&&pr.h!=="")?pr.h+"-"+pr.a:"?-?";
+          var filled=pr&&pr.h!==undefined&&pr.h!=="";
+          ln("  "+mdLabels[md]+"  "+m.home+"  vs  "+m.away+"   "+sc,
+            9,false,filled?[200,220,240]:[80,100,130]);
+        });
+      });
+      y+=2;
+    });
+
+    y+=2; rule([40,60,90]);
+    ln(es?"FASE ELIMINATORIA":"KNOCKOUT STAGE",12,true,[245,158,11]);
+    y+=2; rule([40,60,90]);
+
+    // KO rounds
+    var roundNames=es
+      ? ["Ronda de 32","Ronda de 16","Cuartos de Final","Semifinales","Final","Campeon","3er Lugar"]
+      : ["Round of 32","Round of 16","Quarter-Finals","Semi-Finals","Final","Champion","3rd Place"];
+    var roundKeys=["r32_","r16_","qf_","sf_","final","champion","s3rd"];
+
+    // R32 through SF - show match scores
+    var koRounds=[
+      {label:roundNames[0],prefix:"r32_",count:16},
+      {label:roundNames[1],prefix:"r16_",count:8},
+      {label:roundNames[2],prefix:"qf_",count:4},
+      {label:roundNames[3],prefix:"sf_",count:2},
+    ];
+
+    koRounds.forEach(function(rd){
+      ln(rd.label,10,true,[180,140,40]);
+      for(var i=0;i<rd.count;i++){
+        var fid=rd.prefix+i;
+        var r32f=R32_FIXTURES&&R32_FIXTURES.find(function(f){return f.id===fid;});
+        var r16f=KO_BRACKET&&KO_BRACKET.r16&&KO_BRACKET.r16.find(function(f){return f.id===fid;});
+        var qff=KO_BRACKET&&KO_BRACKET.qf&&KO_BRACKET.qf.find(function(f){return f.id===fid;});
+        var sff=KO_BRACKET&&KO_BRACKET.sf&&KO_BRACKET.sf.find(function(f){return f.id===fid;});
+        var fixture=r32f||r16f||qff||sff;
+        var ko=preds.ko&&preds.ko[fid];
+        var sc=ko&&ko.h!==""?ko.h+"-"+ko.a:"?-?";
+        var homeTm=C&&C[rd.prefix.replace("_","")+"teams"]&&C[rd.prefix.replace("_","")+"teams"][i*2];
+        var awayTm=C&&C[rd.prefix.replace("_","")+"teams"]&&C[rd.prefix.replace("_","")+"teams"][i*2+1];
+        var filled=ko&&ko.h!==undefined&&ko.h!=="";
+        ln("  M"+(i+1)+":  "+(homeTm||"TBD")+"  "+sc+"  "+(awayTm||"TBD"),
+          9,false,filled?[200,220,240]:[80,100,130]);
+      }
+      y+=1;
+    });
+
+    // Final
+    var finalko=preds.ko&&preds.ko["final"];
+    var finalSc=finalko&&finalko.h!==""?finalko.h+"-"+finalko.a:"?-?";
+    ln(roundNames[4],10,true,[180,140,40]);
+    ln("  "+(C.finalTeams&&C.finalTeams[0]||"TBD")+"  "+finalSc+"  "+(C.finalTeams&&C.finalTeams[1]||"TBD"),
+      9,false,[200,220,240]);
+    y+=1;
+
+    // 3rd place
+    var s3ko=preds.ko&&preds.ko["s3rd"];
+    var s3Sc=s3ko&&s3ko.h!==""?s3ko.h+"-"+s3ko.a:"?-?";
+    ln(roundNames[6],10,true,[180,140,40]);
+    ln("  "+(C.thirdTeams&&C.thirdTeams[0]||"TBD")+"  "+s3Sc+"  "+(C.thirdTeams&&C.thirdTeams[1]||"TBD"),
+      9,false,[200,220,240]);
+    y+=2;
+
+    // Champion
+    ln(roundNames[5],10,true,[245,158,11]);
+    ln("  "+(C.champion||"TBD"),12,true,[245,200,50]);
+    y+=2;
+
+    rule([40,60,90]);
+    doc.setFontSize(8);doc.setFont("helvetica","italic");doc.setTextColor(60,80,110);
+    doc.text("Quiniela Mundial 2026  -  "+new Date().toLocaleString(),M,285);
+
+    doc.save(name.replace(/\s+/g,"_")+"_WC2026_Predictions.pdf");
+  } catch(e) {
+    console.error("Preds PDF error:",e);
+    alert("PDF failed: "+e.message);
+  }
+}
+
+// ── Player predictions JSON ──────────────────────────────────────────
+function downloadPredsJSON(preds, name, email) {
+  var data = {
+    participant: { name: name, email: email },
+    exportedAt: new Date().toISOString(),
+    predictions: preds
+  };
+  var blob = new Blob([JSON.stringify(data, null, 2)], { type:"application/json" });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement("a");
+  a.href = url;
+  a.download = name.replace(/\s+/g,"_")+"_WC2026_Predictions.json";
+  a.click();
+  URL.revokeObjectURL(url);
+}

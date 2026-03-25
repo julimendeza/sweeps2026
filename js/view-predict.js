@@ -171,18 +171,37 @@ function PredictView(p) {
 
   // - Step 2: Confirmation -
   if(step===2) return html`<div class="fade" style=${{maxWidth:440,margin:"0 auto",padding:"60px 16px",textAlign:"center"}}>
-    <div style=${{fontSize:56,marginBottom:12}}>-</div>
+    <div style=${{fontSize:56,marginBottom:12}}>\ud83c\udf89</div>
     <h2 class="bb" style=${{fontSize:38}}>${name.toUpperCase()}!</h2>
     <p style=${{color:"rgba(255,255,255,.5)",margin:"14px 0 20px",lineHeight:1.8}}>
       ${t.savedMsg}${existId?" "+t.updated:""}<br/>${t.goodluck}
     </p>
     ${adminNotif==="sent"&&html`<div style=${{display:"inline-flex",alignItems:"center",gap:6,background:"rgba(74,222,128,.1)",border:"1px solid rgba(74,222,128,.3)",borderRadius:10,padding:"7px 14px",fontSize:12,color:"#4ade80",marginBottom:16}}>${t.adminNotifSent}</div>`}
     ${adminNotif==="fail"&&html`<div style=${{display:"inline-flex",alignItems:"center",gap:6,background:"rgba(248,113,113,.1)",border:"1px solid rgba(248,113,113,.3)",borderRadius:10,padding:"7px 14px",fontSize:12,color:"#f87171",marginBottom:16}}>${t.adminNotifFail}</div>`}
-    <div style=${{display:"flex",flexDirection:"column",gap:10,alignItems:"center"}}>
-      <div style=${{display:"flex",gap:10}}>
-        <${Btn} onClick=${function(){setView("bracket");}} v="secondary">- ${t.bracket}</${Btn}>
-        <${Btn} onClick=${function(){setView("leaderboard");}} v="secondary">${t.table}</${Btn}>
+
+    <div style=${{background:"rgba(255,255,255,.04)",border:"1px solid rgba(255,255,255,.08)",borderRadius:14,padding:"16px",marginBottom:20}}>
+      <div style=${{fontSize:12,fontWeight:700,color:"rgba(255,255,255,.4)",marginBottom:12,letterSpacing:".06em"}}>
+        ${lang==="es"?"\ud83d\udcbe GUARDAR COPIA DE MIS PREDICCIONES":"\ud83d\udcbe SAVE A COPY OF MY PREDICTIONS"}
       </div>
+      <div style=${{display:"flex",flexDirection:"column",gap:8}}>
+        <${Btn} onClick=${function(){ generatePredsPDF(preds,name,email,lang); }}
+          sx=${{padding:"10px",fontSize:13,width:"100%"}}>
+          \ud83d\udcc4 ${lang==="es"?"Descargar PDF":"Download PDF"}
+        </${Btn}>
+        <${Btn} onClick=${function(){ downloadPredsJSON(preds,name,email); }}
+          v="secondary" sx=${{padding:"10px",fontSize:13,width:"100%"}}>
+          \ud83d\udcce ${lang==="es"?"Descargar JSON":"Download JSON"}
+        </${Btn}>
+        <${Btn} onClick=${function(){ generatePredsPDF(preds,name,email,lang); downloadPredsJSON(preds,name,email); }}
+          v="secondary" sx=${{padding:"10px",fontSize:13,width:"100%"}}>
+          \u2b07\ufe0f ${lang==="es"?"Descargar ambos":"Download both"}
+        </${Btn}>
+      </div>
+    </div>
+
+    <div style=${{display:"flex",gap:10,justifyContent:"center"}}>
+      <${Btn} onClick=${function(){setView("bracket");}} v="secondary">\ud83c\udfc6 ${t.bracket}</${Btn}>
+      <${Btn} onClick=${function(){setView("leaderboard");}} v="secondary">${t.table}</${Btn}>
     </div>
   </div>`;
 
