@@ -15,6 +15,13 @@ function PredictView(p) {
   var s8=useState("r32");    var activeKO=s8[0], setActiveKO=s8[1];
   var s9=useState(false);    var saving=s9[0],   setSaving=s9[1];
   var s10=useState(null);    var adminNotif=s10[0], setAdminNotif=s10[1];
+  var s11=useState("");      var pinCode=s11[0],  setPinCode=s11[1];
+  var s12=useState(false);   var pinLoading=s12[0],setPinLoading=s12[1];
+  var s13=useState(null);    var validPin=s13[0], setValidPin=s13[1]; // the matched pin object
+
+  var accessMode = settings.access || "off";
+  var needsPin   = accessMode !== "off";
+  var isRobust   = accessMode === "robust";
 
   // Deadline guard
   var deadline = settings.deadline ? new Date(settings.deadline) : null;
@@ -50,10 +57,27 @@ function PredictView(p) {
   var koFilled = Object.keys(preds.ko||{}).length;
   var koTotal  = 32; // 16+8+4+2+1+1
 
-  function handleStart(){
-    if(!name.trim()){setErr(t.nameL+"?");return;}
-    if(!email.trim()||email.indexOf("@")<0){setErr(t.emailL+"?");return;}
+  async function handleStart(){
     setErr("");
+    // PIN validation
+    if(needsPin){
+      if(!pinCode.trim()){setErr(lang==="es"?"Ingresa tu PIN de acceso.":"Enter your access PIN.");return;}
+      setPinLoading(true);
+      var result = await pins.validate(pinCode, accessMode);
+      setPinLoading(false);
+      if(!result.ok){setErr(result.err);return;}
+      setValidPin(result.pin);
+      // Robust: pre-fill name/email from pin record
+      if(isRobust && result.pin){
+        setName(result.pin.name||"");
+        setEmail(result.pin.email||"");
+      }
+    }
+    // Name/email validation (skip in robust — pre-filled)
+    if(!isRobust || !needsPin){
+      if(!name.trim()){setErr(t.nameL+"?");return;}
+      if(!email.trim()||email.indexOf("@")<0){setErr(t.emailL+"?");return;}
+    }
     var ex=participants.find(function(x){return x.email.toLowerCase()===email.toLowerCase();});
     if(ex){
       setExistId(ex.id);
@@ -94,6 +118,10 @@ function PredictView(p) {
       ? participants.map(function(x){return x.id===existId?Object.assign({},x,{name:name,email:email,preds:np}):x;})
       : participants.concat([{id:id,name:name,email:email,preds:np}]);
     await saveP(upd);
+    // Mark PIN as used (only for new registrations, not updates)
+    if(needsPin && !existId && validPin){
+      await pins.markUsed(pinCode, name, email);
+    }
     try{
       var sent=await notifyAdmin(np,name,email,settings,upd,!!existId);
       setAdminNotif(sent?"sent":(settings.ejs&&settings.ejs.tpl_admin&&settings.adminEmail?"fail":"skipped"));
@@ -101,26 +129,43 @@ function PredictView(p) {
     setSaving(false); setStep(2);
   }
 
-  // - Step 0: Name + email -
+  // - Step 0: Name + email (+ PIN if enabled) -
   if(step===0) return html`<div class="fade" style=${{maxWidth:420,margin:"0 auto",padding:"32px 16px"}}>
     <${Btn} v="ghost" onClick=${function(){setView("home");}}>${t.back}</${Btn}>
     <div style=${{textAlign:"center",margin:"20px 0 26px"}}>
-      <div style=${{fontSize:40,marginBottom:8}}>-</div>
+      <div style=${{fontSize:40,marginBottom:8}}>${needsPin?"\ud83d\udd11":"\ud83d\udccb"}</div>
       <h2 class="bb" style=${{fontSize:34}}>${t.registerPreds}</h2>
       <p style=${{color:"rgba(255,255,255,.4)",fontSize:13,marginTop:6}}>${t.regSub}</p>
     </div>
     <${Card}>
-      <${Field} label=${t.nameL}><input type="text" value=${name}
-        onInput=${function(e){setName(e.target.value);}}
-        onKeyDown=${function(e){if(e.key==="Enter")handleStart();}}
-        placeholder=${t.namePh}/></${Field}>
-      <${Field} label=${t.emailL}><input type="email" value=${email}
-        onInput=${function(e){setEmail(e.target.value);}}
-        onKeyDown=${function(e){if(e.key==="Enter")handleStart();}}
-        placeholder=${t.emailPh}/></${Field}>
-      <p style=${{fontSize:11,color:"rgba(255,255,255,.3)",marginBottom:14}}>${t.sameEmail}</p>
+      ${needsPin&&html`<${Field} label=${lang==="es"?"PIN de acceso":"Access PIN"}>
+        <input type="text" value=${pinCode}
+          onInput=${function(e){setPinCode(e.target.value.toUpperCase());}}
+          onKeyDown=${function(e){if(e.key==="Enter")handleStart();}}
+          placeholder=${lang==="es"?"Tu PIN personal":"Your personal PIN"}
+          style=${{letterSpacing:3,fontWeight:700,textTransform:"uppercase"}}/>
+      </${Field}>`}
+      ${(!needsPin||!isRobust)&&html`
+        <${Field} label=${t.nameL}><input type="text" value=${name}
+          onInput=${function(e){setName(e.target.value);}}
+          onKeyDown=${function(e){if(e.key==="Enter")handleStart();}}
+          placeholder=${t.namePh}/></${Field}>
+        <${Field} label=${t.emailL}><input type="email" value=${email}
+          onInput=${function(e){setEmail(e.target.value);}}
+          onKeyDown=${function(e){if(e.key==="Enter")handleStart();}}
+          placeholder=${t.emailPh}/></${Field}>
+        <p style=${{fontSize:11,color:"rgba(255,255,255,.3)",marginBottom:14}}>${t.sameEmail}</p>
+      `}
+      ${needsPin&&html`<div style=${{marginBottom:14,padding:"10px 12px",borderRadius:10,
+        background:"rgba(245,158,11,.07)",border:"1px solid rgba(245,158,11,.2)",fontSize:12,
+        color:"rgba(245,158,11,.8)",lineHeight:1.7}}>
+        ${lang==="es"
+          ? "\ud83d\udcb0 Debes haber transferido la cuota de inscripci\u00f3n antes de recibir tu PIN. Contacta al organizador."
+          : "\ud83d\udcb0 You must have paid the entry fee before receiving your PIN. Contact the organiser."}
+      </div>`}
       ${err&&html`<p style=${{color:"#f87171",fontSize:13,marginBottom:12}}>${err}</p>`}
-      <${Btn} onClick=${handleStart} full=${true} sx=${{padding:"13px",fontSize:15}}>${t.cont}</${Btn}>
+      <${Btn} onClick=${handleStart} full=${true} disabled=${pinLoading}
+        sx=${{padding:"13px",fontSize:15}}>${pinLoading?(lang==="es"?"Verificando...":"Verifying..."):t.cont}</${Btn}>
     </${Card}>
   </div>`;
 

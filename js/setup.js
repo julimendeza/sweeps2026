@@ -80,3 +80,35 @@ function FlagImg(p) {
     onError=${function(e){ e.target.style.display="none"; }}
   />`;
 }
+
+// ── PIN helpers ──────────────────────────────────────────────────────
+var pins = {
+  get: async function() {
+    return await db.get("wc26_pins") || [];
+  },
+  set: async function(list) {
+    await db.set("wc26_pins", list);
+  },
+  // Validate a PIN. Returns { ok, pin } or { ok:false, err }
+  validate: async function(code, accessMode) {
+    if (accessMode === "off") return { ok: true, pin: null };
+    var list = await pins.get();
+    var found = list.find(function(p) {
+      return p.pin.trim().toUpperCase() === code.trim().toUpperCase();
+    });
+    if (!found) return { ok: false, err: "Invalid PIN." };
+    if (found.used) return { ok: false, err: "This PIN has already been used." };
+    return { ok: true, pin: found };
+  },
+  // Mark a PIN as used
+  markUsed: async function(code, name, email) {
+    var list = await pins.get();
+    var updated = list.map(function(p) {
+      if (p.pin.trim().toUpperCase() === code.trim().toUpperCase()) {
+        return Object.assign({}, p, { used: true, usedBy: name, usedEmail: email, usedAt: new Date().toISOString() });
+      }
+      return p;
+    });
+    await pins.set(updated);
+  }
+};

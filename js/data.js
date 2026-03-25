@@ -139,8 +139,9 @@ var DEF = {
   currency:   "AUD",
   adminEmail: "",
   firebase:   "https://quiniela2026-jema-default-rtdb.asia-southeast1.firebasedatabase.app",
-  deadline:   "2026-06-10T23:59",   // ISO datetime — predictions lock after this
-  tcUrl:      "",                   // optional external T&C URL override
+  deadline:   "2026-06-10T23:59",
+  tcUrl:      "",
+  access:     "off",   // "off" | "simple" | "robust"
   scoring: {
     groupResult: 3,
     groupGoalA:  1,

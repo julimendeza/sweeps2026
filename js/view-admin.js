@@ -30,6 +30,7 @@ function AdminView(p) {
     { id:"parts",    l:t.partTab   },
     { id:"email",    l:t.emailTab  },
     { id:"data",     l:"\ud83d\udcbe Data"     },
+    { id:"access",   l:"\ud83d\udd11 Access"   },
     { id:"settings", l:t.settingsTab }
   ];
 
@@ -59,6 +60,7 @@ function AdminView(p) {
     ${tab==="parts"    && html`<${AdminParts}    participants=${p.participants} results=${p.results} settings=${p.settings} saveParticipants=${p.saveParticipants}/>`}
     ${tab==="email"    && html`<${AdminEmail}    participants=${p.participants} results=${p.results} settings=${p.settings} saveSettings=${p.saveSettings}/>`}
     ${tab==="data"     && html`<${AdminData}     participants=${p.participants} results=${p.results} settings=${p.settings} saveParticipants=${p.saveParticipants} saveResults=${p.saveResults} saveSettings=${p.saveSettings}/>`}
+    ${tab==="access"   && html`<${AdminAccess}   settings=${p.settings} saveSettings=${p.saveSettings}/>`}
     ${tab==="settings" && html`<${AdminSettings} settings=${p.settings}     saveSettings=${p.saveSettings}/>`}
   </div>`;
 }
@@ -389,7 +391,160 @@ function AdminEmail(p) {
   </div>`;
 }
 
-// - Admin Data tab (export / import / Firebase) -
+// - Admin Access tab -
+function AdminAccess(p) {
+  var lctx=useLang(); var lang=lctx.lang;
+  var accessMode = p.settings.access || "off";
+
+  var pinsState=useState([]); var pinList=pinsState[0], setPinList=pinsState[1];
+  var loadingState=useState(true); var loading=loadingState[0], setLoading=loadingState[1];
+  var newPinState=useState(""); var newPin=newPinState[0], setNewPin=newPinState[1];
+  var newNameState=useState(""); var newName=newNameState[0], setNewName=newNameState[1];
+  var newEmailState=useState(""); var newEmail=newEmailState[0], setNewEmail=newEmailState[1];
+  var msgState=useState(""); var msg=msgState[0], setMsg=msgState[1];
+
+  useEffect(function(){
+    pins.get().then(function(list){ setPinList(list||[]); setLoading(false); });
+  }, []);
+
+  function flash(m){ setMsg(m); setTimeout(function(){ setMsg(""); }, 3000); }
+
+  function genRandom(){
+    var chars="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    var out="";
+    for(var i=0;i<6;i++) out+=chars[Math.floor(Math.random()*chars.length)];
+    setNewPin(out);
+  }
+
+  async function addPin(){
+    var code=(newPin||"").trim().toUpperCase();
+    if(!code){ flash("\u274c Enter a PIN code."); return; }
+    if(accessMode==="robust"&&(!newName.trim()||!newEmail.trim())){
+      flash("\u274c Name and email required in Robust mode."); return;
+    }
+    if(pinList.find(function(x){ return x.pin===code; })){ flash("\u274c PIN already exists."); return; }
+    var entry={ pin:code, name:newName.trim(), email:newEmail.trim(), used:false };
+    var updated=pinList.concat([entry]);
+    await pins.set(updated);
+    setPinList(updated);
+    setNewPin(""); setNewName(""); setNewEmail("");
+    flash("\u2705 PIN added.");
+  }
+
+  async function removePin(code){
+    var updated=pinList.filter(function(x){ return x.pin!==code; });
+    await pins.set(updated);
+    setPinList(updated);
+    flash("Deleted.");
+  }
+
+  async function setMode(mode){
+    await p.saveSettings(Object.assign({},p.settings,{access:mode}));
+  }
+
+  var used=pinList.filter(function(x){return x.used;}).length;
+  var unused=pinList.length-used;
+
+  var modeInfo={
+    off:  lang==="es"?"Cualquiera puede registrar predicciones sin restricci\u00f3n.":"Anyone can register predictions — no restriction.",
+    simple:lang==="es"?"El usuario ingresa un PIN v\u00e1lido, luego completa su nombre y email.":"User enters a valid PIN, then fills in their own name and email.",
+    robust:lang==="es"?"El PIN est\u00e1 vinculado a nombre y email. Se precargan y bloquean para el usuario.":"PIN is pre-linked to a name and email. These are pre-filled and locked for the user."
+  };
+
+  return html`<div style=${{maxWidth:560}}>
+
+    <div style=${{marginBottom:20}}>
+      <div style=${{fontWeight:700,fontSize:14,marginBottom:12}}>Access Mode</div>
+      <div style=${{display:"flex",flexDirection:"column",gap:8}}>
+        ${["off","simple","robust"].map(function(m){
+          var active=accessMode===m;
+          var labels={off:"Off \u2014 Open access",simple:"Simple \u2014 PIN required",robust:"Robust \u2014 PIN + pre-assigned identity"};
+          return html`<button key=${m} onClick=${function(){setMode(m);}} style=${{
+            padding:"12px 16px",borderRadius:12,cursor:"pointer",textAlign:"left",
+            border:"2px solid "+(active?"#f59e0b":"rgba(255,255,255,.1)"),
+            background:active?"rgba(245,158,11,.1)":"rgba(255,255,255,.03)",
+            fontFamily:"'DM Sans',sans-serif",transition:"all .15s"
+          }}>
+            <div style=${{fontWeight:700,fontSize:13,color:active?"#fbbf24":"rgba(255,255,255,.7)"}}>${labels[m]}</div>
+            <div style=${{fontSize:11,color:"rgba(255,255,255,.4)",marginTop:3}}>${modeInfo[m]}</div>
+          </button>`;
+        })}
+      </div>
+    </div>
+
+    ${accessMode!=="off"&&html`<div>
+
+      <div style=${{display:"flex",gap:10,marginBottom:16}}>
+        <div style=${{flex:1,padding:"12px 16px",borderRadius:12,background:"rgba(74,222,128,.07)",
+          border:"1px solid rgba(74,222,128,.2)",textAlign:"center"}}>
+          <div style=${{fontWeight:800,fontSize:22,color:"#4ade80"}}>${unused}</div>
+          <div style=${{fontSize:11,color:"rgba(255,255,255,.4)"}}>Unused PINs</div>
+        </div>
+        <div style=${{flex:1,padding:"12px 16px",borderRadius:12,background:"rgba(245,158,11,.07)",
+          border:"1px solid rgba(245,158,11,.2)",textAlign:"center"}}>
+          <div style=${{fontWeight:800,fontSize:22,color:"#fbbf24"}}>${used}</div>
+          <div style=${{fontSize:11,color:"rgba(255,255,255,.4)"}}>Used PINs</div>
+        </div>
+      </div>
+
+      <div style=${{background:"rgba(255,255,255,.04)",border:"1px solid rgba(255,255,255,.09)",
+        borderRadius:14,padding:"14px 16px",marginBottom:16}}>
+        <div style=${{fontWeight:700,fontSize:13,marginBottom:10}}>Add PIN</div>
+        <div style=${{display:"flex",gap:8,marginBottom:accessMode==="robust"?10:0}}>
+          <input type="text" value=${newPin}
+            onInput=${function(e){setNewPin(e.target.value.toUpperCase());}}
+            placeholder="e.g. JULI42"
+            style=${{flex:1,letterSpacing:3,fontWeight:700,textTransform:"uppercase"}}/>
+          <button onClick=${genRandom} style=${{
+            padding:"10px 14px",borderRadius:9,border:"1px solid rgba(255,255,255,.15)",
+            background:"rgba(255,255,255,.07)",color:"rgba(255,255,255,.7)",
+            cursor:"pointer",fontSize:12,fontFamily:"'DM Sans',sans-serif",whiteSpace:"nowrap"
+          }}>\ud83c\udfb2 Random</button>
+        </div>
+        ${accessMode==="robust"&&html`<div style=${{display:"flex",gap:8,marginBottom:0}}>
+          <input type="text" value=${newName}
+            onInput=${function(e){setNewName(e.target.value);}}
+            placeholder="Full name"/>
+          <input type="email" value=${newEmail}
+            onInput=${function(e){setNewEmail(e.target.value);}}
+            placeholder="Email"/>
+        </div>`}
+        <div style=${{marginTop:10}}>
+          <${Btn} onClick=${addPin} sx=${{padding:"9px 20px"}}>Add PIN</${Btn}>
+          ${msg&&html`<span style=${{marginLeft:12,fontSize:13,color:msg.startsWith("\u274c")?"#f87171":"#4ade80"}}>${msg}</span>`}
+        </div>
+      </div>
+
+      ${loading?html`<p style=${{color:"rgba(255,255,255,.3)",fontSize:13}}>Loading...</p>`:html`
+        <div style=${{display:"flex",flexDirection:"column",gap:6}}>
+          ${pinList.length===0&&html`<p style=${{color:"rgba(255,255,255,.3)",fontSize:13}}>No PINs yet.</p>`}
+          ${pinList.map(function(px){
+            return html`<div key=${px.pin} style=${{
+              display:"flex",alignItems:"center",gap:10,padding:"10px 14px",
+              borderRadius:10,background:px.used?"rgba(74,222,128,.05)":"rgba(255,255,255,.04)",
+              border:"1px solid "+(px.used?"rgba(74,222,128,.2)":"rgba(255,255,255,.08)")
+            }}>
+              <span style=${{fontFamily:"monospace",fontWeight:700,fontSize:14,letterSpacing:2,
+                color:px.used?"#4ade80":"#fbbf24",minWidth:70}}>${px.pin}</span>
+              <div style=${{flex:1,fontSize:12,color:"rgba(255,255,255,.5)"}}>
+                ${px.used
+                  ? html`\u2705 Used by <strong style=${{color:"rgba(255,255,255,.75)"}}>${px.usedBy||px.name||"?"}</strong> ${px.usedEmail?" ("+px.usedEmail+")":""}`
+                  : (px.name?html`Assigned to <strong style=${{color:"rgba(255,255,255,.7)"}}>${px.name}</strong>${px.email?" \u00b7 "+px.email:""}`:html`<span style=${{color:"rgba(255,255,255,.3)"}}>Unassigned</span>`)
+                }
+              </div>
+              ${!px.used&&html`<button onClick=${function(){removePin(px.pin);}} style=${{
+                background:"none",border:"none",color:"rgba(248,113,113,.6)",
+                fontSize:18,cursor:"pointer",padding:"0 4px",lineHeight:1
+              }}>\u00d7</button>`}
+            </div>`;
+          })}
+        </div>
+      `}
+    </div>`}
+  </div>`;
+}
+
+// - Admin Data tab -
 function AdminData(p) {
   var lctx=useLang(); var t=lctx.t;
   var msgState=useState(""); var msg=msgState[0], setMsg=msgState[1];
