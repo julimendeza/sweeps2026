@@ -28,6 +28,7 @@ function AdminView(p) {
   var tabs = [
     { id:"results",  l:t.results   },
     { id:"parts",    l:t.partTab   },
+    { id:"stats",    l:"\ud83d\udcca Stats"    },
     { id:"email",    l:t.emailTab  },
     { id:"data",     l:"\ud83d\udcbe Data"     },
     { id:"access",   l:"\ud83d\udd11 Access"   },
@@ -58,6 +59,7 @@ function AdminView(p) {
 
     ${tab==="results"  && html`<${AdminResults}  results=${p.results}       saveResults=${p.saveResults}/>`}
     ${tab==="parts"    && html`<${AdminParts}    participants=${p.participants} results=${p.results} settings=${p.settings} saveParticipants=${p.saveParticipants}/>`}
+    ${tab==="stats"    && html`<${AdminStats}    participants=${p.participants} results=${p.results} settings=${p.settings}/>`}
     ${tab==="email"    && html`<${AdminEmail}    participants=${p.participants} results=${p.results} settings=${p.settings} saveSettings=${p.saveSettings}/>`}
     ${tab==="data"     && html`<${AdminData}     participants=${p.participants} results=${p.results} settings=${p.settings} saveParticipants=${p.saveParticipants} saveResults=${p.saveResults} saveSettings=${p.saveSettings}/>`}
     ${tab==="access"   && html`<${AdminAccess}   settings=${p.settings} saveSettings=${p.saveSettings}/>`}
@@ -411,6 +413,119 @@ function AdminEmail(p) {
     </div>
     ${status && html`<p style=${{ marginTop:12, fontSize:13, color:"rgba(255,255,255,.75)" }}>${status}</p>`}
   </div>`;
+}
+
+// - Admin Stats tab -
+function AdminStats(p) {
+  var lctx=useLang(); var lang=lctx.lang;
+  var sc = p.settings.scoring || DEF.scoring;
+
+  var scored = useMemo(function(){
+    return p.participants
+      .map(function(px){ return Object.assign({}, px, calcScore(px.preds, p.results, sc)); })
+      .sort(function(a,b){ return b.pts-a.pts; });
+  }, [p.participants, p.results, sc]);
+
+  var cols=[
+    {key:"groups",    label:"Groups",  color:"#f59e0b"},
+    {key:"r32",       label:"R32",     color:"#60a5fa"},
+    {key:"r16",       label:"R16",     color:"#34d399"},
+    {key:"qf",        label:"QF",      color:"#a78bfa"},
+    {key:"sf",        label:"SF",      color:"#fb923c"},
+    {key:"thirdMatch",label:"3rd M",   color:"#f472b6"},
+    {key:"final",     label:"Final",   color:"#fbbf24"},
+    {key:"thirdWin",  label:"3rd W",   color:"#e879f9"},
+    {key:"champion",  label:"Champ",   color:"#4ade80"},
+  ];
+
+  // Find max per column for color intensity
+  var maxVals={};
+  cols.forEach(function(c){
+    maxVals[c.key]=Math.max.apply(null,scored.map(function(px){
+      return px.detail&&px.detail[c.key]?px.detail[c.key].earned||0:0;
+    }).concat([1]));
+  });
+
+  return html`<div>
+    <div style=${{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16,flexWrap:"wrap",gap:8}}>
+      <div style=${{fontSize:13,color:"rgba(255,255,255,.4)"}}>
+        ${scored.length} participants \u00b7 sorted by total points
+      </div>
+      <${Btn} v="secondary" onClick=${function(){ generateSummaryPDF(p.participants,p.results,p.settings,lang); }}
+        sx=${{padding:"8px 14px",fontSize:12}}>
+        \ud83d\udcca ${lang==="es"?"Reporte PDF resumen":"Summary PDF Report"}
+      </${Btn}>
+    </div>
+
+    <div style=${{overflowX:"auto",WebkitOverflowScrolling:"touch"}}>
+      <table style=${{width:"100%",borderCollapse:"collapse",minWidth:700,fontSize:12}}>
+        <thead>
+          <tr>
+            <th style=${{padding:"8px 10px",textAlign:"left",fontSize:11,fontWeight:700,
+              color:"rgba(255,255,255,.4)",borderBottom:"1px solid rgba(255,255,255,.1)",
+              position:"sticky",left:0,background:"#080f1c",minWidth:160}}>#  Name</th>
+            ${cols.map(function(c){
+              return html`<th key=${c.key} style=${{padding:"8px 6px",textAlign:"center",fontSize:11,
+                fontWeight:700,color:c.color,borderBottom:"1px solid rgba(255,255,255,.1)",
+                minWidth:52}}>${c.label}</th>`;
+            })}
+            <th style=${{padding:"8px 10px",textAlign:"center",fontSize:12,fontWeight:800,
+              color:"#fbbf24",borderBottom:"1px solid rgba(255,255,255,.1)",minWidth:60}}>TOTAL</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${scored.map(function(px,i){
+            var isBot=px.id==="claude_bot";
+            return html`<tr key=${px.id} style=${{
+              background:i%2===0?"rgba(255,255,255,.02)":"transparent",
+              borderBottom:"1px solid rgba(255,255,255,.04)"
+            }}>
+              <td style=${{padding:"8px 10px",position:"sticky",left:0,
+                background:i%2===0?"#0d1520":"#080f1c"}}>
+                <div style=${{display:"flex",alignItems:"center",gap:6}}>
+                  <span style=${{fontSize:i<3?15:11,fontWeight:800,minWidth:20,
+                    color:i===0?"#fbbf24":i===1?"#94a3b8":i===2?"#b45309":"rgba(255,255,255,.3)"}}>
+                    ${i===0?"\ud83e\udd47":i===1?"\ud83e\udd48":i===2?"\ud83e\udd49":(i+1)}
+                  </span>
+                  <div>
+                    <div style=${{fontWeight:600,color:"rgba(255,255,255,.85)",fontSize:12,
+                      display:"flex",alignItems:"center",gap:4}}>
+                      ${px.name}
+                      ${isBot&&html`<span style=${{fontSize:9,background:"rgba(245,158,11,.2)",
+                        color:"#f59e0b",borderRadius:3,padding:"1px 4px"}}>BOT</span>`}
+                    </div>
+                  </div>
+                </div>
+              </td>
+              ${cols.map(function(c){
+                var v=px.detail&&px.detail[c.key]?px.detail[c.key].earned||0:0;
+                var ratio=maxVals[c.key]>0?v/maxVals[c.key]:0;
+                var alpha=ratio*0.7;
+                return html`<td key=${c.key} style=${{
+                  padding:"7px 6px",textAlign:"center",
+                  background:v>0?"rgba("+hexToRgb(c.color)+","+alpha+")":"transparent",
+                  borderRadius:4
+                }}>
+                  ${v>0
+                    ? html`<span style=${{fontWeight:700,color:v===maxVals[c.key]?"#fff":c.color,fontSize:12}}>${v}</span>`
+                    : html`<span style=${{color:"rgba(255,255,255,.15)",fontSize:11}}>-</span>`}
+                </td>`;
+              })}
+              <td style=${{padding:"7px 10px",textAlign:"center"}}>
+                <span style=${{fontWeight:800,fontSize:14,color:"#f59e0b"}}>${px.pts}</span>
+              </td>
+            </tr>`;
+          })}
+        </tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+// hex color to rgb string helper for Stats table
+function hexToRgb(hex){
+  var r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  return r+","+g+","+b;
 }
 
 // - Admin Access tab -
