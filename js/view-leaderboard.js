@@ -49,15 +49,15 @@ function LeaderboardView(p) {
       : html`<${Card} sx=${{ padding:0, overflow:"hidden" }}>
 
 
-          <div style=${{ display:"grid", gridTemplateColumns:"44px 1fr 64px 50px 50px 50px", gap:4,
-            padding:"8px 18px", borderBottom:"1px solid rgba(255,255,255,.08)",
+          <div class="lb-grid" style=${{ padding:"8px 18px",
+            borderBottom:"1px solid rgba(255,255,255,.08)",
             fontSize:11, color:"rgba(255,255,255,.28)", fontWeight:700 }}>
             <span>#</span>
             <span>Name</span>
             <span style=${{ textAlign:"right" }}>PTS</span>
-            <span style=${{ textAlign:"right", fontSize:10 }}>\ud83e\udd47</span>
-            <span style=${{ textAlign:"right", fontSize:10 }}>Final</span>
-            <span style=${{ textAlign:"right", fontSize:10 }}>SF</span>
+            <span class="lb-col-hide" style=${{ textAlign:"right", fontSize:10 }}>\ud83e\udd47</span>
+            <span class="lb-col-hide" style=${{ textAlign:"right", fontSize:10 }}>Final</span>
+            <span class="lb-col-hide" style=${{ textAlign:"right", fontSize:10 }}>SF</span>
           </div>
 
 
@@ -68,9 +68,8 @@ function LeaderboardView(p) {
 
             return html`<div key=${px.id}>
 
-              <div onClick=${function(){ setExp(isOpen ? null : px.id); }} style=${{
-                display:"grid", gridTemplateColumns:"44px 1fr 64px 50px 50px 50px",
-                gap:4, padding:"13px 18px", borderBottom:"1px solid rgba(255,255,255,.05)",
+              <div onClick=${function(){ setExp(isOpen ? null : px.id); }} class="lb-grid" style=${{
+                padding:"13px 18px", borderBottom:"1px solid rgba(255,255,255,.05)",
                 alignItems:"center", cursor:"pointer", transition:"background .13s",
                 background: isOpen ? "rgba(245,158,11,.07)" : i===0 ? "rgba(245,158,11,.05)" : "transparent"
               }}>
@@ -88,13 +87,13 @@ function LeaderboardView(p) {
                   </div>
                 </div>
                 <div style=${{ textAlign:"right", fontWeight:800, fontSize:20, color:"#f59e0b" }}>${px.pts}</div>
-                <div style=${{ textAlign:"right", fontSize:13, color: chHit ? "#4ade80" : "rgba(255,255,255,.28)" }}>
+                <div class="lb-col-hide" style=${{ textAlign:"right", fontSize:13, color: chHit ? "#4ade80" : "rgba(255,255,255,.28)" }}>
                   ${px.detail && px.detail.champion && px.detail.champion.earned || 0}
                 </div>
-                <div style=${{ textAlign:"right", fontSize:13, color:"rgba(255,255,255,.45)" }}>
+                <div class="lb-col-hide" style=${{ textAlign:"right", fontSize:13, color:"rgba(255,255,255,.45)" }}>
                   ${px.detail && px.detail.final && px.detail.final.hits || 0}/${results.final && results.final.length || 2}
                 </div>
-                <div style=${{ textAlign:"right", fontSize:13, color:"rgba(255,255,255,.45)" }}>
+                <div class="lb-col-hide" style=${{ textAlign:"right", fontSize:13, color:"rgba(255,255,255,.45)" }}>
                   ${px.detail && px.detail.sf && px.detail.sf.hits || 0}/${results.sf && results.sf.length || 4}
                 </div>
               </div>

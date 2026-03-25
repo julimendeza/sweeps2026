@@ -74,7 +74,7 @@ function HomeView(p) {
     </div>
 
 
-    <div style=${{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:10, marginBottom:18 }}>
+    <div style=${{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:10, marginBottom:18, className:"grid-3" }}>
       ${[
         { e:"\ud83d\udc65", v:human.length,              l:t.participants },
         { e:"\ud83d\udcb0", v:settings.currency+" "+total, l:t.inPlay       },
@@ -91,7 +91,7 @@ function HomeView(p) {
 
     ${total > 0 && html`<${Card} sx=${{ marginBottom:18 }}>
       <div className="bb" style=${{ fontSize:17, marginBottom:14, color:"rgba(255,255,255,.6)" }}>${t.prizes}</div>
-      <div style=${{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:8 }}>
+      <div style=${{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(90px,1fr))", gap:8 }}>
         ${[{pct:50,l:"\ud83e\udd47 1st"},{pct:25,l:"\ud83e\udd48 2nd"},{pct:15,l:"\ud83e\udd49 3rd"}].map(function(pi){
           return html`<div key=${pi.l} style=${{ textAlign:"center", background:"rgba(245,158,11,.07)",
             borderRadius:12, padding:"12px 6px", border:"1px solid rgba(245,158,11,.14)" }}>
