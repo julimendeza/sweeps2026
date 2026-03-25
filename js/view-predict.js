@@ -16,6 +16,23 @@ function PredictView(p) {
   var s9=useState(false);    var saving=s9[0],   setSaving=s9[1];
   var s10=useState(null);    var adminNotif=s10[0], setAdminNotif=s10[1];
 
+  // Deadline guard
+  var deadline = settings.deadline ? new Date(settings.deadline) : null;
+  var isPastDeadline = deadline && new Date() > deadline;
+  if (isPastDeadline) return html`<div class="fade" style=${{maxWidth:440,margin:"0 auto",padding:"80px 16px",textAlign:"center"}}>
+    <div style=${{fontSize:52,marginBottom:12}}>\ud83d\udd12</div>
+    <h2 class="bb" style=${{fontSize:32,marginBottom:12}}>${lang==="es"?"PREDICCIONES CERRADAS":"PREDICTIONS CLOSED"}</h2>
+    <p style=${{color:"rgba(255,255,255,.4)",fontSize:14,lineHeight:1.8}}>
+      ${lang==="es"?"El plazo de registro cerr\u00f3 el":"The registration deadline was"}
+      ${deadline.toLocaleDateString(lang==="es"?"es-AU":"en-AU",{day:"numeric",month:"long",year:"numeric"})}.<br/>
+      ${lang==="es"?"Ya no es posible registrar o modificar predicciones.":"No new predictions can be registered or modified."}
+    </p>
+    <div style=${{marginTop:24,display:"flex",gap:10,justifyContent:"center"}}>
+      <${Btn} onClick=${function(){setView("leaderboard");}} v="secondary">${t.table}</${Btn}>
+      <${Btn} onClick=${function(){setView("bracket");}}>\ud83c\udfc6 ${t.bracket}</${Btn}>
+    </div>
+  </div>`;
+
   // Cascade from current predictions
   var C = useMemo(function(){
     return cascadeKO(preds.groups, preds.ko||{});

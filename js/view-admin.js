@@ -337,7 +337,7 @@ function AdminEmail(p) {
           ? html`<p><strong>Hey dear football friends,</strong></p>
               <p>The 2026 FIFA World Cup is just around the corner! Predict group stage scores (app auto-calculates who qualifies for the Round of 32), then pick teams advancing each knockout round.</p>
               <p>\ud83d\udc49 <strong>[SWEEPSTAKE WEBSITE LINK]</strong></p>
-              <p>Register: <strong>${p.settings.currency} ${p.settings.entryFee}</strong> - Pay Aaron Bolanos (BSB: 064158 / Acc: 11153291) - Deadline: <strong>June 10, 2026</strong>.</p>
+              <p>Register: <strong>${p.settings.currency} ${p.settings.entryFee}</strong> \u2014 Pay Julian Mendez (ING \u00b7 BSB: 923100 / Acc: 312595197) \u00b7 Deadline: <strong>${p.settings.deadline ? new Date(p.settings.deadline).toLocaleDateString("en-AU",{day:"numeric",month:"long",year:"numeric"}) : "June 10, 2026"}</strong>.</p>
               <p>More players = bigger prize! Please share with friends.</p>
               <p><strong>Good luck! \u26bd\ud83c\udfc6 - Julian</strong></p>`
           : html`<p><strong>Hello everyone!</strong></p>
@@ -556,6 +556,14 @@ function AdminSettings(p) {
       Optional. Create a free Firebase Realtime Database at console.firebase.google.com,
       set rules to public read/write, paste the URL above and save. All data will
       then sync across all users automatically. Leave blank to use local storage only.
+    </div>
+    <${Field} label="Registration deadline">
+      <input type="datetime-local" value=${loc.deadline||""}
+        onInput=${function(e){ setLoc(function(prev){ return Object.assign({},prev,{deadline:e.target.value}); }); }}
+        style=${{ fontFamily:"monospace", fontSize:13 }}/>
+    </${Field}>
+    <div style=${{fontSize:11,color:"rgba(255,255,255,.3)",marginBottom:16,lineHeight:1.7}}>
+      After this date/time, the Predict button on the home page is hidden and new predictions are blocked.
     </div>
     <${Field} label=${t.adminEmailSettings}>
       <input type="email" value=${loc.adminEmail||""}

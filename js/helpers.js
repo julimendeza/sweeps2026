@@ -136,3 +136,152 @@ function loadEJS() {
     document.head.appendChild(s);
   });
 }
+
+// ── Terms & Conditions PDF generator ────────────────────────────────
+async function generateTCPDF(settings) {
+  var jsPDF = window.jspdf && window.jspdf.jsPDF;
+  if (!jsPDF) {
+    alert("PDF library not loaded. Please try again.");
+    return;
+  }
+  try {
+    var doc = new jsPDF({ unit:"mm", format:"a4" });
+    var W = 210, M = 18, cW = W - M*2;
+    var y = 22;
+
+    // Helper functions
+    function h1(txt) {
+      doc.setFont("helvetica","bold");
+      doc.setFontSize(20);
+      doc.setTextColor(30,30,30);
+      doc.text(txt, M, y); y += 9;
+    }
+    function h2(txt) {
+      doc.setFont("helvetica","bold");
+      doc.setFontSize(13);
+      doc.setTextColor(180, 90, 0);
+      y += 5;
+      doc.text(txt, M, y); y += 7;
+    }
+    function body(txt) {
+      doc.setFont("helvetica","normal");
+      doc.setFontSize(10);
+      doc.setTextColor(50,50,50);
+      var lines = doc.splitTextToSize(txt, cW);
+      doc.text(lines, M, y); y += lines.length * 5 + 2;
+    }
+    function bullet(txt) {
+      doc.setFont("helvetica","normal");
+      doc.setFontSize(10);
+      doc.setTextColor(50,50,50);
+      var lines = doc.splitTextToSize("\u2022  " + txt, cW - 4);
+      doc.text(lines, M + 2, y); y += lines.length * 5 + 1;
+    }
+    function rule() {
+      y += 2;
+      doc.setDrawColor(220,220,220);
+      doc.line(M, y, W-M, y);
+      y += 5;
+    }
+    function checkPage() {
+      if (y > 265) { doc.addPage(); y = 22; }
+    }
+
+    var cur = settings.currency || "AUD";
+    var fee = settings.entryFee || 40;
+    var deadline = settings.deadline ? new Date(settings.deadline).toLocaleDateString("en-AU", {day:"numeric",month:"long",year:"numeric"}) : "June 10, 2026";
+    var total_example = fee * 10;
+
+    // Header
+    doc.setFillColor(245, 158, 11);
+    doc.rect(0, 0, W, 14, "F");
+    doc.setFont("helvetica","bold");
+    doc.setFontSize(11);
+    doc.setTextColor(255,255,255);
+    doc.text("QUINIELA MUNDIAL 2026 \u2014 SOUTHAMERICAN FOOTBALL FRIENDS SWEEPSTAKE", M, 9);
+    y = 28;
+
+    h1("Terms & Conditions");
+    body("FIFA World Cup 2026 \u00b7 USA \u00b7 Canada \u00b7 Mexico \u00b7 June 11 \u2013 July 19, 2026");
+    rule();
+
+    h2("1. Entry");
+    bullet("Entry fee: " + cur + " " + fee + " per participant.");
+    bullet("Payment to Julian Enrique Mendez Alvarez \u2014 ING Bank \u00b7 BSB: 923100 / Account: 312595197.");
+    bullet("Registration deadline: " + deadline + ". No entries accepted after this date.");
+    bullet("All entries must be submitted via the sweepstake website before the deadline.");
+    bullet("By entering, participants agree to these terms and conditions.");
+    checkPage();
+
+    h2("2. Predictions");
+    bullet("Participants must predict the score of all 72 group stage matches.");
+    bullet("Participants must predict the score of all 32 knockout matches (Round of 32 through Final).");
+    bullet("The Round of 32 bracket is determined by the official FIFA 2026 fixture rules and is auto-calculated from group stage predictions.");
+    bullet("Predictions are locked at the registration deadline. No changes permitted after that time.");
+    bullet("The same email address can be used to update predictions before the deadline.");
+    checkPage();
+
+    h2("3. Scoring \u2014 Group Stage (per match, max 7 pts)");
+    bullet("Correct result (Win / Draw / Loss): 3 points");
+    bullet("Correct goals scored by Team A: 1 point");
+    bullet("Correct goals scored by Team B: 1 point");
+    bullet("Correct goal difference (if result correct): 2 points");
+    bullet("Exact scoreline = 7 points. Correct result only = 3 points.");
+    checkPage();
+
+    h2("4. Scoring \u2014 Knockout Stage (per team advancing)");
+    bullet("Round of 32: 1 point per team correctly predicted");
+    bullet("Round of 16: 2 points per team");
+    bullet("Quarter-Finals: 4 points per team");
+    bullet("Semi-Finals: 6 points per team");
+    bullet("3rd Place Match (teams in match): 8 points per team");
+    bullet("3rd Place Winner: 15 points");
+    bullet("Finalists (both teams): 10 points per team");
+    bullet("World Cup Champion: 20 points");
+    checkPage();
+
+    h2("5. Tiebreaker Rules");
+    body("In the event of a tie on total points, the following criteria apply in order:");
+    bullet("1. Correct World Cup Champion prediction");
+    bullet("2. Correct Runner-up prediction");
+    bullet("3. Correct 3rd Place winner prediction");
+    bullet("4. Points earned in the Final + 3rd Place match");
+    bullet("5. Points earned in the Semi-Finals");
+    bullet("6. If still tied \u2014 prizes shared equally between tied participants.");
+    checkPage();
+
+    h2("6. Prize Distribution");
+    var sc = settings.scoring || DEF.scoring;
+    bullet("1st place: 50% of prize pool");
+    bullet("2nd place: 25% of prize pool");
+    bullet("3rd place: 15% of prize pool");
+    bullet("Admin fee: 10% of prize pool");
+    body("Example with 10 participants: prize pool = " + cur + " " + total_example + " \u2192 1st: " + cur + " " + Math.floor(total_example*0.5) + " \u00b7 2nd: " + cur + " " + Math.floor(total_example*0.25) + " \u00b7 3rd: " + cur + " " + Math.floor(total_example*0.15));
+    checkPage();
+
+    h2("7. Results & Disputes");
+    bullet("Official match results as published by FIFA will be used for scoring.");
+    bullet("Results include extra time and penalty shootouts for knockout matches.");
+    bullet("The organiser's decision on any disputed matter is final.");
+    bullet("Results will be updated on the website progressively as matches are played.");
+    checkPage();
+
+    h2("8. General");
+    bullet("This sweepstake is run for entertainment purposes among friends.");
+    bullet("The organiser reserves the right to modify these terms with reasonable notice.");
+    bullet("Participants are responsible for providing a valid email address.");
+    bullet("Prize payments will be made within 14 days of the World Cup Final.");
+    rule();
+
+    // Footer
+    doc.setFont("helvetica","italic");
+    doc.setFontSize(9);
+    doc.setTextColor(150,150,150);
+    doc.text("Quiniela Mundial 2026  \u00b7  Generated " + new Date().toLocaleDateString(), M, 285);
+
+    doc.save("Quiniela2026_Terms_and_Conditions.pdf");
+  } catch(e) {
+    console.error("T&C PDF error:", e);
+    alert("PDF generation failed: " + e.message);
+  }
+}

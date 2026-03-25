@@ -23,8 +23,32 @@ function HomeView(p) {
     return results.groups[k] && results.groups[k].h !== "";
   }).length;
 
+  // Deadline logic
+  var now = new Date();
+  var deadline = settings.deadline ? new Date(settings.deadline) : null;
+  var isPastDeadline = deadline && now > deadline;
+  var deadlineStr = deadline ? deadline.toLocaleDateString(lang==="es"?"es-AU":"en-AU",
+    {weekday:"short",day:"numeric",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit"}) : null;
+  var msLeft = deadline ? deadline - now : null;
+  var daysLeft = msLeft ? Math.ceil(msLeft / (1000*60*60*24)) : null;
+
   return html`<div className="fade" style=${{ maxWidth:780, margin:"0 auto", padding:"28px 16px 60px" }}>
 
+    ${isPastDeadline&&html`<div style=${{
+      padding:"10px 16px",borderRadius:10,marginBottom:14,
+      background:"rgba(248,113,113,.08)",border:"1px solid rgba(248,113,113,.25)",
+      fontSize:13,color:"#f87171",textAlign:"center"
+    }}>
+      \ud83d\udd12 ${lang==="es"?"Las predicciones cerraron el":"Predictions closed on"} ${deadlineStr}
+    </div>`}
+
+    ${!isPastDeadline&&deadlineStr&&daysLeft<=14&&html`<div style=${{
+      padding:"10px 16px",borderRadius:10,marginBottom:14,
+      background:"rgba(245,158,11,.08)",border:"1px solid rgba(245,158,11,.2)",
+      fontSize:13,color:"rgba(245,158,11,.9)",textAlign:"center"
+    }}>
+      \u23f0 ${lang==="es"?"Cierre de predicciones en":"Predictions close in"} ${daysLeft} ${lang==="es"?"d\u00edas \u2014 ":"days \u2014 "}${deadlineStr}
+    </div>`}
 
     <div style=${{ textAlign:"center", padding:"34px 20px",
       background:"linear-gradient(135deg,rgba(245,158,11,.1),rgba(217,119,6,.04))",
@@ -35,9 +59,17 @@ function HomeView(p) {
         WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>${t.title}</h1>
       <p style=${{ color:"rgba(255,255,255,.42)", fontSize:13, marginTop:10, lineHeight:1.7 }}>${t.sub}</p>
       <div style=${{ marginTop:20, display:"flex", gap:10, justifyContent:"center", flexWrap:"wrap" }}>
-        <${Btn} onClick=${function(){ setView("predict"); }} sx=${{ padding:"12px 28px", fontSize:15 }}>\u26bd ${t.predict}</${Btn}>
+        ${!isPastDeadline&&html`<${Btn} onClick=${function(){ setView("predict"); }} sx=${{ padding:"12px 28px", fontSize:15 }}>\u26bd ${t.predict}</${Btn}>`}
+        ${isPastDeadline&&html`<${Btn} v="secondary" disabled=${true} sx=${{ padding:"12px 28px", fontSize:15 }}>\ud83d\udd12 ${lang==="es"?"Predicciones cerradas":"Predictions closed"}</${Btn}>`}
         <${Btn} v="secondary" onClick=${function(){ setView("bracket"); }} sx=${{ padding:"12px 20px", fontSize:15 }}>\ud83c\udfc6 ${t.bracket}</${Btn}>
         <${Btn} v="secondary" onClick=${function(){ setView("leaderboard"); }} sx=${{ padding:"12px 20px", fontSize:15 }}>${t.table}</${Btn}>
+      </div>
+      <div style=${{ marginTop:12 }}>
+        <button onClick=${function(){ generateTCPDF(settings); }} style=${{
+          background:"none",border:"none",color:"rgba(255,255,255,.35)",
+          fontSize:12,cursor:"pointer",textDecoration:"underline",
+          fontFamily:"'DM Sans',sans-serif"
+        }}>\ud83d\udccc ${lang==="es"?"Ver T\u00e9rminos y Condiciones (PDF)":"Terms & Conditions (PDF)"}</button>
       </div>
     </div>
 
