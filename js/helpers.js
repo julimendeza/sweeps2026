@@ -195,7 +195,7 @@ async function generateTCPDF(settings, lang) {
     s6b2:"2do lugar: 25% del pozo de premios",
     s6b3:"3er lugar: 15% del pozo de premios",
     s6b4:"Gastos de organizaci\u00f3n: 10% del pozo de premios",
-    s6body:"Ejemplo con 10 participantes: pozo = "+cur+" "+ex10+" \u2192 1\u00ba: "+cur+" "+Math.floor(ex10*.5)+" \u00b7 2\u00ba: "+cur+" "+Math.floor(ex10*.25)+" \u00b7 3\u00ba: "+cur+" "+Math.floor(ex10*.15),
+    s6body:"Ejemplo (10 participantes): Pozo = "+cur+" "+ex10+" | 1ro: "+cur+" "+Math.floor(ex10*.5)+" | 2do: "+cur+" "+Math.floor(ex10*.25)+" | 3ro: "+cur+" "+Math.floor(ex10*.15),
     s7:"7. Resultados y Disputas",
     s7b1:"Se usar\u00e1n los resultados oficiales publicados por la FIFA.",
     s7b2:"Los resultados incluyen el tiempo extra y penales en los partidos eliminatorios.",
@@ -252,7 +252,7 @@ async function generateTCPDF(settings, lang) {
     s6b2:"2nd place: 25% of prize pool",
     s6b3:"3rd place: 15% of prize pool",
     s6b4:"Admin fee: 10% of prize pool",
-    s6body:"Example with 10 participants: prize pool = "+cur+" "+ex10+" \u2192 1st: "+cur+" "+Math.floor(ex10*.5)+" \u00b7 2nd: "+cur+" "+Math.floor(ex10*.25)+" \u00b7 3rd: "+cur+" "+Math.floor(ex10*.15),
+    s6body:"Example (10 participants): Prize pool = "+cur+" "+ex10+" | 1st: "+cur+" "+Math.floor(ex10*.5)+" | 2nd: "+cur+" "+Math.floor(ex10*.25)+" | 3rd: "+cur+" "+Math.floor(ex10*.15),
     s7:"7. Results & Disputes",
     s7b1:"Official match results as published by FIFA will be used for scoring.",
     s7b2:"Results include extra time and penalty shootouts for knockout matches.",
@@ -290,12 +290,9 @@ async function generateTCPDF(settings, lang) {
     // Force section 5 onto a new page
     doc.addPage(); y=22;
     h2(TX.s5);body(TX.s5body);bullet(TX.s5b1);bullet(TX.s5b2);bullet(TX.s5b3);bullet(TX.s5b4);bullet(TX.s5b5);bullet(TX.s5b6);chk();
-    h2(TX.s6);bullet(TX.s6b1);bullet(TX.s6b2);bullet(TX.s6b3);bullet(TX.s6b4);
-    // Split example line to avoid overflow
-    var ex6lines = doc.splitTextToSize(TX.s6body, cW);
-    doc.setFont("helvetica","normal");doc.setFontSize(10);doc.setTextColor(50,50,50);
-    doc.text(ex6lines, M, y); y += ex6lines.length * 5 + 2;
-    chk();
+    h2(TX.s6);bullet(TX.s6b1);bullet(TX.s6b2);bullet(TX.s6b3);bullet(TX.s6b4);chk();
+    // Example line — use body() which handles font+splitTextToSize correctly
+    body(TX.s6body);chk();
     h2(TX.s7);bullet(TX.s7b1);bullet(TX.s7b2);bullet(TX.s7b3);bullet(TX.s7b4);chk();
     h2(TX.s8);bullet(TX.s8b1);bullet(TX.s8b2);bullet(TX.s8b3);bullet(TX.s8b4);rule();
 
