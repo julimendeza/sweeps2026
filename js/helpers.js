@@ -454,3 +454,185 @@ function downloadPredsJSON(preds, name, email) {
   a.click();
   URL.revokeObjectURL(url);
 }
+
+// ── Per-player score report PDF ──────────────────────────────────────
+async function generateReportPDF(participant, results, settings, lang) {
+  var jsPDF = window.jspdf && window.jspdf.jsPDF;
+  if (!jsPDF) { alert("PDF library not loaded."); return; }
+  var es = lang === "es";
+  var preds   = participant.preds || {};
+  var sc      = settings.scoring  || DEF.scoring;
+  var scored  = calcScore(preds, results, sc);
+  var rC      = cascadeKO(results.groups, results.ko || {});
+  var pC      = cascadeKO(preds.groups,   preds.ko   || {});
+
+  try {
+    var doc = new jsPDF({ unit:"mm", format:"a4" });
+    var W=210, M=16, cW=W-M*2, y=20;
+
+    // ── helpers ──
+    function pg(){ if(y>272){doc.addPage();y=20;} }
+    function txt(s,size,bold,r,g,b){
+      doc.setFontSize(size||10);
+      doc.setFont("helvetica",bold?"bold":"normal");
+      doc.setTextColor(r||220,g||230,b||240);
+      pg();
+      var ls=doc.splitTextToSize(s,cW);
+      doc.text(ls,M,y); y+=ls.length*(((size||10)*0.42)+1.5);
+    }
+    function row(left,center,right,pts,colorR,colorG,colorB){
+      pg();
+      doc.setFontSize(9); doc.setFont("helvetica","normal");
+      doc.setTextColor(colorR||180,colorG||200,colorB||220);
+      doc.text(doc.splitTextToSize(left,90),M,y);
+      doc.text(center,M+92,y,{align:"center"});
+      doc.text(right, M+115,y,{align:"center"});
+      doc.setFont("helvetica","bold");
+      doc.setTextColor(pts>0?245:120, pts>0?(pts>=6?200:158):130, pts>0?11:140);
+      doc.text(pts>0?"+"+pts:(pts===0&&right!=="?"?"-":""),M+cW,y,{align:"right"});
+      y+=6;
+    }
+    function sectionHeader(s){
+      y+=3;
+      doc.setFillColor(30,45,70); doc.rect(M,y-4,cW,8,"F");
+      txt(s,10,true,245,158,11); y+=1;
+    }
+    function rule(){ doc.setDrawColor(40,60,90); doc.line(M,y,W-M,y); y+=4; }
+
+    // ── Dark background ──
+    doc.setFillColor(8,15,28); doc.rect(0,0,W,297,"F");
+
+    // ── Header ──
+    doc.setFillColor(245,158,11); doc.rect(0,0,W,28,"F");
+    doc.setFontSize(14);doc.setFont("helvetica","bold");doc.setTextColor(0,0,0);
+    doc.text(es?"REPORTE DE PUNTUACION":"SCORE REPORT",M,11);
+    doc.setFontSize(9);doc.setFont("helvetica","normal");
+    doc.text(participant.name+" - "+participant.email,M,17);
+    doc.text((es?"Total:":"Total:")+" "+scored.pts+" pts  |  "+
+      (es?"Quiniela Mundial 2026":"World Cup 2026 Sweepstake"),M,23);
+    y=34;
+
+    // ── Summary boxes ──
+    var cats=[
+      {l:es?"Fase Grupos":"Group Stage",  v:scored.detail.groups&&scored.detail.groups.earned||0},
+      {l:"R32",   v:scored.detail.r32&&scored.detail.r32.earned||0},
+      {l:"R16",   v:scored.detail.r16&&scored.detail.r16.earned||0},
+      {l:es?"Cuartos":"QF",v:scored.detail.qf&&scored.detail.qf.earned||0},
+      {l:es?"Semis":"SF",  v:scored.detail.sf&&scored.detail.sf.earned||0},
+      {l:"Final",          v:scored.detail.final&&scored.detail.final.earned||0},
+      {l:es?"Campeon":"Champion",v:scored.detail.champion&&scored.detail.champion.earned||0}
+    ];
+    var bw=24, bx=M;
+    cats.forEach(function(c){
+      doc.setFillColor(c.v>0?40:20, c.v>0?35:25, c.v>0?15:35);
+      doc.roundedRect(bx,y,bw-1,14,2,2,"F");
+      doc.setFontSize(7);doc.setFont("helvetica","normal");doc.setTextColor(150,170,190);
+      doc.text(c.l,bx+(bw-1)/2,y+5,{align:"center"});
+      doc.setFontSize(11);doc.setFont("helvetica","bold");
+      doc.setTextColor(c.v>0?245:80,c.v>0?158:90,c.v>0?11:110);
+      doc.text(String(c.v),bx+(bw-1)/2,y+11,{align:"center"});
+      bx+=bw;
+    });
+    y+=20; rule();
+
+    // ── Column headers ──
+    doc.setFontSize(8);doc.setFont("helvetica","bold");doc.setTextColor(100,130,160);
+    doc.text(es?"PARTIDO":"MATCH",M,y);
+    doc.text(es?"PRED":"PRED",M+92,y,{align:"center"});
+    doc.text(es?"REAL":"ACTUAL",M+115,y,{align:"center"});
+    doc.text("PTS",M+cW,y,{align:"right"});
+    y+=5; rule();
+
+    // ── Group stage by matchday ──
+    GROUPS.forEach(function(g){
+      sectionHeader(es?"GRUPO "+g+" - ":"GROUP "+g+" - "+TBG[g].join(" - "));
+      [0,1,2].forEach(function(md){
+        GMS[g].slice(md*2,md*2+2).forEach(function(m){
+          var pred = preds.groups&&preds.groups[m.id];
+          var res  = results.groups&&results.groups[m.id];
+          var pts  = scoreMatch(pred,res);
+          var pSc  = (pred&&pred.h!==''&&pred.h!==undefined)?pred.h+"-"+pred.a:"?";
+          var rSc  = (res&&res.h!==''&&res.h!==undefined)?res.h+"-"+res.a:"?";
+          var hasRes = rSc!=="?";
+          var r=hasRes?(pts>=6?34:pts>=3?140:pts>0?59:180):80;
+          var gg=hasRes?(pts>=6?197:pts>=3?160:pts>0?130:80):90;
+          var b=hasRes?(pts>=6?94:pts>=3?11:pts>0?46:100):110;
+          row("MD"+(md+1)+" "+m.home+" vs "+m.away,pSc,rSc,hasRes?pts:0,r,gg,b);
+        });
+      });
+    });
+
+    y+=3; rule();
+
+    // ── KO stage ──
+    sectionHeader(es?"FASE ELIMINATORIA":"KNOCKOUT STAGE");
+    y+=2;
+
+    var koSections=[
+      {label:"Round of 32",   ids:R32_FIXTURES.map(function(f){return f.id;}), pts:sc.r32||1},
+      {label:"Round of 16",   ids:KO_BRACKET.r16.map(function(f){return f.id;}), pts:sc.r16||2},
+      {label:"Quarter-Finals",ids:KO_BRACKET.qf.map(function(f){return f.id;}),  pts:sc.qf||4},
+      {label:"Semi-Finals",   ids:KO_BRACKET.sf.map(function(f){return f.id;}),  pts:sc.sf||6},
+      {label:"Final",         ids:["final"], pts:sc.final||10},
+      {label:"3rd Place",     ids:["s3rd"],  pts:sc.thirdMatch||8}
+    ];
+
+    koSections.forEach(function(ks){
+      txt(ks.label,9,true,245,200,80); y+=1;
+      ks.ids.forEach(function(fid){
+        var pred=preds.ko&&preds.ko[fid];
+        var res =results.ko&&results.ko[fid];
+        var pSc=(pred&&pred.h!==''&&pred.h!==undefined)?pred.h+"-"+pred.a:"?";
+        var rSc=(res&&res.h!==''&&res.h!==undefined)?res.h+"-"+res.a:"?";
+        var matchPts=scoreMatch(pred,res);
+        var hasRes=rSc!=="?";
+
+        // Team names from cascade
+        var home="TBD", away="TBD";
+        var allTeamMaps={
+          r32:C&&(pC.r32||{}),r16:(pC.r16||{}),qf:(pC.qf||{}),sf:(pC.sf||{})
+        };
+        if(rC){
+          if(fid==="final"){ home=rC.finalTeams&&rC.finalTeams[0]||"TBD"; away=rC.finalTeams&&rC.finalTeams[1]||"TBD"; }
+          else if(fid==="s3rd"){ home=rC.thirdTeams&&rC.thirdTeams[0]||"TBD"; away=rC.thirdTeams&&rC.thirdTeams[1]||"TBD"; }
+          else {
+            var f32=R32_FIXTURES.find(function(f){return f.id===fid;});
+            var f16=KO_BRACKET.r16.find(function(f){return f.id===fid;});
+            var fqf=KO_BRACKET.qf.find(function(f){return f.id===fid;});
+            var fsf=KO_BRACKET.sf.find(function(f){return f.id===fid;});
+            var fx=f32||f16||fqf||fsf;
+            if(fx){ home=rC.r32&&rC.r32[fid]&&rC.r32[fid].home||rC.r16&&rC.r16[fid]&&rC.r16[fid].home||rC.qf&&rC.qf[fid]&&rC.qf[fid].home||rC.sf&&rC.sf[fid]&&rC.sf[fid].home||"TBD"; away=rC.r32&&rC.r32[fid]&&rC.r32[fid].away||rC.r16&&rC.r16[fid]&&rC.r16[fid].away||rC.qf&&rC.qf[fid]&&rC.qf[fid].away||rC.sf&&rC.sf[fid]&&rC.sf[fid].away||"TBD"; }
+          }
+        }
+        var r=hasRes?(matchPts>=6?34:matchPts>=3?140:matchPts>0?59:180):80;
+        var gg=hasRes?(matchPts>=6?197:matchPts>=3?160:matchPts>0?130:80):90;
+        var b2=hasRes?(matchPts>=6?94:matchPts>=3?11:matchPts>0?46:100):110;
+        row(home+" vs "+away,pSc,rSc,hasRes?matchPts:0,r,gg,b2);
+      });
+      y+=2;
+    });
+
+    // Champion & 3rd winner
+    rule();
+    var chHit=pC.champion&&rC.champion&&pC.champion===rC.champion;
+    var twHit=pC.thirdWin&&rC.thirdWin&&pC.thirdWin===rC.thirdWin;
+    txt(es?"CAMPEON DEL MUNDIAL":"WORLD CUP CHAMPION",9,true,245,200,80);
+    row(es?"Prediccion":"Prediction",pC.champion||"?",rC.champion||"?",
+      chHit?sc.champion||0:0, chHit?34:180, chHit?197:80, chHit?94:100);
+    txt(es?"GANADOR 3er LUGAR":"3RD PLACE WINNER",9,true,245,200,80);
+    row(es?"Prediccion":"Prediction",pC.thirdWin||"?",rC.thirdWin||"?",
+      twHit?sc.thirdWin||0:0, twHit?34:180, twHit?197:80, twHit?94:100);
+
+    // Footer
+    rule();
+    doc.setFontSize(8);doc.setFont("helvetica","bold");doc.setTextColor(245,158,11);
+    doc.text("TOTAL: "+scored.pts+" pts",M,y);
+    doc.setFont("helvetica","italic");doc.setTextColor(60,80,110);
+    doc.text("Quiniela Mundial 2026  -  "+new Date().toLocaleString(),W-M,y,{align:"right"});
+
+    doc.save(participant.name.replace(/\s+/g,"_")+"_WC2026_ScoreReport.pdf");
+  } catch(e) {
+    console.error("Report PDF error:",e);
+    alert("Report failed: "+e.message);
+  }
+}

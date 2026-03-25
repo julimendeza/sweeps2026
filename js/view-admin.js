@@ -210,33 +210,55 @@ function AdminParts(p) {
   }
 
   return html`<div>
-    <p style=${{ fontSize:13, color:"rgba(255,255,255,.4)", marginBottom:14 }}>
-      ${p.participants.filter(function(x){ return x.id!=="claude_bot"; }).length} ${t.participants} (+Claude \ud83e\udd16)
-    </p>
+    <div style=${{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14,flexWrap:"wrap",gap:8}}>
+      <p style=${{ fontSize:13, color:"rgba(255,255,255,.4)" }}>
+        ${p.participants.filter(function(x){ return x.id!=="claude_bot"; }).length} ${t.participants} (+Claude \ud83e\udd16)
+      </p>
+      <${Btn} v="secondary" onClick=${async function(){
+        for(var i=0;i<ranked.length;i++){
+          await generateReportPDF(ranked[i],p.results,p.settings,lang);
+          await new Promise(function(r){setTimeout(r,400);});
+        }
+      }} sx=${{padding:"8px 14px",fontSize:12}}>
+        \ud83d\udcca ${lang==="es"?"Generar todos los reportes":"Generate all reports"}
+      </${Btn}>
+    </div>
     ${ranked.map(function(px, i){
       return html`<${Card} key=${px.id} sx=${{
-        marginBottom:8, display:"flex", alignItems:"center", gap:12,
+        marginBottom:8,
         background: px.id==="claude_bot" ? "rgba(245,158,11,.05)" : "rgba(255,255,255,.04)",
         border: px.id==="claude_bot" ? "1.5px solid rgba(245,158,11,.15)" : "1.5px solid rgba(255,255,255,.08)"
       }}>
-        <span style=${{ width:28, textAlign:"center", fontWeight:800, fontSize:i<3?18:13,
-          color: i===0?"#fbbf24":i===1?"#94a3b8":i===2?"#b45309":"rgba(255,255,255,.28)" }}>
-          ${i===0?"\ud83e\udd47":i===1?"\ud83e\udd48":i===2?"\ud83e\udd49":i+1}
-        </span>
-        <div style=${{ flex:1 }}>
-          <div style=${{ fontWeight:600, fontSize:14, display:"flex", alignItems:"center", gap:6 }}>
-            ${px.name}
-            ${px.id==="claude_bot" && html`<span style=${{ fontSize:10, background:"rgba(245,158,11,.2)", color:"#f59e0b", borderRadius:4, padding:"1px 5px", fontWeight:700 }}>BOT</span>`}
+        <div style=${{display:"flex",alignItems:"center",gap:12}}>
+          <span style=${{ width:28, textAlign:"center", fontWeight:800, fontSize:i<3?18:13,
+            color: i===0?"#fbbf24":i===1?"#94a3b8":i===2?"#b45309":"rgba(255,255,255,.28)" }}>
+            ${i===0?"\ud83e\udd47":i===1?"\ud83e\udd48":i===2?"\ud83e\udd49":i+1}
+          </span>
+          <div style=${{ flex:1 }}>
+            <div style=${{ fontWeight:600, fontSize:14, display:"flex", alignItems:"center", gap:6 }}>
+              ${px.name}
+              ${px.id==="claude_bot" && html`<span style=${{ fontSize:10, background:"rgba(245,158,11,.2)", color:"#f59e0b", borderRadius:4, padding:"1px 5px", fontWeight:700 }}>BOT</span>`}
+            </div>
+            <div style=${{ fontSize:12, color:"rgba(255,255,255,.32)" }}>${px.email}</div>
+            <div style=${{ fontSize:11, color:"rgba(255,255,255,.22)", marginTop:2, display:"flex", alignItems:"center", gap:4 }}>
+              \ud83c\udfc6
+              ${px.preds && px.preds.champion
+                ? html`<${FlagImg} team=${px.preds.champion}/> ${px.preds.champion}`
+                : "\u2014"}
+            </div>
           </div>
-          <div style=${{ fontSize:12, color:"rgba(255,255,255,.32)" }}>${px.email}</div>
-          <div style=${{ fontSize:11, color:"rgba(255,255,255,.22)", marginTop:2 }}>
-            \ud83c\udfc6 ${px.preds && px.preds.champion ? (fl(px.preds.champion) + " " + px.preds.champion) : "\u2014"}
+          <div style=${{display:"flex",alignItems:"center",gap:8}}>
+            <div style=${{ fontWeight:800, color:"#f59e0b", fontSize:18 }}>${px.pts} pts</div>
+            <button onClick=${function(){ generateReportPDF(px,p.results,p.settings,lang); }} style=${{
+              background:"rgba(59,130,246,.12)",border:"1px solid rgba(59,130,246,.3)",
+              color:"#93c5fd",borderRadius:8,padding:"6px 10px",cursor:"pointer",
+              fontSize:11,fontWeight:600,fontFamily:"'DM Sans',sans-serif",whiteSpace:"nowrap"
+            }}>\ud83d\udcca PDF</button>
+            <button onClick=${function(){ del(px.id); }} style=${{
+              background:"none", border:"none", color:"#f87171", fontSize:20, cursor:"pointer", opacity:.55, padding:4
+            }}>\u00d7</button>
           </div>
         </div>
-        <div style=${{ fontWeight:800, color:"#f59e0b", fontSize:18 }}>${px.pts} pts</div>
-        <button onClick=${function(){ del(px.id); }} style=${{
-          background:"none", border:"none", color:"#f87171", fontSize:20, cursor:"pointer", opacity:.55, padding:4
-        }}>\u00d7</button>
       </${Card}>`;
     })}
     ${p.participants.length === 0 && html`<${Card} sx=${{ textAlign:"center", padding:"50px", color:"rgba(255,255,255,.3)" }}>${t.noPart}</${Card}>`}
