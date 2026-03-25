@@ -1,4 +1,4 @@
-// ── Generate predictions PDF and auto-download it ───────────────────
+// - Generate predictions PDF and auto-download it -
 function genPDF(preds, name, email, titleStr) {
   try {
     var jsPDF = window.jspdf.jsPDF;
@@ -72,7 +72,7 @@ function genPDF(preds, name, email, titleStr) {
   }
 }
 
-// ── Send admin notification email via EmailJS ────────────────────────
+// - Send admin notification email via EmailJS -
 async function notifyAdmin(preds, name, email, settings, participants, isUpdate) {
   var ejs = settings.ejs;
   if (!ejs || !ejs.svc || !ejs.tpl_admin || !ejs.key || !settings.adminEmail) return false;
@@ -126,7 +126,7 @@ async function notifyAdmin(preds, name, email, settings, participants, isUpdate)
   }
 }
 
-// ── Lazy-load EmailJS (shared by views) ─────────────────────────────
+// - Lazy-load EmailJS (shared by views) -
 function loadEJS() {
   return new Promise(function(res, rej) {
     if (window.emailjs) { res(); return; }
@@ -137,149 +137,164 @@ function loadEJS() {
   });
 }
 
-// ── Terms & Conditions PDF generator ────────────────────────────────
-async function generateTCPDF(settings) {
+// - Terms & Conditions PDF generator -
+async function generateTCPDF(settings, lang) {
   var jsPDF = window.jspdf && window.jspdf.jsPDF;
-  if (!jsPDF) {
-    alert("PDF library not loaded. Please try again.");
-    return;
-  }
+  if (!jsPDF) { alert("PDF library not loaded. Please try again."); return; }
+
+  var es = lang === "es";
+  var cur = settings.currency || "AUD";
+  var fee = settings.entryFee || 40;
+  var dlRaw = settings.deadline ? new Date(settings.deadline) : null;
+  var dlStr = dlRaw ? dlRaw.toLocaleDateString(es?"es-AU":"en-AU",
+    {day:"numeric",month:"long",year:"numeric"}) : (es?"10 de junio de 2026":"June 10, 2026");
+  var ex10 = fee * 10;
+
+  // All text strings
+  var TX = es ? {
+    header:   "QUINIELA MUNDIAL 2026 \u2014 SOUTHAMERICAN FOOTBALL FRIENDS SWEEPSTAKE",
+    title:    "T\u00e9rminos y Condiciones",
+    subtitle: "Copa del Mundo FIFA 2026 \u00b7 EE.UU. \u00b7 Canad\u00e1 \u00b7 M\u00e9xico \u00b7 11 Jun \u2013 19 Jul, 2026",
+    s1:"1. Inscripci\u00f3n",
+    s1b1:"Cuota de inscripci\u00f3n: "+cur+" "+fee+" por participante.",
+    s1b2:"Pago a Julian Enrique Mendez Alvarez \u2014 ING Bank \u00b7 BSB: 923100 / Cuenta: 312595197.",
+    s1b3:"Plazo de inscripci\u00f3n: "+dlStr+". No se aceptan inscripciones despu\u00e9s de esta fecha.",
+    s1b4:"Todas las predicciones deben ser enviadas a trav\u00e9s del sitio web antes del plazo.",
+    s1b5:"Al participar, los participantes aceptan estos t\u00e9rminos y condiciones.",
+    s2:"2. Predicciones",
+    s2b1:"Los participantes deben predecir el marcador de los 72 partidos de la fase de grupos.",
+    s2b2:"Los participantes deben predecir el marcador de los 32 partidos de la fase eliminatoria (desde Ronda de 32 hasta la Final).",
+    s2b3:"El cuadro de la Ronda de 32 est\u00e1 determinado por las reglas oficiales de la FIFA 2026 y se calcula autom\u00e1ticamente a partir de las predicciones de grupos.",
+    s2b4:"Las predicciones se bloquean en el plazo de inscripci\u00f3n. No se permiten cambios despu\u00e9s.",
+    s2b5:"Se puede usar el mismo correo electr\u00f3nico para actualizar predicciones antes del plazo.",
+    s3:"3. Puntuaci\u00f3n \u2014 Fase de Grupos (por partido, m\u00e1x 7 pts)",
+    s3b1:"Resultado correcto (G/E/P): 3 puntos",
+    s3b2:"Goles del Equipo A correctos: 1 punto",
+    s3b3:"Goles del Equipo B correctos: 1 punto",
+    s3b4:"Diferencia de goles correcta (si el resultado es correcto): 2 puntos",
+    s3b5:"Marcador exacto = 7 puntos. Solo resultado correcto = 3 puntos.",
+    s4:"4. Puntuaci\u00f3n \u2014 Fase Eliminatoria (por equipo que avanza)",
+    s4b1:"Ronda de 32: 1 punto por equipo predicho correctamente",
+    s4b2:"Ronda de 16: 2 puntos por equipo",
+    s4b3:"Cuartos de Final: 4 puntos por equipo",
+    s4b4:"Semifinales: 6 puntos por equipo",
+    s4b5:"Partido por el 3er Lugar (equipos en el partido): 8 puntos por equipo",
+    s4b6:"Ganador del 3er Lugar: 15 puntos",
+    s4b7:"Finalistas (ambos equipos): 10 puntos por equipo",
+    s4b8:"Campe\u00f3n del Mundial: 20 puntos",
+    s5:"5. Criterios de Desempate",
+    s5body:"En caso de empate en puntos totales, se aplican los siguientes criterios en orden:",
+    s5b1:"1. Predicci\u00f3n correcta del Campe\u00f3n del Mundial",
+    s5b2:"2. Predicci\u00f3n correcta del Subcampe\u00f3n",
+    s5b3:"3. Predicci\u00f3n correcta del Ganador del 3er Lugar",
+    s5b4:"4. Puntos obtenidos en la Final + Partido por el 3er Lugar",
+    s5b5:"5. Puntos obtenidos en las Semifinales",
+    s5b6:"6. Si sigue el empate \u2014 los premios se reparten en partes iguales.",
+    s6:"6. Distribuci\u00f3n de Premios",
+    s6b1:"1er lugar: 50% del pozo de premios",
+    s6b2:"2do lugar: 25% del pozo de premios",
+    s6b3:"3er lugar: 15% del pozo de premios",
+    s6b4:"Gastos de organizaci\u00f3n: 10% del pozo de premios",
+    s6body:"Ejemplo con 10 participantes: pozo = "+cur+" "+ex10+" \u2192 1\u00ba: "+cur+" "+Math.floor(ex10*.5)+" \u00b7 2\u00ba: "+cur+" "+Math.floor(ex10*.25)+" \u00b7 3\u00ba: "+cur+" "+Math.floor(ex10*.15),
+    s7:"7. Resultados y Disputas",
+    s7b1:"Se usar\u00e1n los resultados oficiales publicados por la FIFA.",
+    s7b2:"Los resultados incluyen el tiempo extra y penales en los partidos eliminatorios.",
+    s7b3:"La decisi\u00f3n del organizador en cualquier asunto en disputa es definitiva.",
+    s7b4:"Los resultados se actualizar\u00e1n progresivamente en el sitio web.",
+    s8:"8. Disposiciones Generales",
+    s8b1:"Esta quiniela se organiza con fines de entretenimiento entre amigos.",
+    s8b2:"El organizador se reserva el derecho de modificar estos t\u00e9rminos con aviso razonable.",
+    s8b3:"Los participantes son responsables de proporcionar un correo electr\u00f3nico v\u00e1lido.",
+    s8b4:"Los pagos de premios se realizar\u00e1n dentro de los 14 d\u00edas posteriores a la Final.",
+    footer:"Quiniela Mundial 2026  \u00b7  Generado el "+new Date().toLocaleDateString("es-AU"),
+    filename:"Quiniela2026_Terminos_y_Condiciones.pdf"
+  } : {
+    header:   "QUINIELA MUNDIAL 2026 \u2014 SOUTHAMERICAN FOOTBALL FRIENDS SWEEPSTAKE",
+    title:    "Terms & Conditions",
+    subtitle: "FIFA World Cup 2026 \u00b7 USA \u00b7 Canada \u00b7 Mexico \u00b7 June 11 \u2013 July 19, 2026",
+    s1:"1. Entry",
+    s1b1:"Entry fee: "+cur+" "+fee+" per participant.",
+    s1b2:"Payment to Julian Enrique Mendez Alvarez \u2014 ING Bank \u00b7 BSB: 923100 / Account: 312595197.",
+    s1b3:"Registration deadline: "+dlStr+". No entries accepted after this date.",
+    s1b4:"All entries must be submitted via the sweepstake website before the deadline.",
+    s1b5:"By entering, participants agree to these terms and conditions.",
+    s2:"2. Predictions",
+    s2b1:"Participants must predict the score of all 72 group stage matches.",
+    s2b2:"Participants must predict the score of all 32 knockout matches (Round of 32 through Final).",
+    s2b3:"The Round of 32 bracket is determined by the official FIFA 2026 fixture rules and is auto-calculated from group stage predictions.",
+    s2b4:"Predictions are locked at the registration deadline. No changes permitted after that time.",
+    s2b5:"The same email address can be used to update predictions before the deadline.",
+    s3:"3. Scoring \u2014 Group Stage (per match, max 7 pts)",
+    s3b1:"Correct result (Win / Draw / Loss): 3 points",
+    s3b2:"Correct goals scored by Team A: 1 point",
+    s3b3:"Correct goals scored by Team B: 1 point",
+    s3b4:"Correct goal difference (if result correct): 2 points",
+    s3b5:"Exact scoreline = 7 points. Correct result only = 3 points.",
+    s4:"4. Scoring \u2014 Knockout Stage (per team advancing)",
+    s4b1:"Round of 32: 1 point per team correctly predicted",
+    s4b2:"Round of 16: 2 points per team",
+    s4b3:"Quarter-Finals: 4 points per team",
+    s4b4:"Semi-Finals: 6 points per team",
+    s4b5:"3rd Place Match (teams in match): 8 points per team",
+    s4b6:"3rd Place Winner: 15 points",
+    s4b7:"Finalists (both teams): 10 points per team",
+    s4b8:"World Cup Champion: 20 points",
+    s5:"5. Tiebreaker Rules",
+    s5body:"In the event of a tie on total points, the following criteria apply in order:",
+    s5b1:"1. Correct World Cup Champion prediction",
+    s5b2:"2. Correct Runner-up prediction",
+    s5b3:"3. Correct 3rd Place winner prediction",
+    s5b4:"4. Points earned in the Final + 3rd Place match",
+    s5b5:"5. Points earned in the Semi-Finals",
+    s5b6:"6. If still tied \u2014 prizes shared equally between tied participants.",
+    s6:"6. Prize Distribution",
+    s6b1:"1st place: 50% of prize pool",
+    s6b2:"2nd place: 25% of prize pool",
+    s6b3:"3rd place: 15% of prize pool",
+    s6b4:"Admin fee: 10% of prize pool",
+    s6body:"Example with 10 participants: prize pool = "+cur+" "+ex10+" \u2192 1st: "+cur+" "+Math.floor(ex10*.5)+" \u00b7 2nd: "+cur+" "+Math.floor(ex10*.25)+" \u00b7 3rd: "+cur+" "+Math.floor(ex10*.15),
+    s7:"7. Results & Disputes",
+    s7b1:"Official match results as published by FIFA will be used for scoring.",
+    s7b2:"Results include extra time and penalty shootouts for knockout matches.",
+    s7b3:"The organiser's decision on any disputed matter is final.",
+    s7b4:"Results will be updated on the website progressively as matches are played.",
+    s8:"8. General",
+    s8b1:"This sweepstake is run for entertainment purposes among friends.",
+    s8b2:"The organiser reserves the right to modify these terms with reasonable notice.",
+    s8b3:"Participants are responsible for providing a valid email address.",
+    s8b4:"Prize payments will be made within 14 days of the World Cup Final.",
+    footer:"Quiniela Mundial 2026  \u00b7  Generated "+new Date().toLocaleDateString("en-AU"),
+    filename:"Quiniela2026_Terms_and_Conditions.pdf"
+  };
+
   try {
     var doc = new jsPDF({ unit:"mm", format:"a4" });
-    var W = 210, M = 18, cW = W - M*2;
-    var y = 22;
+    var W=210, M=18, cW=W-M*2, y=22;
 
-    // Helper functions
-    function h1(txt) {
-      doc.setFont("helvetica","bold");
-      doc.setFontSize(20);
-      doc.setTextColor(30,30,30);
-      doc.text(txt, M, y); y += 9;
-    }
-    function h2(txt) {
-      doc.setFont("helvetica","bold");
-      doc.setFontSize(13);
-      doc.setTextColor(180, 90, 0);
-      y += 5;
-      doc.text(txt, M, y); y += 7;
-    }
-    function body(txt) {
-      doc.setFont("helvetica","normal");
-      doc.setFontSize(10);
-      doc.setTextColor(50,50,50);
-      var lines = doc.splitTextToSize(txt, cW);
-      doc.text(lines, M, y); y += lines.length * 5 + 2;
-    }
-    function bullet(txt) {
-      doc.setFont("helvetica","normal");
-      doc.setFontSize(10);
-      doc.setTextColor(50,50,50);
-      var lines = doc.splitTextToSize("\u2022  " + txt, cW - 4);
-      doc.text(lines, M + 2, y); y += lines.length * 5 + 1;
-    }
-    function rule() {
-      y += 2;
-      doc.setDrawColor(220,220,220);
-      doc.line(M, y, W-M, y);
-      y += 5;
-    }
-    function checkPage() {
-      if (y > 265) { doc.addPage(); y = 22; }
-    }
+    function h1(txt){doc.setFont("helvetica","bold");doc.setFontSize(20);doc.setTextColor(30,30,30);doc.text(txt,M,y);y+=9;}
+    function h2(txt){doc.setFont("helvetica","bold");doc.setFontSize(13);doc.setTextColor(180,90,0);y+=5;doc.text(txt,M,y);y+=7;}
+    function body(txt){doc.setFont("helvetica","normal");doc.setFontSize(10);doc.setTextColor(50,50,50);var l=doc.splitTextToSize(txt,cW);doc.text(l,M,y);y+=l.length*5+2;}
+    function bullet(txt){doc.setFont("helvetica","normal");doc.setFontSize(10);doc.setTextColor(50,50,50);var l=doc.splitTextToSize("\u2022  "+txt,cW-4);doc.text(l,M+2,y);y+=l.length*5+1;}
+    function rule(){y+=2;doc.setDrawColor(220,220,220);doc.line(M,y,W-M,y);y+=5;}
+    function chk(){if(y>265){doc.addPage();y=22;}}
 
-    var cur = settings.currency || "AUD";
-    var fee = settings.entryFee || 40;
-    var deadline = settings.deadline ? new Date(settings.deadline).toLocaleDateString("en-AU", {day:"numeric",month:"long",year:"numeric"}) : "June 10, 2026";
-    var total_example = fee * 10;
+    doc.setFillColor(245,158,11);doc.rect(0,0,W,14,"F");
+    doc.setFont("helvetica","bold");doc.setFontSize(11);doc.setTextColor(255,255,255);
+    doc.text(TX.header,M,9);y=28;
 
-    // Header
-    doc.setFillColor(245, 158, 11);
-    doc.rect(0, 0, W, 14, "F");
-    doc.setFont("helvetica","bold");
-    doc.setFontSize(11);
-    doc.setTextColor(255,255,255);
-    doc.text("QUINIELA MUNDIAL 2026 \u2014 SOUTHAMERICAN FOOTBALL FRIENDS SWEEPSTAKE", M, 9);
-    y = 28;
+    h1(TX.title);body(TX.subtitle);rule();
+    h2(TX.s1);bullet(TX.s1b1);bullet(TX.s1b2);bullet(TX.s1b3);bullet(TX.s1b4);bullet(TX.s1b5);chk();
+    h2(TX.s2);bullet(TX.s2b1);bullet(TX.s2b2);bullet(TX.s2b3);bullet(TX.s2b4);bullet(TX.s2b5);chk();
+    h2(TX.s3);bullet(TX.s3b1);bullet(TX.s3b2);bullet(TX.s3b3);bullet(TX.s3b4);bullet(TX.s3b5);chk();
+    h2(TX.s4);bullet(TX.s4b1);bullet(TX.s4b2);bullet(TX.s4b3);bullet(TX.s4b4);bullet(TX.s4b5);bullet(TX.s4b6);bullet(TX.s4b7);bullet(TX.s4b8);chk();
+    h2(TX.s5);body(TX.s5body);bullet(TX.s5b1);bullet(TX.s5b2);bullet(TX.s5b3);bullet(TX.s5b4);bullet(TX.s5b5);bullet(TX.s5b6);chk();
+    h2(TX.s6);bullet(TX.s6b1);bullet(TX.s6b2);bullet(TX.s6b3);bullet(TX.s6b4);body(TX.s6body);chk();
+    h2(TX.s7);bullet(TX.s7b1);bullet(TX.s7b2);bullet(TX.s7b3);bullet(TX.s7b4);chk();
+    h2(TX.s8);bullet(TX.s8b1);bullet(TX.s8b2);bullet(TX.s8b3);bullet(TX.s8b4);rule();
 
-    h1("Terms & Conditions");
-    body("FIFA World Cup 2026 \u00b7 USA \u00b7 Canada \u00b7 Mexico \u00b7 June 11 \u2013 July 19, 2026");
-    rule();
-
-    h2("1. Entry");
-    bullet("Entry fee: " + cur + " " + fee + " per participant.");
-    bullet("Payment to Julian Enrique Mendez Alvarez \u2014 ING Bank \u00b7 BSB: 923100 / Account: 312595197.");
-    bullet("Registration deadline: " + deadline + ". No entries accepted after this date.");
-    bullet("All entries must be submitted via the sweepstake website before the deadline.");
-    bullet("By entering, participants agree to these terms and conditions.");
-    checkPage();
-
-    h2("2. Predictions");
-    bullet("Participants must predict the score of all 72 group stage matches.");
-    bullet("Participants must predict the score of all 32 knockout matches (Round of 32 through Final).");
-    bullet("The Round of 32 bracket is determined by the official FIFA 2026 fixture rules and is auto-calculated from group stage predictions.");
-    bullet("Predictions are locked at the registration deadline. No changes permitted after that time.");
-    bullet("The same email address can be used to update predictions before the deadline.");
-    checkPage();
-
-    h2("3. Scoring \u2014 Group Stage (per match, max 7 pts)");
-    bullet("Correct result (Win / Draw / Loss): 3 points");
-    bullet("Correct goals scored by Team A: 1 point");
-    bullet("Correct goals scored by Team B: 1 point");
-    bullet("Correct goal difference (if result correct): 2 points");
-    bullet("Exact scoreline = 7 points. Correct result only = 3 points.");
-    checkPage();
-
-    h2("4. Scoring \u2014 Knockout Stage (per team advancing)");
-    bullet("Round of 32: 1 point per team correctly predicted");
-    bullet("Round of 16: 2 points per team");
-    bullet("Quarter-Finals: 4 points per team");
-    bullet("Semi-Finals: 6 points per team");
-    bullet("3rd Place Match (teams in match): 8 points per team");
-    bullet("3rd Place Winner: 15 points");
-    bullet("Finalists (both teams): 10 points per team");
-    bullet("World Cup Champion: 20 points");
-    checkPage();
-
-    h2("5. Tiebreaker Rules");
-    body("In the event of a tie on total points, the following criteria apply in order:");
-    bullet("1. Correct World Cup Champion prediction");
-    bullet("2. Correct Runner-up prediction");
-    bullet("3. Correct 3rd Place winner prediction");
-    bullet("4. Points earned in the Final + 3rd Place match");
-    bullet("5. Points earned in the Semi-Finals");
-    bullet("6. If still tied \u2014 prizes shared equally between tied participants.");
-    checkPage();
-
-    h2("6. Prize Distribution");
-    var sc = settings.scoring || DEF.scoring;
-    bullet("1st place: 50% of prize pool");
-    bullet("2nd place: 25% of prize pool");
-    bullet("3rd place: 15% of prize pool");
-    bullet("Admin fee: 10% of prize pool");
-    body("Example with 10 participants: prize pool = " + cur + " " + total_example + " \u2192 1st: " + cur + " " + Math.floor(total_example*0.5) + " \u00b7 2nd: " + cur + " " + Math.floor(total_example*0.25) + " \u00b7 3rd: " + cur + " " + Math.floor(total_example*0.15));
-    checkPage();
-
-    h2("7. Results & Disputes");
-    bullet("Official match results as published by FIFA will be used for scoring.");
-    bullet("Results include extra time and penalty shootouts for knockout matches.");
-    bullet("The organiser's decision on any disputed matter is final.");
-    bullet("Results will be updated on the website progressively as matches are played.");
-    checkPage();
-
-    h2("8. General");
-    bullet("This sweepstake is run for entertainment purposes among friends.");
-    bullet("The organiser reserves the right to modify these terms with reasonable notice.");
-    bullet("Participants are responsible for providing a valid email address.");
-    bullet("Prize payments will be made within 14 days of the World Cup Final.");
-    rule();
-
-    // Footer
-    doc.setFont("helvetica","italic");
-    doc.setFontSize(9);
-    doc.setTextColor(150,150,150);
-    doc.text("Quiniela Mundial 2026  \u00b7  Generated " + new Date().toLocaleDateString(), M, 285);
-
-    doc.save("Quiniela2026_Terms_and_Conditions.pdf");
+    doc.setFont("helvetica","italic");doc.setFontSize(9);doc.setTextColor(150,150,150);
+    doc.text(TX.footer,M,285);
+    doc.save(TX.filename);
   } catch(e) {
     console.error("T&C PDF error:", e);
     alert("PDF generation failed: " + e.message);

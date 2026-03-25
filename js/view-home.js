@@ -65,7 +65,7 @@ function HomeView(p) {
         <${Btn} v="secondary" onClick=${function(){ setView("leaderboard"); }} sx=${{ padding:"12px 20px", fontSize:15 }}>${t.table}</${Btn}>
       </div>
       <div style=${{ marginTop:12 }}>
-        <button onClick=${function(){ generateTCPDF(settings); }} style=${{
+        <button onClick=${function(){ generateTCPDF(settings, lang); }} style=${{
           background:"none",border:"none",color:"rgba(255,255,255,.35)",
           fontSize:12,cursor:"pointer",textDecoration:"underline",
           fontFamily:"'DM Sans',sans-serif"
