@@ -29,6 +29,7 @@ function AdminView(p) {
     { id:"results",  l:t.results   },
     { id:"parts",    l:t.partTab   },
     { id:"stats",    l:"\ud83d\udcca Stats"    },
+    { id:"picks",    l:"\ud83c\udfaf Picks"    },
     { id:"email",    l:t.emailTab  },
     { id:"data",     l:"\ud83d\udcbe Data"     },
     { id:"access",   l:"\ud83d\udd11 Access"   },
@@ -60,6 +61,7 @@ function AdminView(p) {
     ${tab==="results"  && html`<${AdminResults}  results=${p.results}       saveResults=${p.saveResults}/>`}
     ${tab==="parts"    && html`<${AdminParts}    participants=${p.participants} results=${p.results} settings=${p.settings} saveParticipants=${p.saveParticipants}/>`}
     ${tab==="stats"    && html`<${AdminStats}    participants=${p.participants} results=${p.results} settings=${p.settings}/>`}
+    ${tab==="picks"    && html`<${AdminPicks}    participants=${p.participants} results=${p.results}/>`}
     ${tab==="email"    && html`<${AdminEmail}    participants=${p.participants} results=${p.results} settings=${p.settings} saveSettings=${p.saveSettings}/>`}
     ${tab==="data"     && html`<${AdminData}     participants=${p.participants} results=${p.results} settings=${p.settings} saveParticipants=${p.saveParticipants} saveResults=${p.saveResults} saveSettings=${p.saveSettings}/>`}
     ${tab==="access"   && html`<${AdminAccess}   settings=${p.settings} saveSettings=${p.saveSettings}/>`}
@@ -415,6 +417,174 @@ function AdminEmail(p) {
   </div>`;
 }
 
+// - Admin Picks tab — team nomination matrix -
+function AdminPicks(p) {
+  var lctx=useLang(); var lang=lctx.lang; var es=lang==="es";
+  var filterState=useState(""); var filter=filterState[0], setFilter=filterState[1];
+  var sortState=useState("r32"); var sortCol=sortState[0], setSortCol=sortState[1];
+
+  // Check actual results for highlighting
+  var rC = useMemo(function(){
+    return cascadeKO(p.results.groups, p.results.ko||{});
+  }, [p.results]);
+
+  var cols=[
+    {key:"r32teams",   label:"R32",   short:"R32"},
+    {key:"r16teams",   label:"R16",   short:"R16"},
+    {key:"qfteams",    label:es?"Cuartos":"QF",  short:"QF"},
+    {key:"sfteams",    label:es?"Semis":"SF",     short:"SF"},
+    {key:"finalTeams", label:"Final", short:"Fin"},
+    {key:"champion",   label:es?"Camp.":"Champ",  short:"Ch"},
+    {key:"thirdTeams", label:es?"3ro":"3rd",      short:"3rd"},
+    {key:"thirdWin",   label:es?"3ro W":"3rd W",  short:"3W"},
+  ];
+
+  // Cascade each participant's predictions
+  var human = useMemo(function(){
+    return p.participants.filter(function(x){return x.id!=="claude_bot";});
+  }, [p.participants]);
+  var total = human.length || 1;
+
+  var cascades = useMemo(function(){
+    return human.map(function(px){
+      return cascadeKO(px.preds&&px.preds.groups, px.preds&&px.preds.ko||{});
+    });
+  }, [human]);
+
+  // Build pick counts: pickCounts[team][colKey] = count
+  var pickCounts = useMemo(function(){
+    var counts={};
+    // Init all teams
+    GROUPS.forEach(function(g){ TBG[g].forEach(function(t){ counts[t]={}; }); });
+
+    cascades.forEach(function(C){
+      cols.forEach(function(c){
+        var teams=C[c.key];
+        if(!teams) return;
+        if(typeof teams==="string") teams=[teams]; // champion/thirdWin are strings
+        teams.filter(Boolean).forEach(function(t){
+          if(!counts[t]) counts[t]={};
+          counts[t][c.key]=(counts[t][c.key]||0)+1;
+        });
+      });
+    });
+    return counts;
+  }, [cascades]);
+
+  // Sort teams by chosen column descending, then by name
+  var allTeams = useMemo(function(){
+    return Object.keys(pickCounts)
+      .filter(function(t){ return !filter||t.toLowerCase().indexOf(filter.toLowerCase())>=0; })
+      .sort(function(a,b){
+        var av=pickCounts[a]&&pickCounts[a][sortCol]||0;
+        var bv=pickCounts[b]&&pickCounts[b][sortCol]||0;
+        return bv-av||a.localeCompare(b);
+      });
+  }, [pickCounts, sortCol, filter]);
+
+  // Max per column for colour scaling
+  var maxPer = useMemo(function(){
+    var m={};
+    cols.forEach(function(c){
+      m[c.key]=Math.max.apply(null,Object.values(pickCounts).map(function(t){return t[c.key]||0;}).concat([1]));
+    });
+    return m;
+  }, [pickCounts]);
+
+  // Check if team actually reached this round in results
+  function actuallyReached(team, colKey) {
+    var arr=rC[colKey];
+    if(!arr) return false;
+    if(typeof arr==="string") return arr===team;
+    return arr.indexOf(team)>=0;
+  }
+
+  var cellStyle = function(v, colKey, team) {
+    var ratio = maxPer[colKey]>0 ? v/maxPer[colKey] : 0;
+    var reached = actuallyReached(team, colKey);
+    var bg = v===0 ? "transparent"
+      : reached ? "rgba(74,222,128,"+(0.15+ratio*0.5)+")"
+      : "rgba(245,158,11,"+(0.1+ratio*0.5)+")";
+    var color = v===0 ? "rgba(255,255,255,.12)"
+      : reached ? "#4ade80"
+      : v===maxPer[colKey] ? "#fff" : "#fbbf24";
+    return {padding:"6px 4px",textAlign:"center",background:bg,borderRadius:4,
+      fontWeight:v>0?700:400,color:color,fontSize:12,cursor:"pointer"};
+  };
+
+  return html`<div>
+    <div style=${{display:"flex",alignItems:"center",gap:10,marginBottom:14,flexWrap:"wrap"}}>
+      <input type="text" value=${filter}
+        onInput=${function(e){setFilter(e.target.value);}}
+        placeholder=${es?"Buscar equipo...":"Filter team..."}
+        style=${{maxWidth:200,padding:"7px 12px",fontSize:13}}/>
+      <div style=${{fontSize:12,color:"rgba(255,255,255,.35)"}}>
+        ${human.length} ${es?"participantes (sin Claude)":"participants (excl. Claude)"}
+        \u00a0\u00b7\u00a0
+        <span style=${{color:"#4ade80"}}>\u25a6</span> = ${es?"clasificado real":"actual result"}
+        \u00a0
+        <span style=${{color:"#fbbf24"}}>\u25a6</span> = ${es?"prediccion":"prediction"}
+      </div>
+    </div>
+
+    <div style=${{overflowX:"auto",WebkitOverflowScrolling:"touch"}}>
+      <table style=${{width:"100%",borderCollapse:"collapse",minWidth:600,fontSize:12}}>
+        <thead>
+          <tr>
+            <th style=${{padding:"8px 10px",textAlign:"left",fontSize:11,fontWeight:700,
+              color:"rgba(255,255,255,.4)",borderBottom:"1px solid rgba(255,255,255,.1)",
+              position:"sticky",left:0,background:"#080f1c",minWidth:140}}>
+              ${es?"Equipo":"Team"}
+            </th>
+            ${cols.map(function(c){
+              var active=sortCol===c.key;
+              return html`<th key=${c.key}
+                onClick=${function(){setSortCol(c.key);}}
+                style=${{padding:"8px 4px",textAlign:"center",fontSize:11,fontWeight:700,
+                  color:active?"#fbbf24":"rgba(255,255,255,.4)",
+                  borderBottom:"1px solid rgba(255,255,255,.1)",
+                  minWidth:48,cursor:"pointer",userSelect:"none",
+                  borderBottom:active?"2px solid #f59e0b":"1px solid rgba(255,255,255,.1)"}}>
+                ${c.label}${active?" \u25bc":""}
+              </th>`;
+            })}
+          </tr>
+        </thead>
+        <tbody>
+          ${allTeams.map(function(team, ri){
+            var hasAny=cols.some(function(c){return (pickCounts[team]&&pickCounts[team][c.key]||0)>0;});
+            return html`<tr key=${team} style=${{
+              borderBottom:"1px solid rgba(255,255,255,.04)",
+              background:ri%2===0?"rgba(255,255,255,.015)":"transparent",
+              opacity:hasAny?1:0.45
+            }}>
+              <td style=${{padding:"7px 10px",position:"sticky",left:0,
+                background:ri%2===0?"#0d1520":"#080f1c",
+                display:"flex",alignItems:"center",gap:6}}>
+                <${FlagImg} team=${team}/>
+                <span style=${{fontWeight:hasAny?600:400,
+                  color:hasAny?"rgba(255,255,255,.85)":"rgba(255,255,255,.35)",
+                  fontSize:12}}>${teamName(team,lang)}</span>
+              </td>
+              ${cols.map(function(c){
+                var v=pickCounts[team]&&pickCounts[team][c.key]||0;
+                var pct=total>0?Math.round(v/total*100):0;
+                return html`<td key=${c.key} style=${cellStyle(v,c.key,team)}
+                  title=${v>0?(v+" / "+total+" ("+pct+"%)"):"0"}>
+                  ${v>0?v:html`<span style=${{color:"rgba(255,255,255,.1)"}}>-</span>`}
+                </td>`;
+              })}
+            </tr>`;
+          })}
+        </tbody>
+      </table>
+    </div>
+    <p style=${{fontSize:11,color:"rgba(255,255,255,.25)",marginTop:10}}>
+      ${es?"Click en columna para ordenar. Hover sobre celda para ver porcentaje.":"Click column header to sort. Hover a cell to see percentage."}
+    </p>
+  </div>`;
+}
+
 // - Admin Stats tab -
 function AdminStats(p) {
   var lctx=useLang(); var lang=lctx.lang;
@@ -712,7 +882,7 @@ function AdminData(p) {
   }
 
   // ── Import ──────────────────────────────────────────────────────
-  async function importData(file) {
+  async function importData(file, mode) {
     setImportErr("");
     try {
       var text = await file.text();
@@ -720,10 +890,23 @@ function AdminData(p) {
       if (!data.participants || !Array.isArray(data.participants)) {
         setStatus("Invalid file — missing participants array.", true); return;
       }
-      if (data.participants) await p.saveParticipants(data.participants);
-      if (data.results)      await p.saveResults(data.results);
-      if (data.settings)     await p.saveSettings(data.settings);
-      setStatus("Imported " + data.participants.filter(function(x){return x.id!=="claude_bot";}).length + " participants successfully!");
+      if (mode === "merge") {
+        // Merge: add new participants by email, skip existing ones
+        var existing = p.participants;
+        var existingEmails = existing.map(function(x){ return x.email.toLowerCase(); });
+        var toAdd = data.participants.filter(function(x){
+          return x.id !== "claude_bot" && existingEmails.indexOf(x.email.toLowerCase()) < 0;
+        });
+        var merged = existing.concat(toAdd);
+        await p.saveParticipants(merged);
+        setStatus("\u2705 Merged " + toAdd.length + " new participants (kept " + (existing.length-1) + " existing).");
+      } else {
+        // Replace: full overwrite
+        if (data.participants) await p.saveParticipants(data.participants);
+        if (data.results)      await p.saveResults(data.results);
+        if (data.settings)     await p.saveSettings(data.settings);
+        setStatus("\u2705 Replaced with " + data.participants.filter(function(x){return x.id!=="claude_bot";}).length + " participants.");
+      }
     } catch(e) {
       setStatus("Import failed: " + e.message, true);
     }
@@ -751,8 +934,8 @@ function AdminData(p) {
     <${Card} sx=${{marginBottom:16}}>
       <div style=${{fontWeight:700,fontSize:14,marginBottom:4}}>Current data</div>
       <div style=${{fontSize:13,color:"rgba(255,255,255,.45)",lineHeight:1.9}}>
-        ${human.length} participants &nbsp;·&nbsp;
-        ${Object.keys(p.results.groups||{}).length} group results entered &nbsp;·&nbsp;
+        ${human.length} participants \u00a0\u00b7\u00a0
+        ${Object.keys(p.results.groups||{}).length} group results entered \u00a0\u00b7\u00a0
         ${Object.keys(p.results.ko||{}).length} KO results entered
       </div>
     </${Card}>
@@ -771,16 +954,27 @@ function AdminData(p) {
       <div style=${{background:"rgba(59,130,246,.07)",border:"1px solid rgba(59,130,246,.2)",borderRadius:12,padding:"14px 16px"}}>
         <div style=${{fontWeight:700,fontSize:13,color:"#93c5fd",marginBottom:6}}>Import backup</div>
         <div style=${{fontSize:12,color:"rgba(255,255,255,.4)",marginBottom:10}}>
-          Restore from a previously exported JSON file. This overwrites current data.
+          <strong style=${{color:"#4ade80"}}>Merge</strong> — adds new participants from file, keeps existing ones (safe).<br/>
+          <strong style=${{color:"#f87171"}}>Replace</strong> — overwrites everything with file contents (destructive).
         </div>
-        <label style=${{display:"inline-flex",alignItems:"center",gap:8,cursor:"pointer",
-          padding:"9px 20px",borderRadius:10,background:"rgba(59,130,246,.15)",
-          border:"1px solid rgba(59,130,246,.3)",fontSize:13,fontWeight:600,color:"#93c5fd",
-          fontFamily:"'DM Sans',sans-serif"}}>
-          Choose file
-          <input type="file" accept=".json" style=${{display:"none"}}
-            onChange=${function(e){ if(e.target.files[0]) importData(e.target.files[0]); }}/>
-        </label>
+        <div style=${{display:"flex",gap:8,flexWrap:"wrap"}}>
+          <label style=${{display:"inline-flex",alignItems:"center",gap:6,cursor:"pointer",
+            padding:"9px 16px",borderRadius:10,background:"rgba(74,222,128,.12)",
+            border:"1px solid rgba(74,222,128,.3)",fontSize:13,fontWeight:600,color:"#4ade80",
+            fontFamily:"'DM Sans',sans-serif"}}>
+            \u2795 Merge
+            <input type="file" accept=".json" style=${{display:"none"}}
+              onChange=${function(e){ if(e.target.files[0]) importData(e.target.files[0],"merge"); e.target.value=""; }}/>
+          </label>
+          <label style=${{display:"inline-flex",alignItems:"center",gap:6,cursor:"pointer",
+            padding:"9px 16px",borderRadius:10,background:"rgba(248,113,113,.1)",
+            border:"1px solid rgba(248,113,113,.3)",fontSize:13,fontWeight:600,color:"#f87171",
+            fontFamily:"'DM Sans',sans-serif"}}>
+            \u26a0\ufe0f Replace all
+            <input type="file" accept=".json" style=${{display:"none"}}
+              onChange=${function(e){ if(e.target.files[0]&&confirm("This will overwrite ALL current data. Are you sure?")) importData(e.target.files[0],"replace"); e.target.value=""; }}/>
+          </label>
+        </div>
         ${importErr&&html`<div style=${{marginTop:8,fontSize:12,color:"#f87171"}}>${importErr}</div>`}
       </div>
 

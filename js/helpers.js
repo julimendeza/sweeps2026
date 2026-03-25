@@ -324,6 +324,22 @@ async function fetchFlagB64(teamCode) {
   } catch(e){ return null; }
 }
 
+// Strip emojis/non-latin for jsPDF helvetica compatibility
+function pdfName(str) {
+  if (!str) return "";
+  var out = "";
+  for (var i=0; i<str.length; i++) {
+    var code = str.charCodeAt(i);
+    // Skip surrogate pairs (emoji range)
+    if (code >= 0xD800 && code <= 0xDFFF) { i++; continue; }
+    // Skip misc symbols
+    if (code >= 0x2600 && code <= 0x27BF) continue;
+    // Keep latin extended and below
+    if (code <= 0xFF) out += str[i];
+  }
+  return out.replace(/\s+/g," ").trim();
+}
+
 // ── Shared: resolve KO match teams preferring non-null ───────────────
 // Tries rC first (actual result cascade), falls back to pC (player cascade)
 // Checks .home !== null to avoid the truthy-but-empty-object trap
@@ -451,7 +467,7 @@ async function generatePredsPDF(preds, name, email, lang) {
 
     doc.setFontSize(8);doc.setFont("helvetica","italic");doc.setTextColor(150,150,150);
     doc.text("Quiniela Mundial 2026  |  "+new Date().toLocaleString(),M,285);
-    doc.save(name.replace(/\s+/g,"_")+"_WC2026_Predictions.pdf");
+    doc.save(pdfName(name).replace(/\s+/g,"_")+"_WC2026_Predictions.pdf");
   } catch(e){ console.error("Preds PDF error:",e); alert("PDF failed: "+e.message); }
 }
 
@@ -461,7 +477,7 @@ function downloadPredsJSON(preds, name, email) {
   var blob = new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
   var url = URL.createObjectURL(blob);
   var a = document.createElement("a");
-  a.href=url; a.download=name.replace(/\s+/g,"_")+"_WC2026_Predictions.json"; a.click();
+  a.href=url; a.download=pdfName(name).replace(/\s+/g,"_")+"_WC2026_Predictions.json"; a.click();
   URL.revokeObjectURL(url);
 }
 
@@ -564,7 +580,7 @@ async function generateReportPDF(participant, results, settings, lang) {
     doc.setFontSize(15);doc.setFont("helvetica","bold");doc.setTextColor(255,255,255);
     doc.text(es?"REPORTE DE PUNTUACION":"SCORE REPORT",M,12);
     doc.setFontSize(9);doc.setFont("helvetica","normal");
-    doc.text(participant.name+"  |  "+participant.email,M,19);
+    doc.text(pdfName(participant.name)+"  |  "+participant.email,M,19);
     doc.setFontSize(11);doc.setFont("helvetica","bold");
     doc.text("Total: "+scored.pts+" pts",M,27);
     doc.text(es?"Quiniela Mundial 2026":"World Cup 2026 Sweepstake",W-M,27,{align:"right"});
@@ -695,7 +711,7 @@ async function generateReportPDF(participant, results, settings, lang) {
     doc.setFontSize(9);
     doc.text(new Date().toLocaleDateString(),W-M-4,y+4,{align:"right"});
 
-    doc.save(participant.name.replace(/\s+/g,"_")+"_WC2026_ScoreReport.pdf");
+    doc.save(pdfName(participant.name).replace(/\s+/g,"_")+"_WC2026_ScoreReport.pdf");
   } catch(e){ console.error("Report PDF error:",e); alert("Report failed: "+e.message); }
 }
 
@@ -765,7 +781,7 @@ async function generateSummaryPDF(participants, results, settings, lang) {
       doc.setTextColor(ri===0?180:ri===1?100:ri===2?120:50,
                        ri===0?120:ri===1?105:ri===2?80:60,
                        ri===0?0:ri===1?110:ri===2?40:70);
-      doc.text((ri+1)+". "+(px.name.slice(0,18))+(isBot?" [BOT]":""),M+1,y);
+      doc.text((ri+1)+". "+pdfName(px.name).slice(0,18)+(isBot?" [BOT]":""),M+1,y);
 
       // Per-category cells
       cols.forEach(function(c,i){
