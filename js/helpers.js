@@ -312,7 +312,23 @@ async function generateTCPDF(settings, lang) {
   }
 }
 
-// ── Player predictions PDF ───────────────────────────────────────────
+// ── Shared PDF helpers ────────────────────────────────────────────────
+// Fetch a flag image and return base64 data URL (for jsPDF addImage)
+async function fetchFlagB64(teamCode) {
+  try {
+    var url = "https://flagcdn.com/20x15/" + teamCode + ".png";
+    var res = await fetch(url);
+    if (!res.ok) return null;
+    var blob = await res.blob();
+    return await new Promise(function(resolve) {
+      var r = new FileReader();
+      r.onloadend = function() { resolve(r.result); };
+      r.readAsDataURL(blob);
+    });
+  } catch(e) { return null; }
+}
+
+// ── Player predictions PDF (white background) ────────────────────────
 async function generatePredsPDF(preds, name, email, lang) {
   var jsPDF = window.jspdf && window.jspdf.jsPDF;
   if (!jsPDF) { alert("PDF library not loaded."); return; }
@@ -321,116 +337,128 @@ async function generatePredsPDF(preds, name, email, lang) {
     var doc = new jsPDF({ unit:"mm", format:"a4" });
     var W=210, M=16, cW=W-M*2, y=20;
 
-    function ln(txt,size,bold,rgb){
-      size=size||10; rgb=rgb||[220,230,240];
-      doc.setFontSize(size); doc.setFont("helvetica",bold?"bold":"normal");
-      doc.setTextColor(rgb[0],rgb[1],rgb[2]);
-      if(y>275){doc.addPage();y=20;}
-      var lines=doc.splitTextToSize(txt,cW);
-      doc.text(lines,M,y); y+=lines.length*(size*0.42+1.2)+1;
+    function pg(){ if(y>278){doc.addPage();y=16;} }
+    function ln(txt,size,bold,r,g,b){
+      size=size||10; doc.setFontSize(size);
+      doc.setFont("helvetica",bold?"bold":"normal");
+      doc.setTextColor(r!==undefined?r:40,g!==undefined?g:50,b!==undefined?b:60);
+      pg(); var ls=doc.splitTextToSize(txt,cW);
+      doc.text(ls,M,y); y+=ls.length*(size*0.42+1.2)+1;
     }
-    function rule(rgb){
-      rgb=rgb||[40,55,80];
-      doc.setDrawColor(rgb[0],rgb[1],rgb[2]);
-      doc.line(M,y,W-M,y); y+=4;
-    }
+    function rule(r,g,b){ doc.setDrawColor(r||200,g||210,b||220); doc.line(M,y,W-M,y); y+=4; }
 
-    // Dark background
-    doc.setFillColor(8,15,28);
-    doc.rect(0,0,W,297,"F");
+    // White background
+    doc.setFillColor(255,255,255); doc.rect(0,0,W,297,"F");
 
-    // Header bar
-    doc.setFillColor(245,158,11);
-    doc.rect(0,0,W,26,"F");
-    doc.setFontSize(16);doc.setFont("helvetica","bold");doc.setTextColor(0,0,0);
-    doc.text((es?"QUINIELA MUNDIAL 2026":"WORLD CUP 2026 SWEEPSTAKE"),M,11);
+    // Amber header
+    doc.setFillColor(245,158,11); doc.rect(0,0,W,26,"F");
+    doc.setFontSize(15);doc.setFont("helvetica","bold");doc.setTextColor(255,255,255);
+    doc.text(es?"QUINIELA MUNDIAL 2026":"WORLD CUP 2026 SWEEPSTAKE",M,11);
     doc.setFontSize(9);doc.setFont("helvetica","normal");
-    doc.text((es?"Predicciones de: ":"Predictions by: ")+name+" - "+email,M,19);
+    doc.text((es?"Predicciones de: ":"Predictions by: ")+name+"  |  "+email,M,20);
     y=34;
 
-    // Group stage
-    ln(es?"FASE DE GRUPOS":"GROUP STAGE",12,true,[245,158,11]);
-    y+=2; rule([40,60,90]);
+    var pC=cascadeKO(preds.groups,preds.ko||{});
 
-    var C=cascadeKO(preds.groups,preds.ko||{});
+    // ── Group stage ──
+    ln(es?"FASE DE GRUPOS":"GROUP STAGE",11,true,180,90,0);
+    rule(245,158,11);
 
-    GROUPS.forEach(function(g){
-      ln("Group "+g+":  "+TBG[g].join("  -  "),9,true,[120,160,210]);
+    for(var gi=0;gi<GROUPS.length;gi++){
+      var g=GROUPS[gi];
+      // Group header
+      pg();
+      doc.setFillColor(250,245,235); doc.rect(M,y-4,cW,7,"F");
+      doc.setFontSize(9);doc.setFont("helvetica","bold");doc.setTextColor(120,60,0);
+      doc.text("Group "+g+" :  "+TBG[g].join("  -  "),M+1,y);
+      y+=6;
+
       var mdLabels=["MD1","MD2","MD3"];
-      [0,1,2].forEach(function(md){
-        GMS[g].slice(md*2,md*2+2).forEach(function(m){
+      for(var md=0;md<3;md++){
+        var mdMatches=GMS[g].slice(md*2,md*2+2);
+        for(var mi=0;mi<mdMatches.length;mi++){
+          var m=mdMatches[mi];
           var pr=preds.groups&&preds.groups[m.id];
           var sc=(pr&&pr.h!==undefined&&pr.h!=="")?pr.h+"-"+pr.a:"?-?";
           var filled=pr&&pr.h!==undefined&&pr.h!=="";
-          ln("  "+mdLabels[md]+"  "+m.home+"  vs  "+m.away+"   "+sc,
-            9,false,filled?[200,220,240]:[80,100,130]);
-        });
+          pg();
+
+          // Try to draw flags
+          var hCode=CC&&CC[m.home], aCode=CC&&CC[m.away];
+          doc.setFontSize(8.5);doc.setFont("helvetica",filled?"normal":"normal");
+          doc.setTextColor(filled?30:160, filled?40:170, filled?50:180);
+          doc.text(mdLabels[md]+"  "+m.home,M+2,y);
+          doc.setFont("helvetica","bold");
+          doc.setTextColor(filled?180:200,filled?80:200,filled?0:200);
+          doc.text(sc,M+cW/2,y,{align:"center"});
+          doc.setFont("helvetica","normal");
+          doc.setTextColor(filled?30:160,filled?40:170,filled?50:180);
+          doc.text(m.away,W-M-2,y,{align:"right"});
+          y+=5.5;
+        }
+      }
+      y+=1;
+    }
+
+    y+=2; rule(245,158,11);
+    ln(es?"FASE ELIMINATORIA":"KNOCKOUT STAGE",11,true,180,90,0);
+    rule(220,200,150);
+
+    // KO rounds
+    var koRows=[
+      {label:es?"Ronda de 32":"Round of 32",     ids:R32_FIXTURES.map(function(f){return f.id;})},
+      {label:es?"Ronda de 16":"Round of 16",     ids:KO_BRACKET.r16.map(function(f){return f.id;})},
+      {label:es?"Cuartos de Final":"Quarter-Finals",ids:KO_BRACKET.qf.map(function(f){return f.id;})},
+      {label:es?"Semifinales":"Semi-Finals",     ids:KO_BRACKET.sf.map(function(f){return f.id;})},
+      {label:"Final",                            ids:["final"]},
+      {label:es?"3er Lugar":"3rd Place",         ids:["s3rd"]}
+    ];
+
+    koRows.forEach(function(kr){
+      pg();
+      doc.setFillColor(250,245,235); doc.rect(M,y-4,cW,7,"F");
+      doc.setFontSize(9);doc.setFont("helvetica","bold");doc.setTextColor(120,60,0);
+      doc.text(kr.label,M+1,y); y+=6;
+
+      kr.ids.forEach(function(fid){
+        var ko=preds.ko&&preds.ko[fid];
+        var sc=(ko&&ko.h!==''&&ko.h!==undefined)?ko.h+"-"+ko.a:"?-?";
+        var filled=ko&&ko.h!==undefined&&ko.h!=="";
+        // Get team names from cascade
+        var home="TBD",away="TBD";
+        if(fid==="final"){ home=pC.finalTeams&&pC.finalTeams[0]||"TBD"; away=pC.finalTeams&&pC.finalTeams[1]||"TBD"; }
+        else if(fid==="s3rd"){ home=pC.thirdTeams&&pC.thirdTeams[0]||"TBD"; away=pC.thirdTeams&&pC.thirdTeams[1]||"TBD"; }
+        else {
+          var mr=pC.r32&&pC.r32[fid]||pC.r16&&pC.r16[fid]||pC.qf&&pC.qf[fid]||pC.sf&&pC.sf[fid];
+          if(mr){ home=mr.home||"TBD"; away=mr.away||"TBD"; }
+        }
+        pg();
+        doc.setFontSize(8.5);doc.setFont("helvetica","normal");
+        doc.setTextColor(filled?30:160,filled?40:170,filled?50:180);
+        doc.text(home,M+2,y);
+        doc.setFont("helvetica","bold");
+        doc.setTextColor(filled?180:200,filled?80:200,filled?0:200);
+        doc.text(sc,M+cW/2,y,{align:"center"});
+        doc.setFont("helvetica","normal");
+        doc.setTextColor(filled?30:160,filled?40:170,filled?50:180);
+        doc.text(away,W-M-2,y,{align:"right"});
+        y+=5.5;
       });
       y+=2;
     });
 
-    y+=2; rule([40,60,90]);
-    ln(es?"FASE ELIMINATORIA":"KNOCKOUT STAGE",12,true,[245,158,11]);
-    y+=2; rule([40,60,90]);
-
-    // KO rounds
-    var roundNames=es
-      ? ["Ronda de 32","Ronda de 16","Cuartos de Final","Semifinales","Final","Campeon","3er Lugar"]
-      : ["Round of 32","Round of 16","Quarter-Finals","Semi-Finals","Final","Champion","3rd Place"];
-    var roundKeys=["r32_","r16_","qf_","sf_","final","champion","s3rd"];
-
-    // R32 through SF - show match scores
-    var koRounds=[
-      {label:roundNames[0],prefix:"r32_",count:16},
-      {label:roundNames[1],prefix:"r16_",count:8},
-      {label:roundNames[2],prefix:"qf_",count:4},
-      {label:roundNames[3],prefix:"sf_",count:2},
-    ];
-
-    koRounds.forEach(function(rd){
-      ln(rd.label,10,true,[180,140,40]);
-      for(var i=0;i<rd.count;i++){
-        var fid=rd.prefix+i;
-        var r32f=R32_FIXTURES&&R32_FIXTURES.find(function(f){return f.id===fid;});
-        var r16f=KO_BRACKET&&KO_BRACKET.r16&&KO_BRACKET.r16.find(function(f){return f.id===fid;});
-        var qff=KO_BRACKET&&KO_BRACKET.qf&&KO_BRACKET.qf.find(function(f){return f.id===fid;});
-        var sff=KO_BRACKET&&KO_BRACKET.sf&&KO_BRACKET.sf.find(function(f){return f.id===fid;});
-        var fixture=r32f||r16f||qff||sff;
-        var ko=preds.ko&&preds.ko[fid];
-        var sc=ko&&ko.h!==""?ko.h+"-"+ko.a:"?-?";
-        var homeTm=C&&C[rd.prefix.replace("_","")+"teams"]&&C[rd.prefix.replace("_","")+"teams"][i*2];
-        var awayTm=C&&C[rd.prefix.replace("_","")+"teams"]&&C[rd.prefix.replace("_","")+"teams"][i*2+1];
-        var filled=ko&&ko.h!==undefined&&ko.h!=="";
-        ln("  M"+(i+1)+":  "+(homeTm||"TBD")+"  "+sc+"  "+(awayTm||"TBD"),
-          9,false,filled?[200,220,240]:[80,100,130]);
-      }
-      y+=1;
-    });
-
-    // Final
-    var finalko=preds.ko&&preds.ko["final"];
-    var finalSc=finalko&&finalko.h!==""?finalko.h+"-"+finalko.a:"?-?";
-    ln(roundNames[4],10,true,[180,140,40]);
-    ln("  "+(C.finalTeams&&C.finalTeams[0]||"TBD")+"  "+finalSc+"  "+(C.finalTeams&&C.finalTeams[1]||"TBD"),
-      9,false,[200,220,240]);
-    y+=1;
-
-    // 3rd place
-    var s3ko=preds.ko&&preds.ko["s3rd"];
-    var s3Sc=s3ko&&s3ko.h!==""?s3ko.h+"-"+s3ko.a:"?-?";
-    ln(roundNames[6],10,true,[180,140,40]);
-    ln("  "+(C.thirdTeams&&C.thirdTeams[0]||"TBD")+"  "+s3Sc+"  "+(C.thirdTeams&&C.thirdTeams[1]||"TBD"),
-      9,false,[200,220,240]);
-    y+=2;
-
     // Champion
-    ln(roundNames[5],10,true,[245,158,11]);
-    ln("  "+(C.champion||"TBD"),12,true,[245,200,50]);
-    y+=2;
+    rule(245,158,11);
+    pg();
+    doc.setFillColor(255,248,230); doc.rect(M,y-4,cW,10,"F");
+    doc.setFontSize(10);doc.setFont("helvetica","bold");doc.setTextColor(140,70,0);
+    doc.text((es?"Campeon: ":"Champion: ")+(pC.champion||"TBD"),M+2,y+2);
+    y+=10;
 
-    rule([40,60,90]);
-    doc.setFontSize(8);doc.setFont("helvetica","italic");doc.setTextColor(60,80,110);
-    doc.text("Quiniela Mundial 2026  -  "+new Date().toLocaleString(),M,285);
+    // Footer
+    doc.setFontSize(8);doc.setFont("helvetica","italic");doc.setTextColor(150,150,150);
+    doc.text("Quiniela Mundial 2026  |  "+new Date().toLocaleString(),M,285);
+    doc.text((es?"Generado por":"Generated by")+" julimendeza.github.io/sweeps2026",W-M,285,{align:"right"});
 
     doc.save(name.replace(/\s+/g,"_")+"_WC2026_Predictions.pdf");
   } catch(e) {
@@ -455,180 +483,242 @@ function downloadPredsJSON(preds, name, email) {
   URL.revokeObjectURL(url);
 }
 
-// ── Per-player score report PDF ──────────────────────────────────────
+// ── Per-player score report PDF (white background with flags) ────────
 async function generateReportPDF(participant, results, settings, lang) {
   var jsPDF = window.jspdf && window.jspdf.jsPDF;
   if (!jsPDF) { alert("PDF library not loaded."); return; }
   var es = lang === "es";
-  var preds   = participant.preds || {};
-  var sc      = settings.scoring  || DEF.scoring;
-  var scored  = calcScore(preds, results, sc);
-  var rC      = cascadeKO(results.groups, results.ko || {});
-  var pC      = cascadeKO(preds.groups,   preds.ko   || {});
+  var preds  = participant.preds || {};
+  var sc     = settings.scoring  || DEF.scoring;
+  var scored = calcScore(preds, results, sc);
+  var rC     = cascadeKO(results.groups, results.ko || {});
+  var pC     = cascadeKO(preds.groups,   preds.ko   || {});
+
+  // Pre-fetch flags for all teams
+  var flagCache = {};
+  async function getFlag(team) {
+    if (!team || team==="TBD") return null;
+    if (flagCache[team]) return flagCache[team];
+    var code = CC && CC[team];
+    if (!code) return null;
+    var b64 = await fetchFlagB64(code);
+    if (b64) flagCache[team] = b64;
+    return b64 || null;
+  }
+  // Pre-load flags for all teams
+  var allTeams = Object.keys(CC||{});
+  await Promise.all(allTeams.map(function(t){ return getFlag(t); }));
 
   try {
     var doc = new jsPDF({ unit:"mm", format:"a4" });
     var W=210, M=16, cW=W-M*2, y=20;
+    var FW=6, FH=4.5; // flag width/height in mm
 
-    // ── helpers ──
-    function pg(){ if(y>272){doc.addPage();y=20;} }
-    function txt(s,size,bold,r,g,b){
-      doc.setFontSize(size||10);
-      doc.setFont("helvetica",bold?"bold":"normal");
-      doc.setTextColor(r||220,g||230,b||240);
-      pg();
-      var ls=doc.splitTextToSize(s,cW);
-      doc.text(ls,M,y); y+=ls.length*(((size||10)*0.42)+1.5);
+    function pg(extra){ if(y>(extra||272)){doc.addPage();y=20;} }
+
+    function addFlag(team, x, yy) {
+      var b64=flagCache[team];
+      if(b64){ try{ doc.addImage(b64,"PNG",x,yy-FH+0.5,FW,FH); return FW+1.5; }catch(e){} }
+      return 0;
     }
-    function row(left,center,right,pts,colorR,colorG,colorB){
+
+    function matchRow(homeTeam, awayTeam, predSc, resSc, pts) {
       pg();
-      doc.setFontSize(9); doc.setFont("helvetica","normal");
-      doc.setTextColor(colorR||180,colorG||200,colorB||220);
-      doc.text(doc.splitTextToSize(left,90),M,y);
-      doc.text(center,M+92,y,{align:"center"});
-      doc.text(right, M+115,y,{align:"center"});
+      var hasRes=resSc!=="?";
+      var exact=hasRes&&pts>=6, correct=hasRes&&pts>=3, partial=hasRes&&pts>0;
+      var textR=hasRes?(exact?20:correct?130:partial?50:160):100;
+      var textG=hasRes?(exact?140:correct?100:partial?100:100):110;
+      var textB=hasRes?(exact?60:correct?20:partial?200:120):130;
+
+      // Row bg
+      if(hasRes){
+        doc.setFillColor(exact?240:correct?255:partial?240:255,
+                         exact?255:correct?250:partial?245:240,
+                         exact?240:correct?235:partial?255:240);
+        doc.rect(M,y-3.5,cW,6.5,"F");
+      }
+
+      // Home flag + name
+      var fx=M+1;
+      var flagOff=addFlag(homeTeam,fx,y);
+      doc.setFontSize(8);doc.setFont("helvetica","normal");
+      doc.setTextColor(textR,textG,textB);
+      doc.text(homeTeam||"TBD",M+1+flagOff,y);
+
+      // Score (center)
       doc.setFont("helvetica","bold");
-      doc.setTextColor(pts>0?245:120, pts>0?(pts>=6?200:158):130, pts>0?11:140);
-      doc.text(pts>0?"+"+pts:(pts===0&&right!=="?"?"-":""),M+cW,y,{align:"right"});
-      y+=6;
-    }
-    function sectionHeader(s){
-      y+=3;
-      doc.setFillColor(30,45,70); doc.rect(M,y-4,cW,8,"F");
-      txt(s,10,true,245,158,11); y+=1;
-    }
-    function rule(){ doc.setDrawColor(40,60,90); doc.line(M,y,W-M,y); y+=4; }
+      doc.setTextColor(hasRes?180:200,hasRes?80:200,hasRes?0:200);
+      var scoreStr=predSc+" | "+resSc;
+      doc.text(scoreStr,W/2,y,{align:"center"});
 
-    // ── Dark background ──
-    doc.setFillColor(8,15,28); doc.rect(0,0,W,297,"F");
+      // Away flag + name (right aligned)
+      var awayX=W-M-1;
+      var aCode=CC&&CC[awayTeam];
+      var aFlag=aCode&&flagCache[awayTeam];
+      doc.setFont("helvetica","normal");
+      doc.setTextColor(textR,textG,textB);
+      var awayTxt=awayTeam||"TBD";
+      var awayW=doc.getTextWidth(awayTxt);
+      doc.text(awayTxt,awayX-(aFlag?FW+1.5:0),y,{align:"right"});
+      if(aFlag){ try{ doc.addImage(aFlag,"PNG",awayX-FW,y-FH+0.5,FW,FH); }catch(e){} }
+
+      // Points
+      doc.setFont("helvetica","bold");
+      if(hasRes){
+        doc.setTextColor(exact?20:correct?130:partial?50:160,
+                         exact?140:correct?60:partial?100:60,
+                         exact?60:correct?20:partial?200:70);
+        doc.text(pts>0?"+"+pts:"-",W-M-1,y,{align:"right"});
+      }
+      y+=7;
+    }
+
+    // ── White background ──
+    doc.setFillColor(255,255,255); doc.rect(0,0,W,297,"F");
 
     // ── Header ──
-    doc.setFillColor(245,158,11); doc.rect(0,0,W,28,"F");
-    doc.setFontSize(14);doc.setFont("helvetica","bold");doc.setTextColor(0,0,0);
-    doc.text(es?"REPORTE DE PUNTUACION":"SCORE REPORT",M,11);
+    doc.setFillColor(245,158,11); doc.rect(0,0,W,30,"F");
+    doc.setFontSize(15);doc.setFont("helvetica","bold");doc.setTextColor(255,255,255);
+    doc.text(es?"REPORTE DE PUNTUACION":"SCORE REPORT",M,12);
     doc.setFontSize(9);doc.setFont("helvetica","normal");
-    doc.text(participant.name+" - "+participant.email,M,17);
-    doc.text((es?"Total:":"Total:")+" "+scored.pts+" pts  |  "+
-      (es?"Quiniela Mundial 2026":"World Cup 2026 Sweepstake"),M,23);
-    y=34;
+    doc.text(participant.name+"  |  "+participant.email,M,19);
+    doc.setFontSize(10);doc.setFont("helvetica","bold");
+    doc.text("Total: "+scored.pts+" pts",M,26);
+    y=38;
 
     // ── Summary boxes ──
     var cats=[
-      {l:es?"Fase Grupos":"Group Stage",  v:scored.detail.groups&&scored.detail.groups.earned||0},
-      {l:"R32",   v:scored.detail.r32&&scored.detail.r32.earned||0},
-      {l:"R16",   v:scored.detail.r16&&scored.detail.r16.earned||0},
-      {l:es?"Cuartos":"QF",v:scored.detail.qf&&scored.detail.qf.earned||0},
-      {l:es?"Semis":"SF",  v:scored.detail.sf&&scored.detail.sf.earned||0},
-      {l:"Final",          v:scored.detail.final&&scored.detail.final.earned||0},
-      {l:es?"Campeon":"Champion",v:scored.detail.champion&&scored.detail.champion.earned||0}
+      {l:es?"Grupos":"Groups",   v:scored.detail.groups&&scored.detail.groups.earned||0},
+      {l:"R32",                  v:scored.detail.r32&&scored.detail.r32.earned||0},
+      {l:"R16",                  v:scored.detail.r16&&scored.detail.r16.earned||0},
+      {l:es?"Cuartos":"QF",      v:scored.detail.qf&&scored.detail.qf.earned||0},
+      {l:es?"Semis":"SF",        v:scored.detail.sf&&scored.detail.sf.earned||0},
+      {l:"Final",                v:scored.detail.final&&scored.detail.final.earned||0},
+      {l:es?"Campeon":"Champ",   v:scored.detail.champion&&scored.detail.champion.earned||0}
     ];
-    var bw=24, bx=M;
+    var bw=cW/cats.length, bx=M;
     cats.forEach(function(c){
-      doc.setFillColor(c.v>0?40:20, c.v>0?35:25, c.v>0?15:35);
-      doc.roundedRect(bx,y,bw-1,14,2,2,"F");
-      doc.setFontSize(7);doc.setFont("helvetica","normal");doc.setTextColor(150,170,190);
+      doc.setFillColor(c.v>0?255:245, c.v>0?248:245, c.v>0?230:245);
+      doc.setDrawColor(c.v>0?245:210, c.v>0?158:215, c.v>0?11:220);
+      doc.roundedRect(bx,y,bw-1,14,2,2,"FD");
+      doc.setFontSize(7);doc.setFont("helvetica","normal");
+      doc.setTextColor(c.v>0?140:160,c.v>0?70:165,c.v>0?0:170);
       doc.text(c.l,bx+(bw-1)/2,y+5,{align:"center"});
-      doc.setFontSize(11);doc.setFont("helvetica","bold");
-      doc.setTextColor(c.v>0?245:80,c.v>0?158:90,c.v>0?11:110);
+      doc.setFontSize(12);doc.setFont("helvetica","bold");
+      doc.setTextColor(c.v>0?200:180,c.v>0?100:185,c.v>0?0:190);
       doc.text(String(c.v),bx+(bw-1)/2,y+11,{align:"center"});
       bx+=bw;
     });
-    y+=20; rule();
+    y+=20;
 
-    // ── Column headers ──
-    doc.setFontSize(8);doc.setFont("helvetica","bold");doc.setTextColor(100,130,160);
-    doc.text(es?"PARTIDO":"MATCH",M,y);
-    doc.text(es?"PRED":"PRED",M+92,y,{align:"center"});
-    doc.text(es?"REAL":"ACTUAL",M+115,y,{align:"center"});
-    doc.text("PTS",M+cW,y,{align:"right"});
-    y+=5; rule();
+    // ── Column header ──
+    doc.setFillColor(240,240,245);doc.rect(M,y-3,cW,6,"F");
+    doc.setFontSize(7.5);doc.setFont("helvetica","bold");doc.setTextColor(100,110,130);
+    doc.text(es?"PARTIDO (PREDICCION | RESULTADO)":"MATCH (PREDICTION | RESULT)",M+1,y);
+    doc.text("PTS",W-M-1,y,{align:"right"});
+    y+=6;
+    doc.setDrawColor(200,205,215);doc.line(M,y,W-M,y);y+=4;
 
-    // ── Group stage by matchday ──
-    GROUPS.forEach(function(g){
-      sectionHeader(es?"GRUPO "+g+" - ":"GROUP "+g+" - "+TBG[g].join(" - "));
-      [0,1,2].forEach(function(md){
+    // ── Group stage ──
+    for(var gi=0;gi<GROUPS.length;gi++){
+      var g=GROUPS[gi];
+      pg();
+      doc.setFillColor(255,248,230);doc.rect(M,y-3,cW,6,"F");
+      doc.setFontSize(8.5);doc.setFont("helvetica","bold");doc.setTextColor(160,80,0);
+      doc.text("Group "+g+"  -  "+TBG[g].join(" - "),M+1,y);
+      y+=7;
+
+      for(var md=0;md<3;md++){
         GMS[g].slice(md*2,md*2+2).forEach(function(m){
-          var pred = preds.groups&&preds.groups[m.id];
-          var res  = results.groups&&results.groups[m.id];
-          var pts  = scoreMatch(pred,res);
-          var pSc  = (pred&&pred.h!==''&&pred.h!==undefined)?pred.h+"-"+pred.a:"?";
-          var rSc  = (res&&res.h!==''&&res.h!==undefined)?res.h+"-"+res.a:"?";
-          var hasRes = rSc!=="?";
-          var r=hasRes?(pts>=6?34:pts>=3?140:pts>0?59:180):80;
-          var gg=hasRes?(pts>=6?197:pts>=3?160:pts>0?130:80):90;
-          var b=hasRes?(pts>=6?94:pts>=3?11:pts>0?46:100):110;
-          row("MD"+(md+1)+" "+m.home+" vs "+m.away,pSc,rSc,hasRes?pts:0,r,gg,b);
+          var pred=preds.groups&&preds.groups[m.id];
+          var res=results.groups&&results.groups[m.id];
+          var pts=scoreMatch(pred,res);
+          var pSc=(pred&&pred.h!==''&&pred.h!==undefined)?pred.h+"-"+pred.a:"?";
+          var rSc=(res&&res.h!==''&&res.h!==undefined)?res.h+"-"+res.a:"?";
+          matchRow(m.home,m.away,pSc,rSc,res&&res.h!==''&&res.h!==undefined?pts:null);
         });
-      });
-    });
-
-    y+=3; rule();
+      }
+      y+=2;
+    }
 
     // ── KO stage ──
-    sectionHeader(es?"FASE ELIMINATORIA":"KNOCKOUT STAGE");
-    y+=2;
+    pg();
+    doc.setFillColor(240,240,245);doc.rect(M,y-3,cW,6,"F");
+    doc.setFontSize(9);doc.setFont("helvetica","bold");doc.setTextColor(60,70,130);
+    doc.text(es?"FASE ELIMINATORIA":"KNOCKOUT STAGE",M+1,y);
+    y+=8;
 
     var koSections=[
-      {label:"Round of 32",   ids:R32_FIXTURES.map(function(f){return f.id;}), pts:sc.r32||1},
-      {label:"Round of 16",   ids:KO_BRACKET.r16.map(function(f){return f.id;}), pts:sc.r16||2},
-      {label:"Quarter-Finals",ids:KO_BRACKET.qf.map(function(f){return f.id;}),  pts:sc.qf||4},
-      {label:"Semi-Finals",   ids:KO_BRACKET.sf.map(function(f){return f.id;}),  pts:sc.sf||6},
-      {label:"Final",         ids:["final"], pts:sc.final||10},
-      {label:"3rd Place",     ids:["s3rd"],  pts:sc.thirdMatch||8}
+      {label:es?"Ronda de 32":"Round of 32",     ids:R32_FIXTURES.map(function(f){return f.id;}), rndKey:"r32"},
+      {label:es?"Ronda de 16":"Round of 16",     ids:KO_BRACKET.r16.map(function(f){return f.id;}), rndKey:"r16"},
+      {label:es?"Cuartos de Final":"Quarter-Finals",ids:KO_BRACKET.qf.map(function(f){return f.id;}), rndKey:"qf"},
+      {label:es?"Semifinales":"Semi-Finals",     ids:KO_BRACKET.sf.map(function(f){return f.id;}), rndKey:"sf"},
+      {label:"Final",                            ids:["final"], rndKey:"final"},
+      {label:es?"3er Lugar":"3rd Place",         ids:["s3rd"],  rndKey:"s3rd"}
     ];
 
     koSections.forEach(function(ks){
-      txt(ks.label,9,true,245,200,80); y+=1;
+      pg();
+      doc.setFillColor(255,248,230);doc.rect(M,y-3,cW,6,"F");
+      doc.setFontSize(8.5);doc.setFont("helvetica","bold");doc.setTextColor(160,80,0);
+      doc.text(ks.label,M+1,y); y+=7;
+
       ks.ids.forEach(function(fid){
         var pred=preds.ko&&preds.ko[fid];
         var res =results.ko&&results.ko[fid];
+        var pts=scoreMatch(pred,res);
         var pSc=(pred&&pred.h!==''&&pred.h!==undefined)?pred.h+"-"+pred.a:"?";
         var rSc=(res&&res.h!==''&&res.h!==undefined)?res.h+"-"+res.a:"?";
-        var matchPts=scoreMatch(pred,res);
-        var hasRes=rSc!=="?";
 
-        // Team names from cascade
-        var home="TBD", away="TBD";
-        var allTeamMaps={
-          r32:C&&(pC.r32||{}),r16:(pC.r16||{}),qf:(pC.qf||{}),sf:(pC.sf||{})
-        };
-        if(rC){
-          if(fid==="final"){ home=rC.finalTeams&&rC.finalTeams[0]||"TBD"; away=rC.finalTeams&&rC.finalTeams[1]||"TBD"; }
-          else if(fid==="s3rd"){ home=rC.thirdTeams&&rC.thirdTeams[0]||"TBD"; away=rC.thirdTeams&&rC.thirdTeams[1]||"TBD"; }
-          else {
-            var f32=R32_FIXTURES.find(function(f){return f.id===fid;});
-            var f16=KO_BRACKET.r16.find(function(f){return f.id===fid;});
-            var fqf=KO_BRACKET.qf.find(function(f){return f.id===fid;});
-            var fsf=KO_BRACKET.sf.find(function(f){return f.id===fid;});
-            var fx=f32||f16||fqf||fsf;
-            if(fx){ home=rC.r32&&rC.r32[fid]&&rC.r32[fid].home||rC.r16&&rC.r16[fid]&&rC.r16[fid].home||rC.qf&&rC.qf[fid]&&rC.qf[fid].home||rC.sf&&rC.sf[fid]&&rC.sf[fid].home||"TBD"; away=rC.r32&&rC.r32[fid]&&rC.r32[fid].away||rC.r16&&rC.r16[fid]&&rC.r16[fid].away||rC.qf&&rC.qf[fid]&&rC.qf[fid].away||rC.sf&&rC.sf[fid]&&rC.sf[fid].away||"TBD"; }
-          }
+        // Get team names — use rC for actual bracket, pC for prediction
+        var home="TBD",away="TBD";
+        if(fid==="final"){ home=rC.finalTeams&&rC.finalTeams[0]||pC.finalTeams&&pC.finalTeams[0]||"TBD"; away=rC.finalTeams&&rC.finalTeams[1]||pC.finalTeams&&pC.finalTeams[1]||"TBD"; }
+        else if(fid==="s3rd"){ home=rC.thirdTeams&&rC.thirdTeams[0]||pC.thirdTeams&&pC.thirdTeams[0]||"TBD"; away=rC.thirdTeams&&rC.thirdTeams[1]||pC.thirdTeams&&pC.thirdTeams[1]||"TBD"; }
+        else {
+          var mr=rC.r32&&rC.r32[fid]||rC.r16&&rC.r16[fid]||rC.qf&&rC.qf[fid]||rC.sf&&rC.sf[fid]
+              ||pC.r32&&pC.r32[fid]||pC.r16&&pC.r16[fid]||pC.qf&&pC.qf[fid]||pC.sf&&pC.sf[fid];
+          if(mr){ home=mr.home||"TBD"; away=mr.away||"TBD"; }
         }
-        var r=hasRes?(matchPts>=6?34:matchPts>=3?140:matchPts>0?59:180):80;
-        var gg=hasRes?(matchPts>=6?197:matchPts>=3?160:matchPts>0?130:80):90;
-        var b2=hasRes?(matchPts>=6?94:matchPts>=3?11:matchPts>0?46:100):110;
-        row(home+" vs "+away,pSc,rSc,hasRes?matchPts:0,r,gg,b2);
+        matchRow(home,away,pSc,rSc,res&&res.h!==''&&res.h!==undefined?pts:null);
       });
       y+=2;
     });
 
-    // Champion & 3rd winner
-    rule();
+    // ── Champion & 3rd ──
+    pg();
+    doc.setFillColor(255,248,230);doc.rect(M,y-3,cW,6,"F");
+    doc.setFontSize(8.5);doc.setFont("helvetica","bold");doc.setTextColor(160,80,0);
+    doc.text(es?"CAMPEON DEL MUNDIAL":"WORLD CUP CHAMPION",M+1,y); y+=7;
     var chHit=pC.champion&&rC.champion&&pC.champion===rC.champion;
-    var twHit=pC.thirdWin&&rC.thirdWin&&pC.thirdWin===rC.thirdWin;
-    txt(es?"CAMPEON DEL MUNDIAL":"WORLD CUP CHAMPION",9,true,245,200,80);
-    row(es?"Prediccion":"Prediction",pC.champion||"?",rC.champion||"?",
-      chHit?sc.champion||0:0, chHit?34:180, chHit?197:80, chHit?94:100);
-    txt(es?"GANADOR 3er LUGAR":"3RD PLACE WINNER",9,true,245,200,80);
-    row(es?"Prediccion":"Prediction",pC.thirdWin||"?",rC.thirdWin||"?",
-      twHit?sc.thirdWin||0:0, twHit?34:180, twHit?197:80, twHit?94:100);
+    doc.setFontSize(8);doc.setFont("helvetica","normal");
+    var fx2=M+1; fx2+=addFlag(pC.champion,fx2,y);
+    doc.setTextColor(30,40,50);doc.text((es?"Prediccion: ":"Prediction: ")+(pC.champion||"?"),fx2,y);
+    fx2=W-M-1; var aFlag2=flagCache[rC.champion];
+    if(aFlag2){try{doc.addImage(aFlag2,"PNG",fx2-FW,y-FH+0.5,FW,FH);fx2-=FW+1.5;}catch(e){}}
+    doc.text((es?"Real: ":"Actual: ")+(rC.champion||"?"),fx2,y,{align:"right"});
+    if(chHit){doc.setTextColor(20,140,60);doc.setFont("helvetica","bold");doc.text("+"+sc.champion,W-M-1,y,{align:"right"});}
+    y+=8;
 
-    // Footer
-    rule();
-    doc.setFontSize(8);doc.setFont("helvetica","bold");doc.setTextColor(245,158,11);
-    doc.text("TOTAL: "+scored.pts+" pts",M,y);
-    doc.setFont("helvetica","italic");doc.setTextColor(60,80,110);
-    doc.text("Quiniela Mundial 2026  -  "+new Date().toLocaleString(),W-M,y,{align:"right"});
+    var twHit=pC.thirdWin&&rC.thirdWin&&pC.thirdWin===rC.thirdWin;
+    doc.setFillColor(255,248,230);doc.rect(M,y-3,cW,6,"F");
+    doc.setFontSize(8.5);doc.setFont("helvetica","bold");doc.setTextColor(160,80,0);
+    doc.text(es?"GANADOR 3er LUGAR":"3RD PLACE WINNER",M+1,y); y+=7;
+    doc.setFontSize(8);doc.setFont("helvetica","normal");
+    var fx3=M+1; fx3+=addFlag(pC.thirdWin,fx3,y);
+    doc.setTextColor(30,40,50);doc.text((es?"Prediccion: ":"Prediction: ")+(pC.thirdWin||"?"),fx3,y);
+    if(twHit){doc.setTextColor(20,140,60);doc.setFont("helvetica","bold");doc.text("+"+sc.thirdWin,W-M-1,y,{align:"right"});}
+    y+=10;
+
+    // ── Total ──
+    doc.setFillColor(245,158,11);doc.rect(M,y-4,cW,10,"F");
+    doc.setFontSize(12);doc.setFont("helvetica","bold");doc.setTextColor(255,255,255);
+    doc.text("TOTAL: "+scored.pts+" pts",M+4,y+2);
+    doc.setFontSize(9);
+    doc.text(es?"Quiniela Mundial 2026":"World Cup 2026 Sweepstake",W-M-4,y+2,{align:"right"});
+
+    // ── Footer ──
+    doc.setFontSize(7.5);doc.setFont("helvetica","italic");doc.setTextColor(170,170,170);
+    doc.text("Generated: "+new Date().toLocaleString()+"  |  julimendeza.github.io/sweeps2026",M,287);
 
     doc.save(participant.name.replace(/\s+/g,"_")+"_WC2026_ScoreReport.pdf");
   } catch(e) {
