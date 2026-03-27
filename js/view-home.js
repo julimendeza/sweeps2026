@@ -32,7 +32,94 @@ function HomeView(p) {
   var msLeft = deadline ? deadline - now : null;
   var daysLeft = msLeft ? Math.ceil(msLeft / (1000*60*60*24)) : null;
 
+  // First-visit tour (2 steps: language button, T&C link)
+  var tourDone = false;
+  try { tourDone = !!localStorage.getItem("wc26_tour_done"); } catch(e){}
+  var tourState = useState(tourDone ? 0 : 1); // 0=hidden, 1=step1(lang), 2=step2(tc)
+  var tourStep = tourState[0], setTourStep = tourState[1];
+
+  function tourNext() {
+    if (tourStep === 1) { setTourStep(2); }
+    else { try{ localStorage.setItem("wc26_tour_done","1"); }catch(e){} setTourStep(0); }
+  }
+  function tourSkip() {
+    try{ localStorage.setItem("wc26_tour_done","1"); }catch(e){}
+    setTourStep(0);
+  }
+
+  var tourSteps = {
+    1: {
+      title: lang==="es" ? "\ud83c\uddea\ud83c\uddf8 Idioma / Language" : "\ud83c\uddea\ud83c\uddf8 Language",
+      body: lang==="es"
+        ? "La app est\u00e1 disponible en Espa\u00f1ol e Ingl\u00e9s. Usa el bot\u00f3n en la esquina superior derecha para cambiar el idioma."
+        : "The app is available in English and Spanish. Use the button in the top-right corner of the nav bar to switch languages.",
+      arrow: "top-right",
+      next: lang==="es" ? "Siguiente \u2192" : "Next \u2192"
+    },
+    2: {
+      title: lang==="es" ? "\ud83d\udccc T\u00e9rminos y Condiciones" : "\ud83d\udccc Terms & Conditions",
+      body: lang==="es"
+        ? "Puedes leer y descargar los T\u00e9rminos y Condiciones en cualquier momento usando el enlace debajo de los botones principales."
+        : "You can read and download the Terms & Conditions at any time using the link below the main buttons.",
+      arrow: "bottom-center",
+      next: lang==="es" ? "\u2713 Entendido" : "\u2713 Got it"
+    }
+  };
+  var currentStep = tourSteps[tourStep];
+
   return html`<div className="fade" style=${{ maxWidth:780, margin:"0 auto", padding:"28px 16px 60px" }}>
+
+    ${tourStep>0&&html`<div>
+      <div onClick=${tourSkip} style=${{
+        position:"fixed",top:0,left:0,right:0,bottom:0,
+        background:"rgba(0,0,0,.55)",zIndex:998,cursor:"pointer"
+      }}></div>
+      <div style=${{
+        position:"fixed",
+        top:"50%",left:"50%",
+        transform:"translate(-50%,-50%)",
+        zIndex:999,
+        background:"#1a2540",
+        border:"2px solid rgba(245,158,11,.5)",
+        borderRadius:18,
+        padding:"24px 28px",
+        maxWidth:340,
+        width:"90vw",
+        boxShadow:"0 20px 60px rgba(0,0,0,.6)"
+      }}>
+        <div style=${{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
+          <div style=${{fontSize:16,fontWeight:700,color:"#fbbf24"}}>${currentStep.title}</div>
+          <div style=${{fontSize:11,color:"rgba(255,255,255,.3)",marginTop:2}}>
+            ${tourStep}/2
+          </div>
+        </div>
+        <p style=${{fontSize:14,color:"rgba(255,255,255,.75)",lineHeight:1.7,marginBottom:20}}>
+          ${currentStep.body}
+        </p>
+        <div style=${{display:"flex",gap:8}}>
+          <button onClick=${tourSkip} style=${{
+            flex:1,padding:"9px",borderRadius:9,border:"1px solid rgba(255,255,255,.15)",
+            background:"transparent",color:"rgba(255,255,255,.4)",
+            cursor:"pointer",fontSize:13,fontFamily:"'DM Sans',sans-serif"
+          }}>${lang==="es"?"Saltar":"Skip"}</button>
+          <button onClick=${tourNext} style=${{
+            flex:2,padding:"9px",borderRadius:9,border:"none",
+            background:"linear-gradient(135deg,#f59e0b,#d97706)",
+            color:"#000",cursor:"pointer",fontSize:13,fontWeight:700,
+            fontFamily:"'DM Sans',sans-serif"
+          }}>${currentStep.next}</button>
+        </div>
+        <div style=${{display:"flex",gap:6,justifyContent:"center",marginTop:14}}>
+          ${[1,2].map(function(i){
+            return html`<div key=${i} style=${{
+              width:i===tourStep?20:6,height:6,borderRadius:99,
+              background:i===tourStep?"#f59e0b":"rgba(255,255,255,.2)",
+              transition:"all .2s"
+            }}></div>`;
+          })}
+        </div>
+      </div>
+    </div>`}
 
     ${isPastDeadline&&html`<div style=${{
       padding:"10px 16px",borderRadius:10,marginBottom:14,
