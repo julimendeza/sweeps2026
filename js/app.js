@@ -6,29 +6,70 @@ function App() {
   var sState     = useState(Object.assign({}, DEF)); var settings = sState[0], setS = sState[1];
   var readyState = useState(false);     var ready = readyState[0], setReady = readyState[1];
   var langState  = useState("es");      var lang  = langState[0],  setLangRaw = langState[1];
+  var dbStatusState = useState("local"); var dbStatus = dbStatusState[0], setDbStatus = dbStatusState[1];
 
   // ── Load persisted data on mount ─────────────────────────────────
   useEffect(function(){
     (async function(){
       try {
+        // Auto-connect Firebase immediately using DEF.firebase (no settings needed)
+        if (DEF.firebase) {
+          db._url = DEF.firebase;
+          setDbStatus("firebase");
+        }
+
+        // Load settings (may override firebase URL if admin changed it)
+        var ss = await db.get("wc26_s");
+        var mergedSettings = Object.assign({}, DEF, ss||{}, {
+          scoring: Object.assign({}, DEF.scoring, (ss&&ss.scoring)||{})
+        });
+        setS(mergedSettings);
+
+        // Apply confirmed playoff team names globally to TBG
+        if (mergedSettings.playoffs) {
+          Object.keys(mergedSettings.playoffs).forEach(function(placeholder) {
+            var p = mergedSettings.playoffs[placeholder];
+            if (p && p.confirmed && p.winner) {
+              GROUPS.forEach(function(g) {
+                TBG[g] = TBG[g].map(function(t) {
+                  return t === placeholder ? p.winner : t;
+                });
+              });
+            }
+          });
+          // Rebuild GMS with updated team names
+          GROUPS.forEach(function(g) {
+            var t = TBG[g], ms = [];
+            var pairs = [{i:0,j:1},{i:2,j:3},{i:0,j:2},{i:1,j:3},{i:0,j:3},{i:1,j:2}];
+            pairs.forEach(function(pr, idx) {
+              ms.push({ id: g+(idx+1), g:g, home:t[pr.i], away:t[pr.j] });
+            });
+            GMS[g] = ms;
+          });
+        }
+
+        // Re-wire Firebase if settings override the default URL
+        if (mergedSettings.firebase && mergedSettings.firebase !== DEF.firebase) {
+          db._url = mergedSettings.firebase;
+        }
+
+        // Now load remaining data (from Firebase or localStorage)
         var loaded = await Promise.all([
           db.get("wc26_p"),
           db.get("wc26_r"),
-          db.get("wc26_s"),
-          db.get("wc26_lang")
+          db.getLang()
         ]);
-        var pp = loaded[0], rr = loaded[1], ss = loaded[2], ll = loaded[3];
+        var pp = loaded[0], rr = loaded[1], ll = loaded[2];
 
-        // Ensure Claude bot entry exists
+        // Always replace Claude bot with latest CLAUDE_ENTRY
         var loadedP = pp || [];
-        var hasBot  = loadedP.find(function(x){ return x.id === "claude_bot"; });
-        var finalP  = hasBot ? loadedP : [CLAUDE_ENTRY].concat(loadedP);
-        if (!hasBot) await db.set("wc26_p", finalP);
+        var otherP  = loadedP.filter(function(x){ return x.id !== "claude_bot"; });
+        var finalP  = [CLAUDE_ENTRY].concat(otherP);
+        await db.set("wc26_p", finalP);
         setP(finalP);
 
         if (rr) setR(Object.assign({}, ER, rr));
-        if (ss) setS(Object.assign({}, DEF, ss, { scoring: Object.assign({}, DEF.scoring, ss.scoring || {}) }));
-        if (ll) setLangRaw(ll.value || "es");
+        if (ll) setLangRaw(ll.value || ll || "es");
       } catch(e) {
         console.error("Init error:", e);
       }
@@ -40,7 +81,20 @@ function App() {
   function sv(key, setter) {
     return async function(data) { setter(data); await db.set(key, data); };
   }
-  async function setLang(l) { setLangRaw(l); await db.set("wc26_lang", l); }
+  async function setLang(l) { setLangRaw(l); await db.setLang(l); }
+
+  // ── Re-wire Firebase when settings change ────────────────────────
+  async function saveSettings(newS) {
+    setS(newS);
+    await db.set("wc26_s", newS);
+    if (newS.firebase) {
+      db._url = newS.firebase;
+      setDbStatus("firebase");
+    } else {
+      db._url = null;
+      setDbStatus("local");
+    }
+  }
 
   // ── Loading screen ────────────────────────────────────────────────
   if (!ready) return html`<div style=${{
@@ -48,7 +102,7 @@ function App() {
     alignItems:"center", justifyContent:"center",
     fontFamily:"'DM Sans',sans-serif", color:"rgba(245,158,11,.4)",
     fontSize:18, letterSpacing:".1em"
-  }}>\u26bd LOADING...</div>`;
+  }}>&#x26BD; LOADING...</div>`;
 
   var lCtx = { lang: lang, t: T[lang], setLang: setLang };
 
@@ -77,8 +131,9 @@ function App() {
         participants=${participants}
         results=${results}
         settings=${settings}
+        dbStatus=${dbStatus}
         saveResults=${sv("wc26_r", setR)}
-        saveSettings=${sv("wc26_s", setS)}
+        saveSettings=${saveSettings}
         saveParticipants=${sv("wc26_p", setP)}/>`}
 
     </div>
