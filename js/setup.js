@@ -112,3 +112,22 @@ var pins = {
     await pins.set(updated);
   }
 };
+
+// ── Playoff team name resolver ───────────────────────────────────────
+// If a team name is a playoff placeholder AND admin has confirmed the winner,
+// returns the real team name. Otherwise returns the placeholder.
+function resolvedTeamName(name, settings) {
+  if (!name || !settings || !settings.playoffs) return name;
+  var p = settings.playoffs[name];
+  if (p && p.confirmed && p.winner) return p.winner;
+  return name;
+}
+
+// Apply playoff resolutions to a TBG-style groups object
+function resolveGroups(tbg, settings) {
+  var out = {};
+  Object.keys(tbg).forEach(function(g) {
+    out[g] = tbg[g].map(function(t) { return resolvedTeamName(t, settings); });
+  });
+  return out;
+}

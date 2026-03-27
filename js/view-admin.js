@@ -28,6 +28,7 @@ function AdminView(p) {
   var tabs = [
     { id:"results",  l:t.results   },
     { id:"parts",    l:t.partTab   },
+    { id:"playoffs", l:"\ud83c\udfc6 Playoffs" },
     { id:"stats",    l:"\ud83d\udcca Stats"    },
     { id:"picks",    l:"\ud83c\udfaf Picks"    },
     { id:"email",    l:t.emailTab  },
@@ -60,6 +61,7 @@ function AdminView(p) {
 
     ${tab==="results"  && html`<${AdminResults}  results=${p.results}       saveResults=${p.saveResults}/>`}
     ${tab==="parts"    && html`<${AdminParts}    participants=${p.participants} results=${p.results} settings=${p.settings} saveParticipants=${p.saveParticipants}/>`}
+    ${tab==="playoffs" && html`<${AdminPlayoffs} settings=${p.settings} saveSettings=${p.saveSettings}/>`}
     ${tab==="stats"    && html`<${AdminStats}    participants=${p.participants} results=${p.results} settings=${p.settings}/>`}
     ${tab==="picks"    && html`<${AdminPicks}    participants=${p.participants} results=${p.results}/>`}
     ${tab==="email"    && html`<${AdminEmail}    participants=${p.participants} results=${p.results} settings=${p.settings} saveSettings=${p.saveSettings}/>`}
@@ -414,6 +416,138 @@ function AdminEmail(p) {
       </${Btn}>
     </div>
     ${status && html`<p style=${{ marginTop:12, fontSize:13, color:"rgba(255,255,255,.75)" }}>${status}</p>`}
+  </div>`;
+}
+
+// - Admin Playoffs tab — confirm playoff winners -
+function AdminPlayoffs(p) {
+  var lctx=useLang(); var lang=lctx.lang; var es=lang==="es";
+  var msgState=useState(""); var msg=msgState[0], setMsg=msgState[1];
+
+  // Local copy of playoffs from settings
+  var playoffs = Object.assign({}, DEF.playoffs, p.settings.playoffs||{});
+
+  // Group mapping for context
+  var groupMap = {
+    "Playoff A":"B","Playoff B":"F","Playoff C":"D",
+    "Playoff D":"A","Playoff 1":"K","Playoff 2":"I"
+  };
+
+  async function confirm(key, winner) {
+    var updated = Object.assign({}, playoffs);
+    updated[key] = Object.assign({}, updated[key], { winner:winner, confirmed:true });
+    var newSettings = Object.assign({}, p.settings, { playoffs: updated });
+    await p.saveSettings(newSettings);
+    setMsg("\u2705 " + key + " \u2192 " + winner);
+    setTimeout(function(){ setMsg(""); }, 3000);
+  }
+
+  async function unconfirm(key) {
+    var updated = Object.assign({}, playoffs);
+    updated[key] = Object.assign({}, updated[key], { winner:"", confirmed:false });
+    var newSettings = Object.assign({}, p.settings, { playoffs: updated });
+    await p.saveSettings(newSettings);
+  }
+
+  async function updateFinalists(key, field, value) {
+    var updated = Object.assign({}, playoffs);
+    updated[key] = Object.assign({}, updated[key]);
+    updated[key][field] = value;
+    var newSettings = Object.assign({}, p.settings, { playoffs: updated });
+    await p.saveSettings(newSettings);
+  }
+
+  var confirmedCount = Object.values(playoffs).filter(function(v){ return v.confirmed; }).length;
+  var total = Object.keys(playoffs).length;
+
+  return html`<div style=${{maxWidth:560}}>
+
+    <div style=${{marginBottom:18}}>
+      <div style=${{fontWeight:700,fontSize:15,marginBottom:4}}>
+        ${es?"Confirmaci\u00f3n de Equipos Playoff":"Playoff Team Confirmation"}
+      </div>
+      <div style=${{fontSize:13,color:"rgba(255,255,255,.45)",lineHeight:1.7,marginBottom:10}}>
+        ${es
+          ? "Los finalistas ya est\u00e1n pre-cargados. Despu\u00e9s de las finales del 31 de marzo, selecciona el ganador de cada partido para reemplazar el marcador de posici\u00f3n en toda la app."
+          : "Finalists are pre-loaded from March 26 results. After the March 31 finals, select the winner of each match to replace the placeholder across the whole app."}
+      </div>
+      <div style=${{display:"flex",alignItems:"center",gap:8}}>
+        <div style=${{height:6,flex:1,borderRadius:99,background:"rgba(255,255,255,.08)"}}>
+          <div style=${{height:6,borderRadius:99,background:"linear-gradient(90deg,#f59e0b,#4ade80)",
+            width:(confirmedCount/total*100)+"%",transition:"width .3s"}}></div>
+        </div>
+        <span style=${{fontSize:12,color:"rgba(255,255,255,.4)"}}>${confirmedCount}/${total} ${es?"confirmados":"confirmed"}</span>
+      </div>
+    </div>
+
+    <div style=${{display:"flex",flexDirection:"column",gap:10}}>
+      ${Object.entries(playoffs).map(function(entry){
+        var key=entry[0], val=entry[1];
+        var grp=groupMap[key];
+        var confirmed=val.confirmed&&val.winner;
+
+        return html`<div key=${key} style=${{
+          borderRadius:14,padding:"14px 16px",
+          background:confirmed?"rgba(74,222,128,.06)":"rgba(255,255,255,.04)",
+          border:"1.5px solid "+(confirmed?"rgba(74,222,128,.25)":"rgba(255,255,255,.09)")
+        }}>
+          <div style=${{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+            <div>
+              <span style=${{fontWeight:700,fontSize:14,color:confirmed?"#4ade80":"#fbbf24"}}>${key}</span>
+              <span style=${{fontSize:11,color:"rgba(255,255,255,.3)",marginLeft:8}}>
+                ${es?"Grupo":"Group"} ${grp}
+              </span>
+            </div>
+            ${confirmed&&html`<div style=${{display:"flex",alignItems:"center",gap:6,fontSize:11}}>
+              <span style=${{color:"#4ade80"}}>\u2713 ${val.winner}</span>
+              <button onClick=${function(){ unconfirm(key); }} style=${{
+                background:"none",border:"none",color:"rgba(255,255,255,.3)",
+                cursor:"pointer",fontSize:11,fontFamily:"'DM Sans',sans-serif",padding:"2px 6px",
+                borderRadius:5,border:"1px solid rgba(255,255,255,.1)"
+              }}>${es?"Cambiar":"Change"}</button>
+            </div>`}
+          </div>
+
+          ${!confirmed&&html`<div>
+            <div style=${{fontSize:11,color:"rgba(255,255,255,.35)",marginBottom:8}}>
+              ${es?"Final del 31 de marzo — \u00bfQui\u00e9n gan\u00f3?":"March 31 final — Who won?"}
+            </div>
+            <div style=${{display:"flex",gap:6,flexWrap:"wrap",marginBottom:8}}>
+              <input type="text" value=${val.teamA||""}
+                onInput=${function(e){ updateFinalists(key,"teamA",e.target.value); }}
+                style=${{flex:1,minWidth:100,padding:"8px 12px",fontSize:13,fontWeight:600}}
+                placeholder="Team A"/>
+              <span style=${{color:"rgba(255,255,255,.3)",alignSelf:"center",fontSize:13}}>vs</span>
+              <input type="text" value=${val.teamB||""}
+                onInput=${function(e){ updateFinalists(key,"teamB",e.target.value); }}
+                style=${{flex:1,minWidth:100,padding:"8px 12px",fontSize:13,fontWeight:600}}
+                placeholder="Team B"/>
+            </div>
+            <div style=${{display:"flex",gap:8}}>
+              ${[val.teamA,val.teamB].filter(Boolean).map(function(team){
+                return html`<button key=${team} onClick=${function(){ confirm(key,team); }} style=${{
+                  flex:1,padding:"9px 12px",borderRadius:10,cursor:"pointer",
+                  border:"2px solid rgba(245,158,11,.4)",
+                  background:"rgba(245,158,11,.1)",
+                  color:"#fbbf24",fontWeight:700,fontSize:13,
+                  fontFamily:"'DM Sans',sans-serif",transition:"all .15s"
+                }}>\ud83c\udfc6 ${team}</button>`;
+              })}
+            </div>
+          </div>`}
+        </div>`;
+      })}
+    </div>
+
+    ${msg&&html`<div style=${{marginTop:14,padding:"10px 14px",borderRadius:10,
+      background:"rgba(74,222,128,.1)",border:"1px solid rgba(74,222,128,.3)",
+      fontSize:13,color:"#4ade80"}}>${msg}</div>`}
+
+    ${confirmedCount===total&&html`<div style=${{marginTop:16,padding:"14px",borderRadius:12,
+      background:"rgba(74,222,128,.08)",border:"1px solid rgba(74,222,128,.25)",
+      fontSize:13,color:"#4ade80",textAlign:"center",lineHeight:1.7}}>
+      \u2705 ${es?"Todos los equipos confirmados. Los nombres se han actualizado en toda la app y todos los participantes pueden actualizar sus predicciones.":"All teams confirmed. Names are now live across the whole app — remind participants to update their predictions!"}
+    </div>`}
   </div>`;
 }
 

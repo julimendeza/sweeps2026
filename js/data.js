@@ -142,6 +142,16 @@ var DEF = {
   deadline:   "2026-06-10T23:59",
   tcUrl:      "",
   access:     "off",   // "off" | "simple" | "robust"
+  // Playoff confirmations — set by admin after finals (March 31)
+  // Each entry: { teamA, teamB, confirmed, winner }
+  playoffs: {
+    "Playoff A": { teamA:"Bosnia & Herz.", teamB:"Italy",    confirmed:false, winner:"" },
+    "Playoff B": { teamA:"Sweden",         teamB:"Poland",   confirmed:false, winner:"" },
+    "Playoff C": { teamA:"Kosovo",         teamB:"Turkey",   confirmed:false, winner:"" },
+    "Playoff D": { teamA:"Denmark",        teamB:"Czechia",  confirmed:false, winner:"" },
+    "Playoff 1": { teamA:"Jamaica",        teamB:"DR Congo", confirmed:false, winner:"" },
+    "Playoff 2": { teamA:"Bolivia",        teamB:"Iraq",     confirmed:false, winner:"" }
+  },
   scoring: {
     groupResult: 3,
     groupGoalA:  1,

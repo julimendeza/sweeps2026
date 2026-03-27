@@ -25,6 +25,29 @@ function App() {
         });
         setS(mergedSettings);
 
+        // Apply confirmed playoff team names globally to TBG
+        if (mergedSettings.playoffs) {
+          Object.keys(mergedSettings.playoffs).forEach(function(placeholder) {
+            var p = mergedSettings.playoffs[placeholder];
+            if (p && p.confirmed && p.winner) {
+              GROUPS.forEach(function(g) {
+                TBG[g] = TBG[g].map(function(t) {
+                  return t === placeholder ? p.winner : t;
+                });
+              });
+            }
+          });
+          // Rebuild GMS with updated team names
+          GROUPS.forEach(function(g) {
+            var t = TBG[g], ms = [];
+            var pairs = [{i:0,j:1},{i:2,j:3},{i:0,j:2},{i:1,j:3},{i:0,j:3},{i:1,j:2}];
+            pairs.forEach(function(pr, idx) {
+              ms.push({ id: g+(idx+1), g:g, home:t[pr.i], away:t[pr.j] });
+            });
+            GMS[g] = ms;
+          });
+        }
+
         // Re-wire Firebase if settings override the default URL
         if (mergedSettings.firebase && mergedSettings.firebase !== DEF.firebase) {
           db._url = mergedSettings.firebase;
