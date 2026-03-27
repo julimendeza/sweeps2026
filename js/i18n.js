@@ -106,7 +106,7 @@ var T = {
   },
 
   es: {
-    title:      "QUINIELA MUNDIAL 2026",
+    title:      "POLLA MUNDIAL 2026",
     sub:        "Southamerican Football Friends Sweepstake \u00b7 USA \u00b7 Canad\u00e1 \u00b7 M\u00e9xico \u00b7 11 Jun \u2013 19 Jul 2026",
     predict:    "Predecir",
     table:      "\ud83c\udfc5 Tabla",
@@ -205,37 +205,8 @@ var T = {
     tiebreak:   "Desempate: 1. Campe\u00f3n \u00b7 2. Subcampe\u00f3n \u00b7 3. 3er lugar \u00b7 4. Pts Final+3ro \u00b7 5. Pts SF \u00b7 6. Sorteo",
     adminFee:   "Admin 10%",
     downloadPDF:"Descargar mis predicciones (PDF)",
-    pdfTitle:   "Quiniela Mundial 2026 \u2014 Predicciones",
+    pdfTitle:   "Polla Mundial 2026 \u2014 Predicciones",
     adminNotifSent: "Admin notificado \u2713",
     adminNotifFail: "Email admin fall\u00f3 (revisa la configuraci\u00f3n)"
   }
 };
-
-// ── Team name display translations ───────────────────────────────────
-// Internal keys always stay in English. This map is display-only.
-var TEAM_ES = {
-  "Spain":"España","France":"Francia","Brazil":"Brasil",
-  "Argentina":"Argentina","Germany":"Alemania","England":"Inglaterra",
-  "Portugal":"Portugal","Netherlands":"Países Bajos","Morocco":"Marruecos",
-  "Colombia":"Colombia","USA":"EE.UU.","Japan":"Japón",
-  "South Korea":"Corea del Sur","Norway":"Noruega","Uruguay":"Uruguay",
-  "Senegal":"Senegal","Mexico":"México","Belgium":"Bélgica",
-  "Ecuador":"Ecuador","Croatia":"Croacia","Switzerland":"Suiza",
-  "Australia":"Australia","Ivory Coast":"Costa de Marfil","Tunisia":"Túnez",
-  "Austria":"Austria","Algeria":"Argelia","Uzbekistan":"Uzbekistán",
-  "Jordan":"Jordania","Ghana":"Ghana","Scotland":"Escocia",
-  "Canada":"Canadá","Qatar":"Catar","South Africa":"Sudáfrica",
-  "Haiti":"Haití","Paraguay":"Paraguay","New Zealand":"Nueva Zelanda",
-  "Cape Verde":"Cabo Verde","Saudi Arabia":"Arabia Saudita",
-  "Iran":"Irán","Egypt":"Egipto","Panama":"Panamá",
-  "Curaçao":"Curazao","New Zealand":"Nueva Zelanda",
-  "Playoff A":"Playoff A","Playoff B":"Playoff B",
-  "Playoff C":"Playoff C","Playoff D":"Playoff D",
-  "Playoff 1":"Playoff 1","Playoff 2":"Playoff 2"
-};
-
-// Returns display name for a team in current language
-function teamName(team, lang) {
-  if (lang === 'es' && TEAM_ES[team]) return TEAM_ES[team];
-  return team;
-}
