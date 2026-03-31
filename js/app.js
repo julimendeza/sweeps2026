@@ -10,8 +10,10 @@ function App() {
 
   // ── Load persisted data on mount ─────────────────────────────────
   useEffect(function(){
-    // Safety net: if init hangs, force ready after 12s
-    var safetyTimer = setTimeout(function(){ setReady(true); }, 12000);
+    var done = false;
+    function finish() { if (!done) { done = true; setReady(true); } }
+    // Safety net: always show app after 10s even if Firebase hangs
+    var safetyTimer = setTimeout(finish, 10000);
     (async function(){
       try {
         // Auto-connect Firebase immediately using DEF.firebase (no settings needed)
@@ -75,7 +77,7 @@ function App() {
       } catch(e) {
         console.error("Init error:", e);
       }
-      setReady(true);
+      finish();
       clearTimeout(safetyTimer);
     })();
   }, []);

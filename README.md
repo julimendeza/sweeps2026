@@ -1,4 +1,4 @@
-# ⚽ Prode Mundial 2026
+# ⚽ Quiniela Mundial 2026
 
 A full-featured FIFA World Cup 2026 sweepstake web app for a group of friends. Built with vanilla React (no build step), hosted on GitHub Pages, with Firebase Realtime Database as the backend.
 
