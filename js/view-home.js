@@ -78,7 +78,7 @@ function HomeView(p) {
 
         ${popup==="scoring"&&html`<div>
           <h3 className="bb" style=${{fontSize:22,color:"#fbbf24",marginBottom:16}}>
-            "\ud83d\udcca " + t.scoringTitle
+            ${"\ud83d\udcca " + t.scoringTitle}
           </h3>
           <div style=${{marginBottom:14,textAlign:"left"}}>
             <div style=${{fontSize:11,fontWeight:700,color:"rgba(255,255,255,.4)",marginBottom:8,textTransform:"uppercase",letterSpacing:".06em"}}>${t.perMatch}</div>
@@ -103,7 +103,7 @@ function HomeView(p) {
 
         ${popup==="prizes"&&html`<div>
           <h3 className="bb" style=${{fontSize:22,color:"#fbbf24",marginBottom:16}}>
-            "\ud83c\udfc6 " + t.prizesTitle
+            ${"\ud83c\udfc6 " + t.prizesTitle}
           </h3>
           <div style=${{display:"flex",flexDirection:"column",gap:8,marginBottom:16}}>
             ${[{pct:50,l:"\ud83e\udd47 1\u00ba lugar"},{pct:25,l:"\ud83e\udd48 2\u00ba lugar"},{pct:15,l:"\ud83e\udd49 3\u00ba lugar"}].map(function(pi){
@@ -132,7 +132,7 @@ function HomeView(p) {
           background:"linear-gradient(135deg,#fbbf24,#f59e0b)",
           color:"#000",fontWeight:700,fontSize:14,fontFamily:"'DM Sans',sans-serif",
           boxShadow:"0 4px 14px rgba(245,158,11,.39)"
-        }}>t.close</button>
+        }}>${t.close}</button>
       </div>
     </div>`}
 
