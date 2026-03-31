@@ -226,7 +226,7 @@ var T = {
     prizesInfo:  "Pago de Premios",
     prizesInfoBody: "Los premios ser\u00e1n pagados v\u00eda transferencia bancaria directa a las cuentas de los ganadores dentro de los 7 d\u00edas posteriores a la final del torneo.",
     scoringTitle: "Sistema de Puntaje",
-    participantPicks: "Predicciones de los Participantes",
+    participantPicks: "Predicciones Equipo Campeon de los Participantes",
     downloadPDF:"Descargar mis predicciones (PDF)",
     pdfTitle:   "La Tribuna 2026 \u2014 Predicciones",
     playoffsTab: "Playoffs",
