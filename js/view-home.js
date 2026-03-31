@@ -32,10 +32,10 @@ function HomeView(p) {
   var msLeft = deadline ? deadline - now : null;
   var daysLeft = msLeft ? Math.ceil(msLeft / (1000*60*60*24)) : null;
 
-  // First-visit tour (2 steps: language button, T&C link)
+  // First-visit tour
   var tourDone = false;
   try { tourDone = !!localStorage.getItem("wc26_tour_done"); } catch(e){}
-  var tourState = useState(tourDone ? 0 : 1); // 0=hidden, 1=step1(lang), 2=step2(tc)
+  var tourState = useState(tourDone ? 0 : 1);
   var tourStep = tourState[0], setTourStep = tourState[1];
 
   function tourNext() {
@@ -52,49 +52,42 @@ function HomeView(p) {
       title: lang==="es" ? "\ud83c\uddea\ud83c\uddf8 Idioma / Language" : "\ud83c\uddea\ud83c\uddf8 Language",
       body: lang==="es"
         ? "La app est\u00e1 disponible en Espa\u00f1ol e Ingl\u00e9s. Usa el bot\u00f3n en la esquina superior derecha para cambiar el idioma."
-        : "The app is available in English and Spanish. Use the button in the top-right corner of the nav bar to switch languages.",
-      arrow: "top-right",
+        : "The app is available in English and Spanish. Use the button in the top-right corner to switch languages.",
       next: lang==="es" ? "Siguiente \u2192" : "Next \u2192"
     },
     2: {
       title: lang==="es" ? "\ud83d\udccc Reglas del Juego" : "\ud83d\udccc Game Rules",
       body: lang==="es"
-        ? "Puedes ver y descargar las Reglas del Juego en cualquier momento usando el enlace debajo de los botones principales."
-        : "You can view and download the Game Rules at any time using the link below the main buttons.",
-      arrow: "bottom-center",
+        ? "Puedes ver y descargar las Reglas del Juego usando el enlace debajo de los botones principales."
+        : "You can view and download the Game Rules using the link below the main buttons.",
       next: lang==="es" ? "\u2713 Entendido" : "\u2713 Got it"
     }
   };
-  var currentStep = tourSteps[tourStep];
-
-  // Popup state: null | "scoring" | "prizes"
-  var popupState = useState(null); var popup = popupState[0], setPopup = popupState[1];
+  var currentStep = tourSteps[tourStep] || tourSteps[1];
 
   return html`<div className="fade" style=${{ maxWidth:780, margin:"0 auto", padding:"28px 16px 60px" }}>
 
-    ${(tourStep>0||popup)&&html`<div onClick=${function(){ tourSkip(); setPopup(null); }} style=${{
-      position:"fixed",top:0,left:0,right:0,bottom:0,
-      background:"rgba(0,0,0,.65)",zIndex:998,cursor:"pointer"
-    }}></div>`}
-
-    ${tourStep>0&&html`<div style=${{
-        position:"fixed",
-        top:"50%",left:"50%",
+    ${tourStep>0&&html`<div>
+      <div onClick=${tourSkip} style=${{
+        position:"fixed",top:0,left:0,right:0,bottom:0,
+        background:"rgba(0,0,0,.55)",zIndex:998,cursor:"pointer"
+      }}></div>
+      <div style=${{
+        position:"fixed",top:"50%",left:"50%",
         transform:"translate(-50%,-50%)",
-        zIndex:999,
-        background:"#1a2540",
+        zIndex:999,background:"#1a2540",
         border:"2px solid rgba(245,158,11,.5)",
-        borderRadius:18,
-        padding:"24px 28px",
-        maxWidth:340,
-        width:"90vw",
+        borderRadius:18,padding:"24px 28px",
+        maxWidth:340,width:"90vw",
         boxShadow:"0 20px 60px rgba(0,0,0,.6)"
       }}>
         <div style=${{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
           <div style=${{fontSize:16,fontWeight:700,color:"#fbbf24"}}>${currentStep.title}</div>
           <div style=${{fontSize:11,color:"rgba(255,255,255,.3)",marginTop:2}}>${tourStep}/2</div>
         </div>
-        <p style=${{fontSize:14,color:"rgba(255,255,255,.75)",lineHeight:1.7,marginBottom:20}}>${currentStep.body}</p>
+        <p style=${{fontSize:14,color:"rgba(255,255,255,.75)",lineHeight:1.7,marginBottom:20}}>
+          ${currentStep.body}
+        </p>
         <div style=${{display:"flex",gap:8}}>
           <button onClick=${tourSkip} style=${{
             flex:1,padding:"9px",borderRadius:9,border:"1px solid rgba(255,255,255,.15)",
@@ -117,76 +110,7 @@ function HomeView(p) {
             }}></div>`;
           })}
         </div>
-      </div>`}
-
-    ${popup&&html`<div onClick=${function(e){e.stopPropagation();}} style=${{
-        position:"fixed",top:"50%",left:"50%",
-        transform:"translate(-50%,-50%)",
-        zIndex:999,background:"#1a2540",
-        border:"2px solid rgba(245,158,11,.4)",
-        borderRadius:18,padding:"26px 28px",
-        maxWidth:400,width:"92vw",
-        boxShadow:"0 20px 60px rgba(0,0,0,.7)",
-        maxHeight:"80vh",overflowY:"auto"
-      }}>
-      <div style=${{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-        <div style=${{fontSize:16,fontWeight:700,color:"#fbbf24"}}>
-          ${popup==="scoring"?(lang==="es"?"\ud83d\udcca Sistema de Puntaje":"\ud83d\udcca Scoring System"):""}
-          ${popup==="prizes"?(lang==="es"?"\ud83d\udcb8 Pago de Premios":"\ud83d\udcb8 Prize Payment"):""}
-        </div>
-        <button onClick=${function(){setPopup(null);}} style=${{
-          background:"none",border:"none",color:"rgba(255,255,255,.5)",
-          fontSize:22,cursor:"pointer",lineHeight:1,padding:"0 4px"
-        }}>\u00d7</button>
       </div>
-
-      ${popup==="scoring"&&html`<div>
-        <div style=${{marginBottom:14}}>
-          <div style=${{fontSize:11,fontWeight:700,color:"rgba(255,255,255,.4)",marginBottom:8,textTransform:"uppercase",letterSpacing:".06em"}}>${t.perMatch}</div>
-          ${[[t.result,"3pts","#4ade80"],[t.goalsA,"1pt","#60a5fa"],[t.goalsB,"1pt","#60a5fa"],[t.gdiff,"2pts","#fbbf24"]].map(function(si){
-            return html`<div key=${si[0]} style=${{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 10px",borderRadius:8,marginBottom:4,background:"rgba(255,255,255,.04)"}}>
-              <span style=${{fontSize:13,color:"rgba(255,255,255,.7)"}}>${si[0]}</span>
-              <span style=${{fontWeight:800,color:si[2],fontSize:14}}>${si[1]}</span>
-            </div>`;
-          })}
-        </div>
-        <div>
-          <div style=${{fontSize:11,fontWeight:700,color:"rgba(255,255,255,.4)",marginBottom:8,textTransform:"uppercase",letterSpacing:".06em"}}>${t.perTeam}</div>
-          ${[[t.r32,"1pt","#a78bfa"],[t.r16,"2pts","#a78bfa"],[t.qf,"4pts","#f472b6"],[t.sf,"6pts","#f472b6"],[t.final,"10pts","#fbbf24"],[t.thirdMatch,"8pts","#fb923c"],[t.thirdWin,"15pts","#fb923c"],[t.champion,"20pts","#fbbf24"]].map(function(ki){
-            return html`<div key=${ki[0]} style=${{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 10px",borderRadius:8,marginBottom:4,background:"rgba(255,255,255,.04)"}}>
-              <span style=${{fontSize:13,color:"rgba(255,255,255,.7)"}}>${ki[0]}</span>
-              <span style=${{fontWeight:800,color:ki[2],fontSize:14}}>${ki[1]}</span>
-            </div>`;
-          })}
-        </div>
-        <p style=${{fontSize:11,color:"rgba(255,255,255,.3)",marginTop:12,lineHeight:1.6}}>${t.tiebreak}</p>
-      </div>`}
-
-      ${popup==="prizes"&&html`<div>
-        <div style=${{display:"flex",flexDirection:"column",gap:10,marginBottom:18}}>
-          ${[{pct:50,l:"\ud83e\udd47 1\u00ba lugar"},{pct:25,l:"\ud83e\udd48 2\u00ba lugar"},{pct:15,l:"\ud83e\udd49 3\u00ba lugar"}].map(function(pi){
-            return html`<div key=${pi.l} style=${{display:"flex",alignItems:"center",justifyContent:"space-between",
-              padding:"12px 16px",borderRadius:12,background:"rgba(245,158,11,.08)",border:"1px solid rgba(245,158,11,.2)"}}>
-              <span style=${{fontSize:14,fontWeight:600}}>${pi.l}</span>
-              <div style=${{textAlign:"right"}}>
-                <div style=${{fontSize:18,fontWeight:800,color:"#fbbf24"}}>${settings.currency} ${Math.floor(total*pi.pct/100)}</div>
-                <div style=${{fontSize:11,color:"rgba(255,255,255,.35)"}}>${pi.pct}% ${lang==="es"?"del pozo":"of pool"}</div>
-              </div>
-            </div>`;
-          })}
-        </div>
-        <div style=${{padding:"14px 16px",borderRadius:12,background:"rgba(59,130,246,.08)",border:"1px solid rgba(59,130,246,.2)",marginBottom:12}}>
-          <div style=${{fontSize:12,fontWeight:700,color:"#93c5fd",marginBottom:6}}>\ud83c\udfe6 ${lang==="es"?"M\u00e9todo de pago":"Payment method"}</div>
-          <p style=${{fontSize:13,color:"rgba(255,255,255,.7)",lineHeight:1.7,margin:0}}>
-            ${lang==="es"
-              ? "Los premios se pagar\u00e1n mediante transferencia bancaria directa a las cuentas de los ganadores dentro de los 7 d\u00edas posteriores a la final del torneo."
-              : "Prizes will be paid via direct bank transfer to the winners' accounts within 7 days of the tournament final."}
-          </p>
-        </div>
-        <p style=${{fontSize:11,color:"rgba(255,255,255,.25)",textAlign:"center",margin:0}}>
-          ${t.adminFee}: ${settings.currency} ${Math.floor(total*.1)} \u00b7 ${human.length}\u00d7${settings.currency}${settings.entryFee}
-        </p>
-      </div>`}
     </div>`}
 
     ${isPastDeadline&&html`<div style=${{
@@ -219,27 +143,17 @@ function HomeView(p) {
         <${Btn} v="secondary" onClick=${function(){ setView("bracket"); }} sx=${{ padding:"12px 20px", fontSize:15 }}>\ud83c\udfc6 ${t.bracket}</${Btn}>
         <${Btn} v="secondary" onClick=${function(){ setView("leaderboard"); }} sx=${{ padding:"12px 20px", fontSize:15 }}>${t.table}</${Btn}>
       </div>
-      <div style=${{ marginTop:12, display:"flex", gap:14, justifyContent:"center", flexWrap:"wrap" }}>
+      <div style=${{ marginTop:12 }}>
         <button onClick=${function(){ generateTCPDF(settings, lang); }} style=${{
           background:"none",border:"none",color:"rgba(255,255,255,.35)",
           fontSize:12,cursor:"pointer",textDecoration:"underline",
           fontFamily:"'DM Sans',sans-serif"
-        }}>\ud83d\udccc ${t.tcLink}</button>
-        <button onClick=${function(){ setPopup("scoring"); }} style=${{
-          background:"none",border:"none",color:"rgba(255,255,255,.35)",
-          fontSize:12,cursor:"pointer",textDecoration:"underline",
-          fontFamily:"'DM Sans',sans-serif"
-        }}>\ud83d\udcca ${lang==="es"?"Puntaje":"Scoring"}</button>
-        <button onClick=${function(){ setPopup("prizes"); }} style=${{
-          background:"none",border:"none",color:"rgba(255,255,255,.35)",
-          fontSize:12,cursor:"pointer",textDecoration:"underline",
-          fontFamily:"'DM Sans',sans-serif"
-        }}>\ud83d\udcb8 ${lang==="es"?"Premios":"Prizes"}</button>
+        }}>\ud83d\udccc ${lang==="es"?"Reglas del Juego (PDF)":"Game Rules (PDF)"}</button>
       </div>
     </div>
 
 
-    <div style=${{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:10, marginBottom:18, className:"grid-3" }}>
+    <div style=${{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:10, marginBottom:18 }}>
       ${[
         { e:"\ud83d\udc65", v:human.length,              l:t.participants },
         { e:"\ud83d\udcb0", v:settings.currency+" "+total, l:t.inPlay       },
@@ -254,22 +168,50 @@ function HomeView(p) {
     </div>
 
 
-    ${total > 0 && html`<${Card} sx=${{ marginBottom:18, cursor:"pointer" }} onClick=${function(){setPopup("prizes");}}>
-      <div style=${{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-        <div className="bb" style=${{ fontSize:17, color:"rgba(255,255,255,.6)" }}>${t.prizes}</div>
-        <span style=${{fontSize:12,color:"rgba(245,158,11,.6)",fontWeight:600}}>${lang==="es"?"Ver detalles":"See details"} \u2192</span>
-      </div>
-      <div style=${{ display:"flex", gap:8 }}>
-        ${[{pct:50,l:"\ud83e\udd47"},{pct:25,l:"\ud83e\udd48"},{pct:15,l:"\ud83e\udd49"}].map(function(pi){
-          return html`<div key=${pi.l} style=${{ flex:1, textAlign:"center", background:"rgba(245,158,11,.07)",
-            borderRadius:12, padding:"10px 6px", border:"1px solid rgba(245,158,11,.14)" }}>
-            <div style=${{ fontSize:18, marginBottom:2 }}>${pi.l}</div>
-            <div className="bb" style=${{ fontSize:18, color:"#f59e0b" }}>${settings.currency} ${Math.floor(total*pi.pct/100)}</div>
-            <div style=${{ fontSize:10, color:"rgba(255,255,255,.28)" }}>${pi.pct}%</div>
+    ${total > 0 && html`<${Card} sx=${{ marginBottom:18 }}>
+      <div className="bb" style=${{ fontSize:17, marginBottom:14, color:"rgba(255,255,255,.6)" }}>${t.prizes}</div>
+      <div style=${{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(90px,1fr))", gap:8 }}>
+        ${[{pct:50,l:"\ud83e\udd47 1\u00ba"},{pct:25,l:"\ud83e\udd48 2\u00ba"},{pct:15,l:"\ud83e\udd49 3\u00ba"}].map(function(pi){
+          return html`<div key=${pi.l} style=${{ textAlign:"center", background:"rgba(245,158,11,.07)",
+            borderRadius:12, padding:"12px 6px", border:"1px solid rgba(245,158,11,.14)" }}>
+            <div style=${{ fontSize:11, color:"rgba(255,255,255,.42)", marginBottom:3 }}>${pi.l}</div>
+            <div className="bb" style=${{ fontSize:20, color:"#f59e0b" }}>${settings.currency} ${Math.floor(total*pi.pct/100)}</div>
+            <div style=${{ fontSize:11, color:"rgba(255,255,255,.28)" }}>(${pi.pct}%)</div>
           </div>`;
         })}
       </div>
+      <p style=${{ textAlign:"center", marginTop:10, fontSize:11, color:"rgba(255,255,255,.22)" }}>
+        ${t.adminFee}: ${settings.currency} ${Math.floor(total*.1)} \u00b7 ${human.length}\u00d7${settings.currency}${settings.entryFee}
+      </p>
+      <p style=${{textAlign:"center",marginTop:6,fontSize:11,color:"rgba(255,255,255,.3)",lineHeight:1.6}}>
+        \ud83c\udfe6 ${lang==="es"?"Los premios se pagan por transferencia bancaria directa.":"Prizes paid via direct bank transfer."}
+      </p>
     </${Card}>`}
+
+
+    <${Card} sx=${{ marginBottom:18, padding:"14px 18px" }}>
+      <div className="bb" style=${{ fontSize:15, marginBottom:10, color:"rgba(255,255,255,.5)" }}>${t.scoring}</div>
+      <div style=${{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+        <div>
+          <div style=${{ fontSize:11, fontWeight:700, color:"rgba(255,255,255,.35)", marginBottom:6 }}>${t.perMatch}</div>
+          ${[[t.result,"3pts"],[t.goalsA,"1pt"],[t.goalsB,"1pt"],[t.gdiff,"2pts"]].map(function(si){
+            return html`<div key=${si[0]} style=${{ display:"flex", justifyContent:"space-between", fontSize:12, marginBottom:2 }}>
+              <span style=${{ color:"rgba(255,255,255,.5)" }}>${si[0]}</span>
+              <span style=${{ fontWeight:700, color:"#f59e0b" }}>${si[1]}</span>
+            </div>`;
+          })}
+        </div>
+        <div>
+          <div style=${{ fontSize:11, fontWeight:700, color:"rgba(255,255,255,.35)", marginBottom:6 }}>${t.perTeam}</div>
+          ${[[t.r32,"1pt"],[t.r16,"2pts"],[t.qf,"4pts"],[t.sf,"6pts"],[t.final,"10pts"],[t.thirdMatch,"8pts"],[t.thirdWin,"15pts"],[t.champion,"20pts"]].map(function(ki){
+            return html`<div key=${ki[0]} style=${{ display:"flex", justifyContent:"space-between", fontSize:12, marginBottom:2 }}>
+              <span style=${{ color:"rgba(255,255,255,.5)" }}>${ki[0]}</span>
+              <span style=${{ fontWeight:700, color:"#f59e0b" }}>${ki[1]}</span>
+            </div>`;
+          })}
+        </div>
+      </div>
+    </${Card}>
 
 
     ${ranked.length > 0 && html`<${Card} sx=${{ padding:0, overflow:"hidden", marginBottom:18 }}>
@@ -296,7 +238,7 @@ function HomeView(p) {
 
 
     ${topCh.length > 0 && html`<${Card}>
-      <div style=${{ fontWeight:700, fontSize:13, marginBottom:12, color:"rgba(255,255,255,.65)" }}>\ud83c\udfc6 ${t.participantPicks}</div>
+      <div style=${{ fontWeight:700, fontSize:13, marginBottom:12, color:"rgba(255,255,255,.65)" }}>\ud83c\udfc6 ${lang==="es"?"Predicciones de los Participantes":"Participant Champion Picks"}</div>
       <div style=${{ display:"flex", flexWrap:"wrap", gap:7 }}>
         ${topCh.map(function(tc){
           return html`<div key=${tc[0]} style=${{ display:"flex", alignItems:"center", gap:6,
@@ -312,17 +254,17 @@ function HomeView(p) {
   </div>`;
 }
 
-// - Bracket page (select participant - show their bracket + group stage) -
+// - Bracket page -
 function BracketPage(p) {
   var lctx=useLang();var t=lctx.t;var lang=lctx.lang;
   var participants = p.participants;
-  var def          = participants.find(function(x){ return x.id === "claude_bot"; }) || participants[0];
-  var selState     = useState(def ? def.id : "");
-  var selId        = selState[0], setSelId = selState[1];
-  var tabState     = useState("bracket");
-  var activeTab    = tabState[0], setActiveTab = tabState[1];
+  var def = participants.find(function(x){ return x.id === "claude_bot"; }) || participants[0];
+  var selState = useState(def ? def.id : "");
+  var selId = selState[0], setSelId = selState[1];
+  var tabState = useState("bracket");
+  var activeTab = tabState[0], setActiveTab = tabState[1];
   var activeGState = useState("A");
-  var activeG      = activeGState[0], setActiveG = activeGState[1];
+  var activeG = activeGState[0], setActiveG = activeGState[1];
 
   var me = participants.find(function(x){ return x.id === selId; }) || participants[0];
 
@@ -335,19 +277,17 @@ function BracketPage(p) {
       </div>
     </div>
 
-
     <div style=${{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:16 }}>
       ${participants.map(function(px){
         return html`<button key=${px.id} onClick=${function(){ setSelId(px.id); }} style=${{
           padding:"6px 14px", borderRadius:8, fontSize:13, fontWeight:600, cursor:"pointer",
           border:"1.5px solid " + (selId===px.id ? "#f59e0b" : "rgba(255,255,255,.1)"),
           background: selId===px.id ? "rgba(245,158,11,.12)" : "rgba(255,255,255,.04)",
-          color:      selId===px.id ? "#fbbf24" : "rgba(255,255,255,.6)",
+          color: selId===px.id ? "#fbbf24" : "rgba(255,255,255,.6)",
           fontFamily:"'DM Sans',sans-serif"
         }}>${px.name}</button>`;
       })}
     </div>
-
 
     <div style=${{ display:"flex", gap:6, marginBottom:20 }}>
       ${[{id:"bracket",l:"\ud83c\udfc6 "+t.bracket},{id:"groups",l:"\ud83c\uddf3 "+t.groupStage}].map(function(tb){
@@ -355,72 +295,34 @@ function BracketPage(p) {
           padding:"7px 16px", borderRadius:9, fontSize:13, fontWeight:600, cursor:"pointer",
           border:"none", transition:"all .15s",
           background: activeTab===tb.id ? "#f59e0b" : "rgba(255,255,255,.07)",
-          color:      activeTab===tb.id ? "#000" : "rgba(255,255,255,.6)",
+          color: activeTab===tb.id ? "#000" : "rgba(255,255,255,.6)",
           fontFamily:"'DM Sans',sans-serif"
         }}>${tb.l}</button>`;
       })}
     </div>
-
 
     ${activeTab === "bracket" && (me
       ? html`<${BracketView} preds=${me.preds}/>`
       : html`<div style=${{ textAlign:"center", padding:"60px", color:"rgba(255,255,255,.3)" }}>${t.bracketNoPreds}</div>`
     )}
 
-
     ${activeTab === "groups" && html`<div>
-
       <div style=${{ display:"flex", gap:4, flexWrap:"wrap", marginBottom:14 }}>
-        ${GROUPS.map(function(g){
+        ${["A","B","C","D","E","F","G","H","I","J","K","L"].map(function(g){
           return html`<button key=${g} onClick=${function(){ setActiveG(g); }} style=${{
-            padding:"4px 10px", borderRadius:7, fontSize:12, fontWeight:700, cursor:"pointer",
-            border:"1.5px solid " + (activeG===g ? "#f59e0b" : "rgba(255,255,255,.1)"),
-            background: activeG===g ? "#f59e0b" : "transparent",
-            color: activeG===g ? "#000" : "rgba(255,255,255,.5)",
+            padding:"5px 10px", borderRadius:8, fontSize:12, fontWeight:700, cursor:"pointer",
+            border:"1.5px solid "+(activeG===g?"#f59e0b":"rgba(255,255,255,.1)"),
+            background:activeG===g?"rgba(245,158,11,.12)":"transparent",
+            color:activeG===g?"#fbbf24":"rgba(255,255,255,.5)",
             fontFamily:"'DM Sans',sans-serif"
-          }}>Group ${g}</button>`;
+          }}>${g}</button>`;
         })}
       </div>
-
-      ${me ? html`<div>
-        <${Card} sx=${{ marginBottom:14 }}>
-          <div style=${{ fontSize:12, fontWeight:600, color:"rgba(255,255,255,.4)", marginBottom:12, letterSpacing:".04em" }}>
-            GROUP ${activeG} - ${TBG[activeG].map(function(tm){return teamName(tm,lang);}).join(" \u00b7 ")}
-          </div>
-          ${[0,1,2].map(function(md){
-            var mdMatches=GMS[activeG].slice(md*2,md*2+2);
-            return html`<div key=${md}>
-              <div style=${{fontSize:10,fontWeight:700,color:"rgba(255,255,255,.25)",letterSpacing:".08em",
-                marginTop:md===0?0:12,marginBottom:5,textTransform:"uppercase"}}>Matchday ${md+1}</div>
-              ${mdMatches.map(function(m){
-                var pred=me.preds&&me.preds.groups&&me.preds.groups[m.id];
-                var hasScore=pred&&pred.h!==""&&pred.h!==undefined;
-                return html`<div key=${m.id} style=${{
-                  display:"flex", alignItems:"center", gap:8, padding:"9px 12px",
-                  borderRadius:10, marginBottom:5,
-                  background:"rgba(255,255,255,.04)", border:"1px solid rgba(255,255,255,.08)"
-                }}>
-                  <span style=${{ flex:1, textAlign:"right", fontSize:13, fontWeight:500 }}>${fl(m.home)} ${m.home}</span>
-                  <div style=${{ display:"flex", alignItems:"center", gap:6, flexShrink:0,
-                    padding:"4px 12px", borderRadius:8,
-                    background: hasScore ? "rgba(245,158,11,.12)" : "rgba(255,255,255,.06)",
-                    border: "1px solid " + (hasScore ? "rgba(245,158,11,.3)" : "rgba(255,255,255,.1)"),
-                    minWidth:64, justifyContent:"center" }}>
-                    ${hasScore
-                      ? html`<span style=${{ fontWeight:800, fontSize:16, color:"#fbbf24" }}>${pred.h}</span>
-                             <span style=${{ color:"rgba(255,255,255,.3)", fontSize:12 }}>-</span>
-                             <span style=${{ fontWeight:800, fontSize:16, color:"#fbbf24" }}>${pred.a}</span>`
-                      : html`<span style=${{ fontSize:12, color:"rgba(255,255,255,.25)", fontStyle:"italic" }}>?-?</span>`
-                    }
-                  </div>
-                  <span style=${{ flex:1, textAlign:"left", fontSize:13, fontWeight:500 }}>${m.away} ${fl(m.away)}</span>
-                </div>`;
-              })}
-            </div>`;
-          })}
-        </${Card}>
-        <${StandingsTable} group=${activeG} preds=${me.preds && me.preds.groups} allPreds=${me.preds && me.preds.groups}/>
-      </div>` : html`<div style=${{ textAlign:"center", padding:"40px", color:"rgba(255,255,255,.3)" }}>${t.bracketNoPreds}</div>`}
+      ${me && html`<${StandingsTable}
+        group=${activeG}
+        preds=${me.preds&&me.preds.groups}
+        allPreds=${me.preds&&me.preds.groups}
+      />`}
     </div>`}
   </div>`;
 }

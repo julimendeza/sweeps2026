@@ -20,7 +20,11 @@ var db = {
     var opts = { method: method, headers: { 'Content-Type': 'application/json' } };
     if (body !== undefined) opts.body = JSON.stringify(body);
     try {
+      var controller = new AbortController();
+      var timer = setTimeout(function(){ controller.abort(); }, 8000);
+      opts.signal = controller.signal;
       var res = await fetch(base, opts);
+      clearTimeout(timer);
       if (!res.ok) return null;
       return await res.json();
     } catch(e) { return null; }
