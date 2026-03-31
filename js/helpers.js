@@ -303,10 +303,13 @@ async function generateTCPDF(settings, lang) {
     h2(TX.s6);bullet(TX.s6b1);bullet(TX.s6b2);bullet(TX.s6b3);bullet(TX.s6b4);
     if(TX.s6pay){
       y+=3;
-      doc.setFillColor(230,245,255);doc.roundedRect(M,y-3,cW,16,3,3,"F");
+      // Strip emoji for jsPDF (Helvetica can't render it)
+      var payText=TX.s6pay;
+      var payLines=doc.splitTextToSize(payText,cW-8);
+      var boxH=payLines.length*5+8;
+      doc.setFillColor(230,245,255);doc.roundedRect(M,y-3,cW,boxH,3,3,"F");
       doc.setFontSize(9);doc.setFont("helvetica","italic");doc.setTextColor(30,80,160);
-      var payLines=doc.splitTextToSize("\ud83c\udfe6 "+TX.s6pay,cW-6);
-      doc.text(payLines,M+3,y+1); y+=payLines.length*5+5;
+      doc.text(payLines,M+4,y+2); y+=boxH+3;
     }
     chk();
     body(TX.s6b5);bullet(TX.s6b6);bullet(TX.s6b7);bullet(TX.s6b8);bullet(TX.s6b9);chk();
