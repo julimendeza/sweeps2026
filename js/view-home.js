@@ -65,7 +65,73 @@ function HomeView(p) {
   };
   var currentStep = tourSteps[tourStep] || tourSteps[1];
 
+  // Modal state
+  var popupState = useState(null); var popup = popupState[0], setPopup = popupState[1];
+
   return html`<div className="fade" style=${{ maxWidth:780, margin:"0 auto", padding:"28px 16px 60px" }}>
+
+    ${popup&&html`<div className="modal-overlay" onClick=${function(){setPopup(null);}}>
+      <div className="modal-content" onClick=${function(e){e.stopPropagation();}}>
+
+        ${popup==="scoring"&&html`<div>
+          <h3 className="bb" style=${{fontSize:22,color:"#fbbf24",marginBottom:16}}>
+            "\ud83d\udcca " + t.scoringTitle
+          </h3>
+          <div style=${{marginBottom:14,textAlign:"left"}}>
+            <div style=${{fontSize:11,fontWeight:700,color:"rgba(255,255,255,.4)",marginBottom:8,textTransform:"uppercase",letterSpacing:".06em"}}>${t.perMatch}</div>
+            ${[[t.result,"3pts","#4ade80"],[t.goalsA,"1pt","#60a5fa"],[t.goalsB,"1pt","#60a5fa"],[t.gdiff,"2pts","#fbbf24"]].map(function(si){
+              return html`<div key=${si[0]} style=${{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 10px",borderRadius:8,marginBottom:4,background:"rgba(255,255,255,.05)"}}>
+                <span style=${{fontSize:13,color:"rgba(255,255,255,.75)"}}>${si[0]}</span>
+                <span style=${{fontWeight:800,color:si[2],fontSize:14}}>${si[1]}</span>
+              </div>`;
+            })}
+          </div>
+          <div style=${{marginBottom:16,textAlign:"left"}}>
+            <div style=${{fontSize:11,fontWeight:700,color:"rgba(255,255,255,.4)",marginBottom:8,textTransform:"uppercase",letterSpacing:".06em"}}>${t.perTeam}</div>
+            ${[[t.r32,"1pt","#a78bfa"],[t.r16,"2pts","#a78bfa"],[t.qf,"4pts","#f472b6"],[t.sf,"6pts","#f472b6"],[t.final,"10pts","#fbbf24"],[t.thirdMatch,"8pts","#fb923c"],[t.thirdWin,"15pts","#fb923c"],[t.champion,"20pts","#fbbf24"]].map(function(ki){
+              return html`<div key=${ki[0]} style=${{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 10px",borderRadius:8,marginBottom:4,background:"rgba(255,255,255,.05)"}}>
+                <span style=${{fontSize:13,color:"rgba(255,255,255,.75)"}}>${ki[0]}</span>
+                <span style=${{fontWeight:800,color:ki[2],fontSize:14}}>${ki[1]}</span>
+              </div>`;
+            })}
+          </div>
+          <p style=${{fontSize:11,color:"rgba(255,255,255,.3)",marginBottom:16,lineHeight:1.6}}>${t.tiebreak}</p>
+        </div>`}
+
+        ${popup==="prizes"&&html`<div>
+          <h3 className="bb" style=${{fontSize:22,color:"#fbbf24",marginBottom:16}}>
+            "\ud83c\udfc6 " + t.prizesTitle
+          </h3>
+          <div style=${{display:"flex",flexDirection:"column",gap:8,marginBottom:16}}>
+            ${[{pct:50,l:"\ud83e\udd47 1\u00ba lugar"},{pct:25,l:"\ud83e\udd48 2\u00ba lugar"},{pct:15,l:"\ud83e\udd49 3\u00ba lugar"}].map(function(pi){
+              return html`<div key=${pi.l} style=${{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 14px",borderRadius:12,background:"rgba(251,191,36,.08)",border:"1px solid rgba(251,191,36,.2)"}}>
+                <span style=${{fontSize:14,fontWeight:600}}>${pi.l}</span>
+                <div style=${{textAlign:"right"}}>
+                  <div style=${{fontSize:18,fontWeight:800,color:"#fbbf24"}}>${settings.currency} ${Math.floor(total*pi.pct/100)}</div>
+                  <div style=${{fontSize:11,color:"rgba(255,255,255,.4)"}}>${pi.pct}%</div>
+                </div>
+              </div>`;
+            })}
+          </div>
+          <div style=${{padding:"12px 14px",borderRadius:12,background:"rgba(99,102,241,.1)",border:"1px solid rgba(99,102,241,.3)",marginBottom:16,textAlign:"left"}}>
+            <div style=${{fontSize:12,fontWeight:700,color:"#818cf8",marginBottom:5}}>\ud83c\udfe6 ${lang==="es"?"M\u00e9todo de pago":"Payment method"}</div>
+            <p style=${{fontSize:13,color:"rgba(255,255,255,.7)",lineHeight:1.7,margin:0}}>
+              ${t.prizesBody}
+            </p>
+          </div>
+          <p style=${{fontSize:11,color:"rgba(255,255,255,.3)",marginBottom:16}}>
+            ${t.adminFee}: ${settings.currency} ${Math.floor(total*.1)} \u00b7 ${human.length}\u00d7${settings.currency}${settings.entryFee}
+          </p>
+        </div>`}
+
+        <button onClick=${function(){setPopup(null);}} style=${{
+          width:"100%",padding:"11px",borderRadius:10,border:"none",cursor:"pointer",
+          background:"linear-gradient(135deg,#fbbf24,#f59e0b)",
+          color:"#000",fontWeight:700,fontSize:14,fontFamily:"'DM Sans',sans-serif",
+          boxShadow:"0 4px 14px rgba(245,158,11,.39)"
+        }}>t.close</button>
+      </div>
+    </div>`}
 
     ${tourStep>0&&html`<div>
       <div onClick=${tourSkip} style=${{
@@ -168,50 +234,20 @@ function HomeView(p) {
     </div>
 
 
-    ${total > 0 && html`<${Card} sx=${{ marginBottom:18 }}>
-      <div className="bb" style=${{ fontSize:17, marginBottom:14, color:"rgba(255,255,255,.6)" }}>${t.prizes}</div>
-      <div style=${{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(90px,1fr))", gap:8 }}>
-        ${[{pct:50,l:"\ud83e\udd47 1\u00ba"},{pct:25,l:"\ud83e\udd48 2\u00ba"},{pct:15,l:"\ud83e\udd49 3\u00ba"}].map(function(pi){
-          return html`<div key=${pi.l} style=${{ textAlign:"center", background:"rgba(245,158,11,.07)",
-            borderRadius:12, padding:"12px 6px", border:"1px solid rgba(245,158,11,.14)" }}>
-            <div style=${{ fontSize:11, color:"rgba(255,255,255,.42)", marginBottom:3 }}>${pi.l}</div>
-            <div className="bb" style=${{ fontSize:20, color:"#f59e0b" }}>${settings.currency} ${Math.floor(total*pi.pct/100)}</div>
-            <div style=${{ fontSize:11, color:"rgba(255,255,255,.28)" }}>(${pi.pct}%)</div>
-          </div>`;
-        })}
-      </div>
-      <p style=${{ textAlign:"center", marginTop:10, fontSize:11, color:"rgba(255,255,255,.22)" }}>
-        ${t.adminFee}: ${settings.currency} ${Math.floor(total*.1)} \u00b7 ${human.length}\u00d7${settings.currency}${settings.entryFee}
-      </p>
-      <p style=${{textAlign:"center",marginTop:6,fontSize:11,color:"rgba(255,255,255,.3)",lineHeight:1.6}}>
-        \ud83c\udfe6 ${lang==="es"?"Los premios se pagan por transferencia bancaria directa.":"Prizes paid via direct bank transfer."}
-      </p>
-    </${Card}>`}
-
-
-    <${Card} sx=${{ marginBottom:18, padding:"14px 18px" }}>
-      <div className="bb" style=${{ fontSize:15, marginBottom:10, color:"rgba(255,255,255,.5)" }}>${t.scoring}</div>
-      <div style=${{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
-        <div>
-          <div style=${{ fontSize:11, fontWeight:700, color:"rgba(255,255,255,.35)", marginBottom:6 }}>${t.perMatch}</div>
-          ${[[t.result,"3pts"],[t.goalsA,"1pt"],[t.goalsB,"1pt"],[t.gdiff,"2pts"]].map(function(si){
-            return html`<div key=${si[0]} style=${{ display:"flex", justifyContent:"space-between", fontSize:12, marginBottom:2 }}>
-              <span style=${{ color:"rgba(255,255,255,.5)" }}>${si[0]}</span>
-              <span style=${{ fontWeight:700, color:"#f59e0b" }}>${si[1]}</span>
-            </div>`;
-          })}
-        </div>
-        <div>
-          <div style=${{ fontSize:11, fontWeight:700, color:"rgba(255,255,255,.35)", marginBottom:6 }}>${t.perTeam}</div>
-          ${[[t.r32,"1pt"],[t.r16,"2pts"],[t.qf,"4pts"],[t.sf,"6pts"],[t.final,"10pts"],[t.thirdMatch,"8pts"],[t.thirdWin,"15pts"],[t.champion,"20pts"]].map(function(ki){
-            return html`<div key=${ki[0]} style=${{ display:"flex", justifyContent:"space-between", fontSize:12, marginBottom:2 }}>
-              <span style=${{ color:"rgba(255,255,255,.5)" }}>${ki[0]}</span>
-              <span style=${{ fontWeight:700, color:"#f59e0b" }}>${ki[1]}</span>
-            </div>`;
-          })}
-        </div>
-      </div>
-    </${Card}>
+    <div style=${{display:"flex",gap:10,marginBottom:18}}>
+      <button onClick=${function(){setPopup("prizes");}} style=${{
+        flex:1,padding:"13px",borderRadius:12,cursor:"pointer",
+        background:"rgba(251,191,36,.08)",border:"1.5px solid rgba(251,191,36,.25)",
+        color:"#fbbf24",fontWeight:700,fontSize:14,fontFamily:"'DM Sans',sans-serif",
+        transition:"all .15s"
+      }}>\ud83c\udfc6 ${lang==="es"?"Ver Premios":"See Prizes"}</button>
+      <button onClick=${function(){setPopup("scoring");}} style=${{
+        flex:1,padding:"13px",borderRadius:12,cursor:"pointer",
+        background:"rgba(99,102,241,.08)",border:"1.5px solid rgba(99,102,241,.25)",
+        color:"#a5b4fc",fontWeight:700,fontSize:14,fontFamily:"'DM Sans',sans-serif",
+        transition:"all .15s"
+      }}>\ud83d\udcca ${lang==="es"?"Ver Puntaje":"See Scoring"}</button>
+    </div>
 
 
     ${ranked.length > 0 && html`<${Card} sx=${{ padding:0, overflow:"hidden", marginBottom:18 }}>
