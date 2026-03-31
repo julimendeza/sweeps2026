@@ -1,168 +1,123 @@
-# ⚽ Quiniela Mundial 2026
+// - Leaderboard / standings view -
+function LeaderboardView(p) {
+  var lctx=useLang();var t=lctx.t;var lang=lctx.lang;
+  var participants = p.participants;
+  var results      = p.results;
+  var settings     = p.settings;
 
-A full-featured FIFA World Cup 2026 sweepstake web app for a group of friends. Built with vanilla React (no build step), hosted on GitHub Pages, with Firebase Realtime Database as the backend.
+  var rC = useMemo(function(){ return cascadeKO(results.groups, results.ko||{}); }, [results]);
+  var ranked = useMemo(function(){
+    return participants
+      .map(function(x){ return Object.assign({}, x, calcScore(x.preds, results, settings.scoring)); })
+      .sort(function(a, b){ return cmpTb(a, b, rC); });
+  }, [participants, results, settings, rC]);
 
-**Live site:** https://julimendeza.github.io/sweeps2026/
+  var expState = useState(null);
+  var exp = expState[0], setExp = expState[1];
 
----
+  var human = participants.filter(function(x){ return x.id !== "claude_bot"; });
+  var total = human.length * settings.entryFee;
 
-## Features
+  var koLabels = {
+    groups:     t.groupStage,
+    r32:        t.r32,
+    r16:        t.r16,
+    qf:         t.qf,
+    sf:         t.sf,
+    thirdMatch: t.thirdMatch,
+    final:      t.final,
+    champion:   t.champion,
+    thirdWin:   t.thirdWin
+  };
 
-- **Group stage predictions** — all 72 matches organised by matchday, with live standings and FIFA tiebreaker rules
-- **Knockout predictions** — scores for all 32 KO matches (R32 → R16 → QF → SF → Final + 3rd place)
-- **Auto bracket resolution** — Round of 32 bracket auto-calculated from group predictions using official FIFA 2026 fixture rules and Annex C best-third placement algorithm
-- **Bracket visualisation** — mirrored bracket view showing each participant's predicted path to the final
-- **Live leaderboard** — points update as the admin enters real results
-- **Bilingual** — full English / Spanish support, including T&C PDF
-- **Access control** — Off / Simple PIN / Robust PIN (pre-linked identity) — switchable from admin panel
-- **Registration deadline** — configurable cutoff date; countdown banner and prediction lock after deadline
-- **Terms & Conditions PDF** — auto-generated in the active language with current settings
-- **Firebase backend** — all data synced in real time across all users
-- **Admin panel** — results entry, participant management, email notifications (EmailJS), data export/import, backup/restore, Firebase sync
-- **Mobile friendly** — responsive layout, iOS zoom prevention, touch-optimised bracket scroll
+  return html`<div className="fade" style=${{ maxWidth:780, margin:"0 auto", padding:"28px 16px 60px" }}>
 
----
 
-## Tournament Structure
+    <div style=${{ display:"flex", alignItems:"center", gap:12, marginBottom:22 }}>
+      <span style=${{ fontSize:36 }}>\ud83c\udfc5</span>
+      <div>
+        <h2 className="bb" style=${{ fontSize:30 }}>${t.table.replace("\ud83c\udfc5 ","")}</h2>
+        <p style=${{ color:"rgba(255,255,255,.4)", fontSize:13 }}>
+          ${human.length} ${t.participants} \u00b7 ${settings.currency} ${total}
+        </p>
+      </div>
+    </div>
 
-- 12 groups × 4 teams = 48 teams, 72 group matches
-- Best 8 third-placed teams qualify alongside the top 2 from each group
-- Round of 32 (16 matches) → Round of 16 → Quarter-Finals → Semi-Finals → Final + 3rd place match
-- Total: 104 matches
 
----
+    ${ranked.length === 0
+      ? html`<${Card} sx=${{ textAlign:"center", padding:"60px 20px", color:"rgba(255,255,255,.3)" }}>${t.noPart}</${Card}>`
+      : html`<${Card} sx=${{ padding:0, overflow:"hidden" }}>
 
-## Scoring
 
-| Category | Points |
-|---|---|
-| Correct result (W/D/L) | 3 |
-| Correct goals Team A | 1 |
-| Correct goals Team B | 1 |
-| Correct goal difference | 2 |
-| **Max per group match** | **7** |
-| Round of 32 (per team) | 1 |
-| Round of 16 (per team) | 2 |
-| Quarter-Finals (per team) | 4 |
-| Semi-Finals (per team) | 6 |
-| 3rd Place match (per team) | 8 |
-| 3rd Place winner | 15 |
-| Finalists (per team) | 10 |
-| World Cup Champion | 20 |
+          <div class="lb-grid" style=${{ padding:"8px 18px",
+            borderBottom:"1px solid rgba(255,255,255,.08)",
+            fontSize:11, color:"rgba(255,255,255,.28)", fontWeight:700 }}>
+            <span>#</span>
+            <span>Name</span>
+            <span style=${{ textAlign:"right" }}>PTS</span>
+            <span class="lb-col-hide" style=${{ textAlign:"right", fontSize:10 }}>\ud83e\udd47</span>
+            <span class="lb-col-hide" style=${{ textAlign:"right", fontSize:10 }}>Final</span>
+            <span class="lb-col-hide" style=${{ textAlign:"right", fontSize:10 }}>SF</span>
+          </div>
 
-**Tiebreaker order:** Champion → Runner-up → 3rd place winner → Points in Final+3rd → Points in SF → shared prize
 
----
+          ${ranked.map(function(px, i){
+            var isOpen = exp === px.id;
+            var pxC=cascadeKO(px.preds&&px.preds.groups,px.preds&&px.preds.ko||{}); var ch=pxC.champion;
+            var chHit  = ch && results.champion && ch === results.champion;
 
-## Tech Stack
+            return html`<div key=${px.id}>
 
-| Layer | Technology |
-|---|---|
-| UI | React 18 (CDN), htm 3.1.1 (no Babel/build step) |
-| Styling | Vanilla CSS, Bebas Neue + DM Sans (Google Fonts) |
-| Backend | Firebase Realtime Database |
-| Hosting | GitHub Pages |
-| PDF | jsPDF 2.5.1 |
-| Email | EmailJS (optional) |
-| Flags | flagcdn.com |
+              <div onClick=${function(){ setExp(isOpen ? null : px.id); }} class="lb-grid" style=${{
+                padding:"13px 18px", borderBottom:"1px solid rgba(255,255,255,.05)",
+                alignItems:"center", cursor:"pointer", transition:"background .13s",
+                background: isOpen ? "rgba(245,158,11,.07)" : i===0 ? "rgba(245,158,11,.05)" : "transparent"
+              }}>
+                <span style=${{ textAlign:"center", fontWeight:800, fontSize:i<3?20:14,
+                  color: i===0?"#fbbf24":i===1?"#94a3b8":i===2?"#b45309":"rgba(255,255,255,.22)" }}>
+                  ${i===0?"\ud83e\udd47":i===1?"\ud83e\udd48":i===2?"\ud83e\udd49":i+1}
+                </span>
+                <div>
+                  <div style=${{ fontWeight:600, fontSize:14, display:"flex", alignItems:"center", gap:6 }}>
+                    ${px.name}
+                    ${px.id === "claude_bot" && html`<span style=${{ fontSize:10, background:"rgba(245,158,11,.2)", color:"#f59e0b", borderRadius:4, padding:"1px 5px", fontWeight:700 }}>BOT</span>`}
+                  </div>
+                  <div style=${{ fontSize:11, color:"rgba(255,255,255,.3)", marginTop:1 }}>
+                    ${ch ? html`<${FlagImg} team=${ch}/> ${teamName(ch,lang)}${chHit?" \u2b50":""}` : " "}
+                  </div>
+                </div>
+                <div style=${{ textAlign:"right", fontWeight:800, fontSize:20, color:"#f59e0b" }}>${px.pts}</div>
+                <div class="lb-col-hide" style=${{ textAlign:"right", fontSize:13, color: chHit ? "#4ade80" : "rgba(255,255,255,.28)" }}>
+                  ${px.detail && px.detail.champion && px.detail.champion.earned || 0}
+                </div>
+                <div class="lb-col-hide" style=${{ textAlign:"right", fontSize:13, color:"rgba(255,255,255,.45)" }}>
+                  ${px.detail && px.detail.final && px.detail.final.hits || 0}/${results.final && results.final.length || 2}
+                </div>
+                <div class="lb-col-hide" style=${{ textAlign:"right", fontSize:13, color:"rgba(255,255,255,.45)" }}>
+                  ${px.detail && px.detail.sf && px.detail.sf.hits || 0}/${results.sf && results.sf.length || 4}
+                </div>
+              </div>
 
-No npm, no webpack, no build process — just static files.
 
----
+              ${isOpen && html`<div style=${{ padding:"12px 18px 16px", background:"rgba(255,255,255,.02)", borderBottom:"1px solid rgba(255,255,255,.06)" }}>
+                <div style=${{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(155px,1fr))", gap:8 }}>
+                  ${["groups","r32","r16","qf","sf","thirdMatch","final","champion","thirdWin"].map(function(rid){
+                    var d = (px.detail && px.detail[rid]) || { hits:0, earned:0 };
+                    return html`<div key=${rid} style=${{ background:"rgba(255,255,255,.04)", borderRadius:10, padding:"9px 12px" }}>
+                      <div style=${{ fontSize:11, color:"rgba(255,255,255,.35)", marginBottom:3 }}>${koLabels[rid] || rid}</div>
+                      <div style=${{ fontWeight:700, fontSize:15, color: d.earned>0 ? "#f59e0b" : "rgba(255,255,255,.28)" }}>
+                        ${d.earned} pts
+                      </div>
+                    </div>`;
+                  })}
+                </div>
+              </div>`}
+            </div>`;
+          })}
+        </${Card}>`
+    }
 
-## Project Structure
 
-```
-sweeps2026/
-├── index.html              # HTML shell + script load order
-├── css/
-│   └── styles.css          # All styles including responsive rules
-└── js/
-    ├── setup.js            # React hooks, htm, Firebase db, PIN helpers
-    ├── data.js             # Groups, teams, fixtures, defaults (DEF), Claude entry
-    ├── i18n.js             # EN + ES translations
-    ├── logic.js            # Standings, KO cascade, scoring, tiebreaker
-    ├── helpers.js          # PDF generator, admin email notification, T&C PDF
-    ├── components.js       # Shared UI components + bracket visualisation
-    ├── nav.js              # Navigation bar
-    ├── view-home.js        # Home page
-    ├── view-predict.js     # Prediction form (group + KO stages)
-    ├── view-leaderboard.js # Leaderboard
-    ├── view-admin.js       # Admin panel (results, participants, email, data, access, settings)
-    └── app.js              # Root App component + Firebase wiring
-```
-
----
-
-## Setup & Deployment
-
-### 1. Fork / clone the repo
-
-```bash
-git clone https://github.com/julimendeza/sweeps2026.git
-```
-
-### 2. Firebase setup
-
-1. Go to [console.firebase.google.com](https://console.firebase.google.com)
-2. Create a new project
-3. Build → Realtime Database → Create database → **Start in test mode**
-4. Copy the database URL (e.g. `https://your-project-default-rtdb.asia-southeast1.firebasedatabase.app`)
-5. Paste it into `js/data.js` under `DEF.firebase`
-
-### 3. Deploy to GitHub Pages
-
-Push to the `main` branch. GitHub Pages serves the repo root automatically.
-
-### 4. First-time admin setup
-
-1. Open the site → **Admin** → enter password (`PuraFoda888!`)
-2. Go to **Data** tab → click **Push all data to Firebase**
-3. Confirm the green **Firebase** dot appears in the admin header
-
----
-
-## Admin Guide
-
-### Changing settings
-Admin → Settings: entry fee, currency, admin password, Firebase URL, registration deadline, scoring points.
-
-### Entering results
-Admin → Results: enter group match scores (standings auto-calculate) and knockout advancing teams round by round.
-
-### Managing participants
-Admin → Participants: view all entries ranked by current score, delete participants.
-
-### Access control (PIN)
-Admin → Access:
-- **Off** — open registration (default)
-- **Simple** — participant enters a PIN you've issued, then fills their own name/email
-- **Robust** — PIN is pre-linked to a name/email; details are pre-filled and locked
-
-Generate PINs in the Access tab and share them with participants after they pay.
-
-### Data backup
-Admin → Data: download a JSON backup before any risky change, restore from backup, or push all local data to Firebase.
-
-### Email notifications
-Admin → Email: configure EmailJS (free tier) to send invitation and results update emails to all participants.
-
----
-
-## Customisation
-
-| What | Where |
-|---|---|
-| Groups & teams | `js/data.js` → `TBG` |
-| Entry fee & currency | Admin → Settings (or `js/data.js` → `DEF`) |
-| Bank details | `js/helpers.js` → `generateTCPDF()` |
-| Scoring points | Admin → Settings |
-| Registration deadline | Admin → Settings |
-| Language default | `js/app.js` → `useState("es")` |
-| Admin password | Admin → Settings |
-
----
-
-## License
-
-Personal project — not licensed for redistribution. All FIFA World Cup 2026 team names and tournament data are used for personal entertainment purposes only.
+    <p style=${{ marginTop:12, fontSize:11, color:"rgba(255,255,255,.25)", textAlign:"center" }}>${t.tiebreak}</p>
+  </div>`;
+}
