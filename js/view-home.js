@@ -249,7 +249,7 @@ function HomeView(p) {
         background:"rgba(99,102,241,.08)",border:"1.5px solid rgba(99,102,241,.25)",
         color:"#a5b4fc",fontWeight:700,fontSize:14,fontFamily:"'DM Sans',sans-serif",
         transition:"all .15s"
-      }}>\ud83d\udcca ${lang==="es"?"Ver Puntaje":"See Scoring"}</button>
+      }}>\ud83d\udcca ${lang==="es"?"Ver Sistema de Puntaje":"See Scoring System"}</button>
     </div>
 
 
