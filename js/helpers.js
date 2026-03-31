@@ -152,8 +152,8 @@ async function generateTCPDF(settings, lang) {
 
   // All text strings
   var TX = es ? {
-    header:   "QUINIELA MUNDIAL 2026 \u2014 SOUTHAMERICAN FOOTBALL FRIENDS SWEEPSTAKE",
-    title:    "T\u00e9rminos y Condiciones",
+    header:   "LA TRIBUNA 2026 \u2014 SOUTHAMERICAN FOOTBALL FRIENDS SWEEPSTAKE",
+    title:    "Reglas del Juego",
     subtitle: "Copa del Mundo FIFA 2026 \u00b7 EE.UU. \u00b7 Canad\u00e1 \u00b7 M\u00e9xico \u00b7 11 Jun \u2013 19 Jul, 2026",
     s1:"1. Inscripci\u00f3n",
     s1b1:"Cuota de inscripci\u00f3n: "+cur+" "+fee+" por participante.",
@@ -190,11 +190,12 @@ async function generateTCPDF(settings, lang) {
     s5b4:"4. Puntos obtenidos en la Final + Partido por el 3er Lugar",
     s5b5:"5. Puntos obtenidos en las Semifinales",
     s5b6:"6. Si sigue el empate \u2014 los premios se reparten en partes iguales.",
-    s6:"6. Distribuci\u00f3n de Premios",
+    s6:"6. Distribuci\u00f3n de Premios y Pago",
     s6b1:"1er lugar: 50% del pozo de premios",
     s6b2:"2do lugar: 25% del pozo de premios",
     s6b3:"3er lugar: 15% del pozo de premios",
     s6b4:"Gastos de organizaci\u00f3n: 10% del pozo de premios",
+    s6pay:"Los premios se pagar\u00e1n mediante transferencia bancaria directa a las cuentas de los ganadores dentro de los 7 d\u00edas posteriores a la Final del torneo.",
     s6b5:"Ejemplo con 10 participantes (pozo de "+cur+" "+ex10+"):",
     s6b6:"Primer lugar: "+cur+" "+Math.floor(ex10*.5),
     s6b7:"Segundo lugar: "+cur+" "+Math.floor(ex10*.25),
@@ -211,10 +212,10 @@ async function generateTCPDF(settings, lang) {
     s8b3:"Los participantes son responsables de proporcionar un correo electr\u00f3nico v\u00e1lido.",
     s8b4:"Los pagos de premios se realizar\u00e1n dentro de los 14 d\u00edas posteriores a la Final.",
     footer:"Quiniela Mundial 2026  \u00b7  Generado el "+new Date().toLocaleDateString("es-AU"),
-    filename:"Quiniela2026_Terminos_y_Condiciones.pdf"
+    filename:"LaTribuna2026_Reglas_del_Juego.pdf"
   } : {
-    header:   "QUINIELA MUNDIAL 2026 \u2014 SOUTHAMERICAN FOOTBALL FRIENDS SWEEPSTAKE",
-    title:    "Terms & Conditions",
+    header:   "LA TRIBUNA 2026 \u2014 SOUTHAMERICAN FOOTBALL FRIENDS SWEEPSTAKE",
+    title:    "Game Rules",
     subtitle: "FIFA World Cup 2026 \u00b7 USA \u00b7 Canada \u00b7 Mexico \u00b7 June 11 \u2013 July 19, 2026",
     s1:"1. Entry",
     s1b1:"Entry fee: "+cur+" "+fee+" per participant.",
@@ -256,6 +257,7 @@ async function generateTCPDF(settings, lang) {
     s6b2:"2nd place: 25% of prize pool",
     s6b3:"3rd place: 15% of prize pool",
     s6b4:"Admin fee: 10% of prize pool",
+    s6pay:"Prizes will be paid via direct bank transfer to winners\u2019 accounts within 7 days of the tournament final.",
     s6b5:"Example with 10 participants ("+cur+" "+ex10+" prize pool):",
     s6b6:"First place: "+cur+" "+Math.floor(ex10*.5),
     s6b7:"Second place: "+cur+" "+Math.floor(ex10*.25),
@@ -298,7 +300,15 @@ async function generateTCPDF(settings, lang) {
     // Force section 5 onto a new page
     doc.addPage(); y=22;
     h2(TX.s5);body(TX.s5body);bullet(TX.s5b1);bullet(TX.s5b2);bullet(TX.s5b3);bullet(TX.s5b4);bullet(TX.s5b5);bullet(TX.s5b6);chk();
-    h2(TX.s6);bullet(TX.s6b1);bullet(TX.s6b2);bullet(TX.s6b3);bullet(TX.s6b4);chk();
+    h2(TX.s6);bullet(TX.s6b1);bullet(TX.s6b2);bullet(TX.s6b3);bullet(TX.s6b4);
+    if(TX.s6pay){
+      y+=3;
+      doc.setFillColor(230,245,255);doc.roundedRect(M,y-3,cW,16,3,3,"F");
+      doc.setFontSize(9);doc.setFont("helvetica","italic");doc.setTextColor(30,80,160);
+      var payLines=doc.splitTextToSize("\ud83c\udfe6 "+TX.s6pay,cW-6);
+      doc.text(payLines,M+3,y+1); y+=payLines.length*5+5;
+    }
+    chk();
     body(TX.s6b5);bullet(TX.s6b6);bullet(TX.s6b7);bullet(TX.s6b8);bullet(TX.s6b9);chk();
     h2(TX.s7);bullet(TX.s7b1);bullet(TX.s7b2);bullet(TX.s7b3);bullet(TX.s7b4);chk();
     h2(TX.s8);bullet(TX.s8b1);bullet(TX.s8b2);bullet(TX.s8b3);bullet(TX.s8b4);rule();
@@ -824,3 +834,4 @@ async function generateSummaryPDF(participants, results, settings, lang) {
     doc.save("WC2026_Predictions_Summary.pdf");
   } catch(e){ console.error("Summary PDF error:",e); alert("Summary failed: "+e.message); }
 }
+

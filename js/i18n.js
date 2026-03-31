@@ -99,18 +99,24 @@ var T = {
     bracketNoPreds: "No predictions found.",
     tiebreak:   "Tiebreak: 1. Champion \u00b7 2. Runner-up \u00b7 3. 3rd place \u00b7 4. Pts Final+3rd \u00b7 5. Pts SF \u00b7 6. Draw",
     adminFee:   "Admin 10%",
+    tcLink:      "Game Rules (PDF)",
+    prizesInfo:  "Prize Payment",
+    prizesInfoBody: "Prizes will be paid via direct bank transfer to winners\u2019 accounts within 7 days of the tournament final.",
+    scoringTitle: "Scoring System",
+    participantPicks: "Participant Champion Picks",
     downloadPDF:"Download my predictions (PDF)",
     pdfTitle:   "WC 2026 Sweepstake \u2014 Predictions",
+    playoffsTab: "Playoffs",
     adminNotifSent: "Admin notified \u2713",
     adminNotifFail: "Admin email failed (check config)"
   },
 
   es: {
-    title:      "QUINIELA MUNDIAL 2026",
+    title:      "LA TRIBUNA 2026",
     sub:        "Southamerican Football Friends Sweepstake \u00b7 USA \u00b7 Canad\u00e1 \u00b7 M\u00e9xico \u00b7 11 Jun \u2013 19 Jul 2026",
     predict:    "Predecir",
     table:      "\ud83c\udfc5 Tabla",
-    bracket:    "Bracket",
+    bracket:    "Llaves",
     admin:      "Admin",
     participants: "Participantes",
     inPlay:     "En juego",
@@ -199,13 +205,19 @@ var T = {
     adminPwL:   "Contrase\u00f1a admin",
     adminEmailSettings: "Email para notificaciones admin",
     ptsConfig:  "Puntos por categor\u00eda",
-    bracketTitle: "BRACKET DEL TORNEO",
-    bracketSub:   "Basado en predicciones \u2014 scroll para ver todas las rondas",
+    bracketTitle: "LLAVES DEL TORNEO",
+    bracketSub:   "Basado en predicciones \u2014 desplaz\u00e1 para ver todas las rondas",
     bracketNoPreds: "Sin predicciones.",
     tiebreak:   "Desempate: 1. Campe\u00f3n \u00b7 2. Subcampe\u00f3n \u00b7 3. 3er lugar \u00b7 4. Pts Final+3ro \u00b7 5. Pts SF \u00b7 6. Sorteo",
     adminFee:   "Admin 10%",
+    tcLink:      "Reglas del Juego (PDF)",
+    prizesInfo:  "Pago de Premios",
+    prizesInfoBody: "Los premios ser\u00e1n pagados v\u00eda transferencia bancaria directa a las cuentas de los ganadores dentro de los 7 d\u00edas posteriores a la final del torneo.",
+    scoringTitle: "Sistema de Puntaje",
+    participantPicks: "Predicciones de los Participantes",
     downloadPDF:"Descargar mis predicciones (PDF)",
-    pdfTitle:   "Quiniela Mundial 2026 \u2014 Predicciones",
+    pdfTitle:   "La Tribuna 2026 \u2014 Predicciones",
+    playoffsTab: "Playoffs",
     adminNotifSent: "Admin notificado \u2713",
     adminNotifFail: "Email admin fall\u00f3 (revisa la configuraci\u00f3n)"
   }
@@ -231,7 +243,10 @@ var TEAM_ES = {
   "Curaçao":"Curazao","New Zealand":"Nueva Zelanda",
   "Playoff A":"Playoff A","Playoff B":"Playoff B",
   "Playoff C":"Playoff C","Playoff D":"Playoff D",
-  "Playoff 1":"Playoff 1","Playoff 2":"Playoff 2"
+  "Playoff 1":"Playoff 1","Playoff 2":"Playoff 2",
+  "Italy":"Italia","Sweden":"Suecia","Poland":"Polonia","Turkey":"Turqu\u00eda",
+  "Kosovo":"Kosovo","Denmark":"Dinamarca","Czechia":"Chequia","Bosnia & Herz.":"Bosnia y Herz.",
+  "Jamaica":"Jamaica","DR Congo":"Rep. D. del Congo","Bolivia":"Bolivia","Iraq":"Irak"
 };
 
 // Returns display name for a team in current language

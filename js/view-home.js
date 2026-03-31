@@ -57,24 +57,27 @@ function HomeView(p) {
       next: lang==="es" ? "Siguiente \u2192" : "Next \u2192"
     },
     2: {
-      title: lang==="es" ? "\ud83d\udccc T\u00e9rminos y Condiciones" : "\ud83d\udccc Terms & Conditions",
+      title: lang==="es" ? "\ud83d\udccc Reglas del Juego" : "\ud83d\udccc Game Rules",
       body: lang==="es"
-        ? "Puedes leer y descargar los T\u00e9rminos y Condiciones en cualquier momento usando el enlace debajo de los botones principales."
-        : "You can read and download the Terms & Conditions at any time using the link below the main buttons.",
+        ? "Puedes ver y descargar las Reglas del Juego en cualquier momento usando el enlace debajo de los botones principales."
+        : "You can view and download the Game Rules at any time using the link below the main buttons.",
       arrow: "bottom-center",
       next: lang==="es" ? "\u2713 Entendido" : "\u2713 Got it"
     }
   };
   var currentStep = tourSteps[tourStep];
 
+  // Popup state: null | "scoring" | "prizes"
+  var popupState = useState(null); var popup = popupState[0], setPopup = popupState[1];
+
   return html`<div className="fade" style=${{ maxWidth:780, margin:"0 auto", padding:"28px 16px 60px" }}>
 
-    ${tourStep>0&&html`<div>
-      <div onClick=${tourSkip} style=${{
-        position:"fixed",top:0,left:0,right:0,bottom:0,
-        background:"rgba(0,0,0,.55)",zIndex:998,cursor:"pointer"
-      }}></div>
-      <div style=${{
+    ${(tourStep>0||popup)&&html`<div onClick=${function(){ tourSkip(); setPopup(null); }} style=${{
+      position:"fixed",top:0,left:0,right:0,bottom:0,
+      background:"rgba(0,0,0,.65)",zIndex:998,cursor:"pointer"
+    }}></div>`}
+
+    ${tourStep>0&&html`<div style=${{
         position:"fixed",
         top:"50%",left:"50%",
         transform:"translate(-50%,-50%)",
@@ -89,13 +92,9 @@ function HomeView(p) {
       }}>
         <div style=${{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
           <div style=${{fontSize:16,fontWeight:700,color:"#fbbf24"}}>${currentStep.title}</div>
-          <div style=${{fontSize:11,color:"rgba(255,255,255,.3)",marginTop:2}}>
-            ${tourStep}/2
-          </div>
+          <div style=${{fontSize:11,color:"rgba(255,255,255,.3)",marginTop:2}}>${tourStep}/2</div>
         </div>
-        <p style=${{fontSize:14,color:"rgba(255,255,255,.75)",lineHeight:1.7,marginBottom:20}}>
-          ${currentStep.body}
-        </p>
+        <p style=${{fontSize:14,color:"rgba(255,255,255,.75)",lineHeight:1.7,marginBottom:20}}>${currentStep.body}</p>
         <div style=${{display:"flex",gap:8}}>
           <button onClick=${tourSkip} style=${{
             flex:1,padding:"9px",borderRadius:9,border:"1px solid rgba(255,255,255,.15)",
@@ -118,7 +117,76 @@ function HomeView(p) {
             }}></div>`;
           })}
         </div>
+      </div>`}
+
+    ${popup&&html`<div onClick=${function(e){e.stopPropagation();}} style=${{
+        position:"fixed",top:"50%",left:"50%",
+        transform:"translate(-50%,-50%)",
+        zIndex:999,background:"#1a2540",
+        border:"2px solid rgba(245,158,11,.4)",
+        borderRadius:18,padding:"26px 28px",
+        maxWidth:400,width:"92vw",
+        boxShadow:"0 20px 60px rgba(0,0,0,.7)",
+        maxHeight:"80vh",overflowY:"auto"
+      }}>
+      <div style=${{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+        <div style=${{fontSize:16,fontWeight:700,color:"#fbbf24"}}>
+          ${popup==="scoring"?(lang==="es"?"\ud83d\udcca Sistema de Puntaje":"\ud83d\udcca Scoring System"):""}
+          ${popup==="prizes"?(lang==="es"?"\ud83d\udcb8 Pago de Premios":"\ud83d\udcb8 Prize Payment"):""}
+        </div>
+        <button onClick=${function(){setPopup(null);}} style=${{
+          background:"none",border:"none",color:"rgba(255,255,255,.5)",
+          fontSize:22,cursor:"pointer",lineHeight:1,padding:"0 4px"
+        }}>\u00d7</button>
       </div>
+
+      ${popup==="scoring"&&html`<div>
+        <div style=${{marginBottom:14}}>
+          <div style=${{fontSize:11,fontWeight:700,color:"rgba(255,255,255,.4)",marginBottom:8,textTransform:"uppercase",letterSpacing:".06em"}}>${t.perMatch}</div>
+          ${[[t.result,"3pts","#4ade80"],[t.goalsA,"1pt","#60a5fa"],[t.goalsB,"1pt","#60a5fa"],[t.gdiff,"2pts","#fbbf24"]].map(function(si){
+            return html`<div key=${si[0]} style=${{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 10px",borderRadius:8,marginBottom:4,background:"rgba(255,255,255,.04)"}}>
+              <span style=${{fontSize:13,color:"rgba(255,255,255,.7)"}}>${si[0]}</span>
+              <span style=${{fontWeight:800,color:si[2],fontSize:14}}>${si[1]}</span>
+            </div>`;
+          })}
+        </div>
+        <div>
+          <div style=${{fontSize:11,fontWeight:700,color:"rgba(255,255,255,.4)",marginBottom:8,textTransform:"uppercase",letterSpacing:".06em"}}>${t.perTeam}</div>
+          ${[[t.r32,"1pt","#a78bfa"],[t.r16,"2pts","#a78bfa"],[t.qf,"4pts","#f472b6"],[t.sf,"6pts","#f472b6"],[t.final,"10pts","#fbbf24"],[t.thirdMatch,"8pts","#fb923c"],[t.thirdWin,"15pts","#fb923c"],[t.champion,"20pts","#fbbf24"]].map(function(ki){
+            return html`<div key=${ki[0]} style=${{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 10px",borderRadius:8,marginBottom:4,background:"rgba(255,255,255,.04)"}}>
+              <span style=${{fontSize:13,color:"rgba(255,255,255,.7)"}}>${ki[0]}</span>
+              <span style=${{fontWeight:800,color:ki[2],fontSize:14}}>${ki[1]}</span>
+            </div>`;
+          })}
+        </div>
+        <p style=${{fontSize:11,color:"rgba(255,255,255,.3)",marginTop:12,lineHeight:1.6}}>${t.tiebreak}</p>
+      </div>`}
+
+      ${popup==="prizes"&&html`<div>
+        <div style=${{display:"flex",flexDirection:"column",gap:10,marginBottom:18}}>
+          ${[{pct:50,l:"\ud83e\udd47 1\u00ba lugar"},{pct:25,l:"\ud83e\udd48 2\u00ba lugar"},{pct:15,l:"\ud83e\udd49 3\u00ba lugar"}].map(function(pi){
+            return html`<div key=${pi.l} style=${{display:"flex",alignItems:"center",justifyContent:"space-between",
+              padding:"12px 16px",borderRadius:12,background:"rgba(245,158,11,.08)",border:"1px solid rgba(245,158,11,.2)"}}>
+              <span style=${{fontSize:14,fontWeight:600}}>${pi.l}</span>
+              <div style=${{textAlign:"right"}}>
+                <div style=${{fontSize:18,fontWeight:800,color:"#fbbf24"}}>${settings.currency} ${Math.floor(total*pi.pct/100)}</div>
+                <div style=${{fontSize:11,color:"rgba(255,255,255,.35)"}}>${pi.pct}% ${lang==="es"?"del pozo":"of pool"}</div>
+              </div>
+            </div>`;
+          })}
+        </div>
+        <div style=${{padding:"14px 16px",borderRadius:12,background:"rgba(59,130,246,.08)",border:"1px solid rgba(59,130,246,.2)",marginBottom:12}}>
+          <div style=${{fontSize:12,fontWeight:700,color:"#93c5fd",marginBottom:6}}>\ud83c\udfe6 ${lang==="es"?"M\u00e9todo de pago":"Payment method"}</div>
+          <p style=${{fontSize:13,color:"rgba(255,255,255,.7)",lineHeight:1.7,margin:0}}>
+            ${lang==="es"
+              ? "Los premios se pagar\u00e1n mediante transferencia bancaria directa a las cuentas de los ganadores dentro de los 7 d\u00edas posteriores a la final del torneo."
+              : "Prizes will be paid via direct bank transfer to the winners' accounts within 7 days of the tournament final."}
+          </p>
+        </div>
+        <p style=${{fontSize:11,color:"rgba(255,255,255,.25)",textAlign:"center",margin:0}}>
+          ${t.adminFee}: ${settings.currency} ${Math.floor(total*.1)} \u00b7 ${human.length}\u00d7${settings.currency}${settings.entryFee}
+        </p>
+      </div>`}
     </div>`}
 
     ${isPastDeadline&&html`<div style=${{
@@ -151,12 +219,22 @@ function HomeView(p) {
         <${Btn} v="secondary" onClick=${function(){ setView("bracket"); }} sx=${{ padding:"12px 20px", fontSize:15 }}>\ud83c\udfc6 ${t.bracket}</${Btn}>
         <${Btn} v="secondary" onClick=${function(){ setView("leaderboard"); }} sx=${{ padding:"12px 20px", fontSize:15 }}>${t.table}</${Btn}>
       </div>
-      <div style=${{ marginTop:12 }}>
+      <div style=${{ marginTop:12, display:"flex", gap:14, justifyContent:"center", flexWrap:"wrap" }}>
         <button onClick=${function(){ generateTCPDF(settings, lang); }} style=${{
           background:"none",border:"none",color:"rgba(255,255,255,.35)",
           fontSize:12,cursor:"pointer",textDecoration:"underline",
           fontFamily:"'DM Sans',sans-serif"
-        }}>\ud83d\udccc ${lang==="es"?"Ver T\u00e9rminos y Condiciones (PDF)":"Terms & Conditions (PDF)"}</button>
+        }}>\ud83d\udccc ${t.tcLink}</button>
+        <button onClick=${function(){ setPopup("scoring"); }} style=${{
+          background:"none",border:"none",color:"rgba(255,255,255,.35)",
+          fontSize:12,cursor:"pointer",textDecoration:"underline",
+          fontFamily:"'DM Sans',sans-serif"
+        }}>\ud83d\udcca ${lang==="es"?"Puntaje":"Scoring"}</button>
+        <button onClick=${function(){ setPopup("prizes"); }} style=${{
+          background:"none",border:"none",color:"rgba(255,255,255,.35)",
+          fontSize:12,cursor:"pointer",textDecoration:"underline",
+          fontFamily:"'DM Sans',sans-serif"
+        }}>\ud83d\udcb8 ${lang==="es"?"Premios":"Prizes"}</button>
       </div>
     </div>
 
@@ -176,47 +254,22 @@ function HomeView(p) {
     </div>
 
 
-    ${total > 0 && html`<${Card} sx=${{ marginBottom:18 }}>
-      <div className="bb" style=${{ fontSize:17, marginBottom:14, color:"rgba(255,255,255,.6)" }}>${t.prizes}</div>
-      <div style=${{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(90px,1fr))", gap:8 }}>
-        ${[{pct:50,l:"\ud83e\udd47 1st"},{pct:25,l:"\ud83e\udd48 2nd"},{pct:15,l:"\ud83e\udd49 3rd"}].map(function(pi){
-          return html`<div key=${pi.l} style=${{ textAlign:"center", background:"rgba(245,158,11,.07)",
-            borderRadius:12, padding:"12px 6px", border:"1px solid rgba(245,158,11,.14)" }}>
-            <div style=${{ fontSize:11, color:"rgba(255,255,255,.42)", marginBottom:3 }}>${pi.l}</div>
-            <div className="bb" style=${{ fontSize:20, color:"#f59e0b" }}>${settings.currency} ${Math.floor(total*pi.pct/100)}</div>
-            <div style=${{ fontSize:11, color:"rgba(255,255,255,.28)" }}>(${pi.pct}%)</div>
+    ${total > 0 && html`<${Card} sx=${{ marginBottom:18, cursor:"pointer" }} onClick=${function(){setPopup("prizes");}}>
+      <div style=${{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+        <div className="bb" style=${{ fontSize:17, color:"rgba(255,255,255,.6)" }}>${t.prizes}</div>
+        <span style=${{fontSize:12,color:"rgba(245,158,11,.6)",fontWeight:600}}>${lang==="es"?"Ver detalles":"See details"} \u2192</span>
+      </div>
+      <div style=${{ display:"flex", gap:8 }}>
+        ${[{pct:50,l:"\ud83e\udd47"},{pct:25,l:"\ud83e\udd48"},{pct:15,l:"\ud83e\udd49"}].map(function(pi){
+          return html`<div key=${pi.l} style=${{ flex:1, textAlign:"center", background:"rgba(245,158,11,.07)",
+            borderRadius:12, padding:"10px 6px", border:"1px solid rgba(245,158,11,.14)" }}>
+            <div style=${{ fontSize:18, marginBottom:2 }}>${pi.l}</div>
+            <div className="bb" style=${{ fontSize:18, color:"#f59e0b" }}>${settings.currency} ${Math.floor(total*pi.pct/100)}</div>
+            <div style=${{ fontSize:10, color:"rgba(255,255,255,.28)" }}>${pi.pct}%</div>
           </div>`;
         })}
       </div>
-      <p style=${{ textAlign:"center", marginTop:10, fontSize:11, color:"rgba(255,255,255,.22)" }}>
-        ${t.adminFee}: ${settings.currency} ${Math.floor(total*.1)} \u00b7 ${human.length}\u00d7${settings.currency}${settings.entryFee}
-      </p>
     </${Card}>`}
-
-
-    <${Card} sx=${{ marginBottom:18, padding:"14px 18px" }}>
-      <div className="bb" style=${{ fontSize:15, marginBottom:10, color:"rgba(255,255,255,.5)" }}>${t.scoring}</div>
-      <div style=${{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
-        <div>
-          <div style=${{ fontSize:11, fontWeight:700, color:"rgba(255,255,255,.35)", marginBottom:6 }}>${t.perMatch}</div>
-          ${[[t.result,"3pts"],[t.goalsA,"1pt"],[t.goalsB,"1pt"],[t.gdiff,"2pts"]].map(function(si){
-            return html`<div key=${si[0]} style=${{ display:"flex", justifyContent:"space-between", fontSize:12, marginBottom:2 }}>
-              <span style=${{ color:"rgba(255,255,255,.5)" }}>${si[0]}</span>
-              <span style=${{ fontWeight:700, color:"#f59e0b" }}>${si[1]}</span>
-            </div>`;
-          })}
-        </div>
-        <div>
-          <div style=${{ fontSize:11, fontWeight:700, color:"rgba(255,255,255,.35)", marginBottom:6 }}>${t.perTeam}</div>
-          ${[[t.r32,"1pt"],[t.r16,"2pts"],[t.qf,"4pts"],[t.sf,"6pts"],[t.final,"10pts"],[t.thirdMatch,"8pts"],[t.thirdWin,"15pts"],[t.champion,"20pts"]].map(function(ki){
-            return html`<div key=${ki[0]} style=${{ display:"flex", justifyContent:"space-between", fontSize:12, marginBottom:2 }}>
-              <span style=${{ color:"rgba(255,255,255,.5)" }}>${ki[0]}</span>
-              <span style=${{ fontWeight:700, color:"#f59e0b" }}>${ki[1]}</span>
-            </div>`;
-          })}
-        </div>
-      </div>
-    </${Card}>
 
 
     ${ranked.length > 0 && html`<${Card} sx=${{ padding:0, overflow:"hidden", marginBottom:18 }}>
@@ -243,7 +296,7 @@ function HomeView(p) {
 
 
     ${topCh.length > 0 && html`<${Card}>
-      <div style=${{ fontWeight:700, fontSize:13, marginBottom:12, color:"rgba(255,255,255,.65)" }}>\ud83c\udfc6 ${t.champion}</div>
+      <div style=${{ fontWeight:700, fontSize:13, marginBottom:12, color:"rgba(255,255,255,.65)" }}>\ud83c\udfc6 ${t.participantPicks}</div>
       <div style=${{ display:"flex", flexWrap:"wrap", gap:7 }}>
         ${topCh.map(function(tc){
           return html`<div key=${tc[0]} style=${{ display:"flex", alignItems:"center", gap:6,

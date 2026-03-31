@@ -338,7 +338,7 @@ function KOMatchRow(p) {
   </div>`;
 }
 
-// - Bracket team column -
+
 function BCol(p) {
   var lang=useLang().lang;
   var teams=p.teams, next=p.next||[], H=p.H, PW=p.PW, PH=p.PH, scores=p.scores||{};
@@ -347,35 +347,33 @@ function BCol(p) {
   function isAdv(team){return team&&next.filter(Boolean).length>0&&next.indexOf(team)>=0;}
   function isElim(team){return team&&next.filter(Boolean).length>0&&next.indexOf(team)<0;}
 
-  return html`<div style=${{display:'flex',flexDirection:'column',alignItems:'center',flexShrink:0,width:PW+'px'}}>
-    <div style=${{fontSize:9,fontWeight:700,color:'rgba(255,255,255,.35)',letterSpacing:'.05em',marginBottom:6,textAlign:'center',whiteSpace:'nowrap'}}>${p.label}</div>
-    <div style=${{position:'relative',width:'100%',height:H+'px'}}>
-      ${teams.map(function(team,i){
-        var a=isAdv(team), e=isElim(team);
-        var pairIdx=Math.floor(i/2);
-        var score=a?scores[pairIdx]:null;
-        var top=i*slotH+(slotH-PH)/2;
-        return html`<div key=${i} style=${{
-          position:'absolute',top:top+'px',left:0,right:0,height:PH+'px',
-          display:'flex',alignItems:'center',gap:3,padding:'0 4px',borderRadius:5,
-          background:a?'rgba(74,222,128,.12)':e?'rgba(255,255,255,.02)':'rgba(255,255,255,.06)',
-          border:'1px solid '+(a?'rgba(74,222,128,.35)':e?'rgba(255,255,255,.07)':'rgba(255,255,255,.12)'),
-        }}>
-          ${team
-            ? html`
-              <${FlagImg} team=${team} dim=${e}/>
-              <span style=${{fontSize:8,fontWeight:a?600:400,flex:1,minWidth:0,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',marginLeft:2,
-                color:a?'#4ade80':e?'rgba(255,255,255,.35)':'rgba(255,255,255,.75)'}}>${teamName(team,lang)}</span>
-              ${score&&html`<span style=${{flexShrink:0,fontSize:8,fontWeight:800,background:'rgba(245,158,11,.3)',
-                border:'1px solid rgba(245,158,11,.6)',borderRadius:3,padding:'0 3px',
-                color:'#fde68a',whiteSpace:'nowrap'}}>${score}</span>`}
-            `
-            : html`<span style=${{fontSize:8,color:'rgba(255,255,255,.18)',fontStyle:'italic',flex:1}}>TBD</span>`
-          }
-        </div>`;
-      })}
-    </div>
+  return html`<div style=${{position:'relative',width:PW+'px',height:H+'px',flexShrink:0}}>
+    ${teams.map(function(team,i){
+      var a=isAdv(team), e=isElim(team);
+      var pairIdx=Math.floor(i/2);
+      var score=a?scores[pairIdx]:null;
+      var top=i*slotH+(slotH-PH)/2;
+      return html`<div key=${i} style=${{
+        position:'absolute',top:top+'px',left:0,right:0,height:PH+'px',
+        display:'flex',alignItems:'center',gap:3,padding:'0 4px',borderRadius:5,
+        background:a?'rgba(74,222,128,.12)':e?'rgba(255,255,255,.02)':'rgba(255,255,255,.06)',
+        border:'1px solid '+(a?'rgba(74,222,128,.35)':e?'rgba(255,255,255,.07)':'rgba(255,255,255,.12)'),
+      }}>
+        ${team
+          ? html`
+            <${FlagImg} team=${team} dim=${e}/>
+            <span style=${{fontSize:8,fontWeight:a?600:400,flex:1,minWidth:0,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',marginLeft:2,
+              color:a?'#4ade80':e?'rgba(255,255,255,.35)':'rgba(255,255,255,.75)'}}>${teamName(team,lang)}</span>
+            ${score&&html`<span style=${{flexShrink:0,fontSize:8,fontWeight:800,background:'rgba(245,158,11,.3)',
+              border:'1px solid rgba(245,158,11,.6)',borderRadius:3,padding:'0 3px',
+              color:'#fde68a',whiteSpace:'nowrap'}}>${score}</span>`}
+          `
+          : html`<span style=${{fontSize:8,color:'rgba(255,255,255,.18)',fontStyle:'italic',flex:1}}>TBD</span>`
+        }
+      </div>`;
+    })}
   </div>`;
+}
 }
 
 // - Bracket connector SVG -
@@ -465,7 +463,7 @@ function BracketView(p) {
   var lSF  = [C.sf['sf_0']&&C.sf['sf_0'].home||null, C.sf['sf_0']&&C.sf['sf_0'].away||null];
   var rSF  = [C.sf['sf_1']&&C.sf['sf_1'].home||null, C.sf['sf_1']&&C.sf['sf_1'].away||null];
 
-  // Advancing team lists — who won each match in each column
+  
   // r32teams = R32 winners (advance to R16), r16teams = R16 winners (advance to QF), etc.
   var lR32adv = C.r32teams.slice(0, 8);   // winners of fixtures 0-7
   var rR32adv = C.r32teams.slice(8);      // winners of fixtures 8-15
@@ -477,7 +475,7 @@ function BracketView(p) {
   var lSFadv  = C.sf['sf_0']&&C.sf['sf_0'].winner ? [C.sf['sf_0'].winner] : [];
   var rSFadv  = C.sf['sf_1']&&C.sf['sf_1'].winner ? [C.sf['sf_1'].winner] : [];
 
-  // Build score map for each column — keyed by pair index
+  
   // e.g. lR32 pair 0 = r32_0, pair 1 = r32_1, ...
   function scoreMap(matchIds) {
     var out = {};
@@ -511,6 +509,36 @@ function BracketView(p) {
 
   return html`<div>
     <div class="bscroll" style=${{paddingTop:4,paddingBottom:12}}>
+
+      <div style=${{display:'flex',alignItems:'flex-end',gap:0,minWidth:'1700px',marginBottom:6}}>
+        ${[
+          {label:t.r32, w:PW},
+          {label:'', w:CW},
+          {label:t.r16, w:PW},
+          {label:'', w:CW},
+          {label:t.qf,  w:PW},
+          {label:'', w:CW},
+          {label:t.sf,  w:PW},
+          {label:'', w:CW},
+          {label:'\ud83c\udfc6', w:170},
+          {label:'', w:CW},
+          {label:t.sf,  w:PW},
+          {label:'', w:CW},
+          {label:t.qf,  w:PW},
+          {label:'', w:CW},
+          {label:t.r16, w:PW},
+          {label:'', w:CW},
+          {label:t.r32, w:PW},
+        ].map(function(col,i){
+          return html`<div key=${i} style=${{
+            width:col.w+'px',flexShrink:0,textAlign:'center',
+            fontSize:9,fontWeight:700,
+            color:'rgba(255,255,255,.35)',letterSpacing:'.05em',
+            whiteSpace:'nowrap',overflow:'hidden'
+          }}>${col.label}</div>`;
+        })}
+      </div>
+
       <div style=${{display:'flex',alignItems:'flex-start',gap:0,minWidth:'1700px'}}>
 
         ${col(t.r32, lR32, lR32adv, lR32ids)}
@@ -524,7 +552,6 @@ function BracketView(p) {
 
         <div style=${{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',
           height:H+'px',width:'170px',flexShrink:0,padding:'0 8px'}}>
-          <div style=${{fontSize:9,fontWeight:700,color:'rgba(245,158,11,.7)',marginBottom:5,textAlign:'center',letterSpacing:'.06em'}}>${'\ud83c\udfc6'} ${t.champion}</div>
           <div style=${{padding:'8px 10px',borderRadius:10,textAlign:'center',width:'100%',marginBottom:4,
             background:ch?'rgba(245,158,11,.15)':'rgba(255,255,255,.04)',
             border:'2px solid '+(ch?'rgba(245,158,11,.5)':'rgba(255,255,255,.1)')}}>
@@ -549,7 +576,7 @@ function BracketView(p) {
                 <${FlagImg} team=${t3}/>
                 <span style=${{fontSize:9,flex:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',
                   color:isW?'#fb923c':'rgba(255,255,255,.5)'}}>${teamName(t3,lang)}</span>
-                ${isW&&html`<span style=${{fontSize:8,color:'#fb923c'}}>${'-'}</span>`}
+                ${isW&&html`<span style=${{fontSize:8,color:'#fb923c'}}>-</span>`}
               </div>`;
             })}
           </div>`}
@@ -567,7 +594,6 @@ function BracketView(p) {
       </div>
     </div>
     <p style=${{fontSize:10,color:'rgba(255,255,255,.22)',marginTop:6,textAlign:'center'}}>${t.bracketSub}</p>
-    <${BracketScoreTable} C=${C} ko=${preds.ko||{}} lang=${lang} t=${t}/>
   </div>`;
 }
 
