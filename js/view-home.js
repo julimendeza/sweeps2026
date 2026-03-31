@@ -22,6 +22,9 @@ function HomeView(p) {
   var gFilled = Object.keys(results.groups || {}).filter(function(k){
     return results.groups[k] && results.groups[k].h !== "";
   }).length;
+  var koFilled = Object.keys(results.ko || {}).filter(function(k){
+    return results.ko[k] && results.ko[k].h !== "";
+  }).length;
 
   // Deadline logic
   var now = new Date();
@@ -223,7 +226,7 @@ function HomeView(p) {
       ${[
         { e:"\ud83d\udc65", v:human.length,              l:t.participants },
         { e:"\ud83d\udcb0", v:settings.currency+" "+total, l:t.inPlay       },
-        { e:"\u26bd",       v:gFilled+"/72",              l:t.loaded        }
+        { e:"\u26bd",       v:(gFilled+koFilled)+"/104",   l:t.loaded        }
       ].map(function(s){
         return html`<${Card} key=${s.l} sx=${{ textAlign:"center", padding:"15px 8px" }}>
           <div style=${{ fontSize:22, marginBottom:3 }}>${s.e}</div>
