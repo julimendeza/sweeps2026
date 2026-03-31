@@ -374,7 +374,6 @@ function BCol(p) {
     })}
   </div>`;
 }
-}
 
 // - Bracket connector SVG -
 function BConn(p) {
