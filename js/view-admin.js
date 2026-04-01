@@ -28,7 +28,6 @@ function AdminView(p) {
   var tabs = [
     { id:"results",  l:t.results   },
     { id:"parts",    l:t.partTab   },
-    { id:"playoffs", l:"\ud83c\udfc6 Playoffs" },
     { id:"stats",    l:"\ud83d\udcca Stats"    },
     { id:"picks",    l:"\ud83c\udfaf Picks"    },
     { id:"email",    l:t.emailTab  },
