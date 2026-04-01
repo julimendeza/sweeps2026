@@ -13,10 +13,14 @@ function HomeView(p) {
   var human = participants.filter(function(x){ return x.id !== "claude_bot"; });
   var total = human.length * settings.entryFee;
 
-  var chCounts = {};
-  human.forEach(function(x){
-    var xC=cascadeKO(x.preds&&x.preds.groups,x.preds&&x.preds.ko||{}); if(xC.champion) chCounts[xC.champion]=(chCounts[xC.champion]||0)+1;
-  });
+  var chCounts = useMemo(function(){
+    var counts = {};
+    participants.forEach(function(x){
+      var xC=cascadeKO(x.preds&&x.preds.groups, x.preds&&x.preds.ko||{}, x.preds&&x.preds.tiebreaker);
+      if(xC.champion) counts[xC.champion]=(counts[xC.champion]||0)+1;
+    });
+    return counts;
+  }, [participants]);
   var topCh = Object.entries(chCounts).sort(function(a,b){ return b[1] - a[1]; });
 
   var gFilled = Object.keys(results.groups || {}).filter(function(k){
@@ -249,7 +253,7 @@ function HomeView(p) {
         background:"rgba(99,102,241,.08)",border:"1.5px solid rgba(99,102,241,.25)",
         color:"#a5b4fc",fontWeight:700,fontSize:14,fontFamily:"'DM Sans',sans-serif",
         transition:"all .15s"
-      }}>\ud83d\udcca ${lang==="es"?"Ver Sistema de Puntaje":"See Scoring System"}</button>
+      }}>\ud83d\udcca ${lang==="es"?"Ver Puntaje":"See Scoring"}</button>
     </div>
 
 
