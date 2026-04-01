@@ -188,60 +188,69 @@ var CLAUDE_ENTRY = {
   email: "claude@anthropic.com",
   preds: {
     groups: {
-      A1:{h:"2",a:"0"},A2:{h:"2",a:"0"},A3:{h:"1",a:"1"},A4:{h:"1",a:"1"},A5:{h:"2",a:"1"},A6:{h:"0",a:"2"},
-      B1:{h:"1",a:"1"},B2:{h:"0",a:"2"},B3:{h:"3",a:"0"},B4:{h:"1",a:"2"},B5:{h:"1",a:"2"},B6:{h:"2",a:"0"},
+      // Group A: Mexico, South Africa, South Korea, Czechia
+      // Prediction: Mexico 1st, South Korea 2nd, Czechia 3rd, South Africa 4th
+      A1:{h:"2",a:"0"},A2:{h:"2",a:"1"},A3:{h:"1",a:"1"},A4:{h:"2",a:"0"},A5:{h:"2",a:"1"},A6:{h:"1",a:"2"},
+      // Group B: Canada, Bosnia & Herz., Qatar, Switzerland
+      // Prediction: Switzerland 1st, Canada 2nd, Bosnia 3rd, Qatar 4th
+      B1:{h:"1",a:"2"},B2:{h:"0",a:"2"},B3:{h:"2",a:"1"},B4:{h:"1",a:"2"},B5:{h:"0",a:"2"},B6:{h:"2",a:"1"},
+      // Group C: Brazil, Morocco, Haiti, Scotland
+      // Prediction: Brazil 1st, Morocco 2nd, Scotland 3rd, Haiti 4th
       C1:{h:"2",a:"1"},C2:{h:"0",a:"2"},C3:{h:"4",a:"0"},C4:{h:"1",a:"1"},C5:{h:"3",a:"0"},C6:{h:"2",a:"0"},
-      D1:{h:"2",a:"1"},D2:{h:"1",a:"0"},D3:{h:"2",a:"0"},D4:{h:"2",a:"1"},D5:{h:"1",a:"0"},D6:{h:"1",a:"1"},
+      // Group D: USA, Paraguay, Australia, Turkey
+      // Prediction: USA 1st, Turkey 2nd, Paraguay 3rd, Australia 4th
+      D1:{h:"2",a:"1"},D2:{h:"1",a:"2"},D3:{h:"2",a:"1"},D4:{h:"1",a:"2"},D5:{h:"2",a:"1"},D6:{h:"1",a:"1"},
+      // Group E: Germany, Curaçao, Ivory Coast, Ecuador
+      // Prediction: Germany 1st, Ivory Coast 2nd, Ecuador 3rd, Curaçao 4th
       E1:{h:"4",a:"0"},E2:{h:"1",a:"1"},E3:{h:"2",a:"1"},E4:{h:"0",a:"3"},E5:{h:"2",a:"0"},E6:{h:"0",a:"2"},
-      F1:{h:"2",a:"1"},F2:{h:"1",a:"0"},F3:{h:"2",a:"0"},F4:{h:"2",a:"0"},F5:{h:"3",a:"0"},F6:{h:"1",a:"1"},
+      // Group F: Netherlands, Japan, Sweden, Tunisia
+      // Prediction: Netherlands 1st, Sweden 2nd, Japan 3rd, Tunisia 4th
+      F1:{h:"2",a:"1"},F2:{h:"1",a:"0"},F3:{h:"1",a:"1"},F4:{h:"2",a:"1"},F5:{h:"3",a:"0"},F6:{h:"2",a:"1"},
+      // Group G: Belgium, Egypt, Iran, New Zealand
+      // Prediction: Belgium 1st, Egypt 2nd, Iran 3rd, New Zealand 4th
       G1:{h:"3",a:"1"},G2:{h:"1",a:"0"},G3:{h:"2",a:"0"},G4:{h:"2",a:"0"},G5:{h:"3",a:"0"},G6:{h:"1",a:"1"},
+      // Group H: Spain, Cape Verde, Saudi Arabia, Uruguay
+      // Prediction: Spain 1st, Uruguay 2nd, Cape Verde 3rd, Saudi Arabia 4th
       H1:{h:"4",a:"0"},H2:{h:"1",a:"2"},H3:{h:"2",a:"0"},H4:{h:"0",a:"2"},H5:{h:"1",a:"0"},H6:{h:"1",a:"1"},
+      // Group I: France, Senegal, Iraq, Norway
+      // Prediction: France 1st, Norway 2nd, Senegal 3rd, Iraq 4th
       I1:{h:"2",a:"1"},I2:{h:"0",a:"2"},I3:{h:"3",a:"0"},I4:{h:"1",a:"2"},I5:{h:"2",a:"1"},I6:{h:"2",a:"0"},
+      // Group J: Argentina, Algeria, Austria, Jordan
+      // Prediction: Argentina 1st, Austria 2nd, Algeria 3rd, Jordan 4th
       J1:{h:"2",a:"0"},J2:{h:"2",a:"1"},J3:{h:"2",a:"1"},J4:{h:"2",a:"0"},J5:{h:"3",a:"0"},J6:{h:"1",a:"1"},
+      // Group K: Portugal, DR Congo, Uzbekistan, Colombia
+      // Prediction: Portugal 1st, Colombia 2nd, Uzbekistan 3rd, DR Congo 4th
       K1:{h:"3",a:"0"},K2:{h:"0",a:"2"},K3:{h:"3",a:"0"},K4:{h:"0",a:"2"},K5:{h:"2",a:"1"},K6:{h:"0",a:"1"},
+      // Group L: England, Croatia, Ghana, Panama
+      // Prediction: England 1st, Croatia 2nd, Ghana 3rd, Panama 4th
       L1:{h:"2",a:"0"},L2:{h:"1",a:"1"},L3:{h:"3",a:"1"},L4:{h:"2",a:"0"},L5:{h:"4",a:"0"},L6:{h:"2",a:"1"}
     },
-    r32: ["Spain","France","Brazil","Argentina","Germany","England","Portugal","Netherlands",
-          "Morocco","Colombia","USA","Japan","South Korea","Norway","Uruguay","Senegal",
-          "Mexico","Belgium","Ecuador","Croatia","Switzerland","Australia","Ivory Coast","Tunisia",
-          "Austria","Algeria","Uzbekistan","Jordan","Ghana","Scotland","Canada","Qatar"],
-    r16:      ["Spain","France","Brazil","Argentina","Germany","England","Portugal","Netherlands","Morocco","Colombia","USA","Japan","South Korea","Norway","Uruguay","Senegal"],
-    qf:       ["Spain","France","Brazil","Argentina","Germany","England","Portugal","Colombia"],
-    sf:       ["Spain","France","Brazil","Argentina"],
-    final:    ["Spain","France"],
     champion: "Spain",
     thirdWin: "Brazil",
     ko: {
-      // Round of 32 (home score first, winner advances)
-      // r32_0: Mexico vs Canada        r32_1: Germany vs Playoff A
-      // r32_2: Netherlands vs Morocco  r32_3: Brazil vs Japan
-      // r32_4: France vs Australia     r32_5: Ecuador vs Norway
-      // r32_6: S.Korea vs Scotland     r32_7: England vs Senegal
-      // r32_8: USA vs Playoff B        r32_9: Belgium vs Ivory Coast
-      // r32_10: Colombia vs Croatia    r32_11: Spain vs Austria
-      // r32_12: Switzerland vs Iran    r32_13: Argentina vs Uruguay
-      // r32_14: Portugal vs Algeria    r32_15: Paraguay vs Egypt
+      // Round of 32 — using real playoff teams
+      // r32_0: Switzerland vs Canada      r32_1: Germany vs Bosnia
+      // r32_2: Netherlands vs Morocco     r32_3: Brazil vs Japan
+      // r32_4: France vs Turkey           r32_5: Ivory Coast vs Norway
+      // r32_6: Mexico vs Sweden           r32_7: England vs Senegal
+      // r32_8: USA vs DR Congo            r32_9: Belgium vs Egypt
+      // r32_10: Colombia vs Croatia       r32_11: Spain vs Austria
+      // r32_12: Canada vs Iraq            r32_13: Argentina vs Uruguay
+      // r32_14: Portugal vs Czechia       r32_15: Paraguay vs Turkey (wait - Turkey in r32_4)
       r32_0:{h:"2",a:"1"}, r32_1:{h:"3",a:"0"}, r32_2:{h:"2",a:"1"}, r32_3:{h:"3",a:"0"},
-      r32_4:{h:"3",a:"0"}, r32_5:{h:"0",a:"2"}, r32_6:{h:"2",a:"1"}, r32_7:{h:"2",a:"0"},
+      r32_4:{h:"3",a:"0"}, r32_5:{h:"2",a:"1"}, r32_6:{h:"2",a:"1"}, r32_7:{h:"2",a:"0"},
       r32_8:{h:"2",a:"1"}, r32_9:{h:"2",a:"1"}, r32_10:{h:"2",a:"1"},r32_11:{h:"3",a:"0"},
       r32_12:{h:"2",a:"1"},r32_13:{h:"2",a:"1"},r32_14:{h:"2",a:"0"},r32_15:{h:"2",a:"1"},
       // Round of 16
-      // r16_0: Mexico vs Germany       r16_1: Netherlands vs Brazil
-      // r16_2: France vs Norway        r16_3: S.Korea vs England
-      // r16_4: USA vs Belgium          r16_5: Colombia vs Spain
-      // r16_6: Switzerland vs Argentina r16_7: Portugal vs Paraguay
       r16_0:{h:"1",a:"2"}, r16_1:{h:"1",a:"2"}, r16_2:{h:"2",a:"0"}, r16_3:{h:"1",a:"2"},
       r16_4:{h:"2",a:"1"}, r16_5:{h:"1",a:"2"}, r16_6:{h:"0",a:"2"}, r16_7:{h:"2",a:"0"},
       // Quarter-Finals
-      // qf_0: Germany vs Brazil        qf_1: France vs England
-      // qf_2: USA vs Spain             qf_3: Argentina vs Portugal
       qf_0:{h:"1",a:"2"}, qf_1:{h:"2",a:"0"}, qf_2:{h:"0",a:"2"}, qf_3:{h:"2",a:"1"},
-      // Semi-Finals
-      // sf_0: Brazil vs France         sf_1: Spain vs Argentina
+      // Semi-Finals: Brazil vs France, Spain vs Argentina
       sf_0:{h:"1",a:"2"}, sf_1:{h:"2",a:"1"},
-      // Final: Spain vs France → Spain wins 1-0
+      // Final: France vs Spain → Spain wins 0-1
       // 3rd place: Brazil vs Argentina → Brazil wins 3-2
-      final:{h:"1",a:"0"}, s3rd:{h:"3",a:"2"}
+      final:{h:"0",a:"1"}, s3rd:{h:"3",a:"2"}
     }
   }
 };
