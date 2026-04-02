@@ -557,14 +557,23 @@ function BracketView(p) {
             ${ch
               ? html`<${FlagImg} team=${ch}/><div style=${{fontWeight:700,color:'#fbbf24',fontSize:12,marginTop:3}}>${teamName(ch,lang)}</div>`
               : html`<div style=${{fontSize:9,color:'rgba(255,255,255,.25)',fontStyle:'italic',padding:'4px 0'}}>TBD</div>`}
-          </div>
+          </div>       
+
           ${C.final&&C.final.score&&html`<div style=${{display:'flex',alignItems:'center',gap:4,
             background:'rgba(245,158,11,.14)',border:'1px solid rgba(245,158,11,.3)',
             borderRadius:6,padding:'3px 10px',marginBottom:8,width:'100%',justifyContent:'center'}}>
-            <span style=${{fontSize:9,color:'rgba(255,255,255,.5)'}}>${ch?teamName(ch,lang):'?'}</span>
-            <span style=${{fontWeight:800,fontSize:14,color:'#fbbf24',letterSpacing:2}}>${C.final.score.h}-${C.final.score.a}</span>
-            <span style=${{fontSize:9,color:'rgba(255,255,255,.5)'}}>${ru?teamName(ru,lang):'?'}</span>
+            ${(function(){
+              var champIsHome = C.final.home === ch;
+              var cs = champIsHome ? C.final.score.h : C.final.score.a;
+              var rs = champIsHome ? C.final.score.a : C.final.score.h;
+              return html`
+                <span style=${{fontSize:9,color:'rgba(255,255,255,.5)'}}>${ch?teamName(ch,lang):'?'}</span>
+                <span style=${{fontWeight:800,fontSize:14,color:'#fbbf24',letterSpacing:2}}>${cs}-${rs}</span>
+                <span style=${{fontSize:9,color:'rgba(255,255,255,.5)'}}>${ru?teamName(ru,lang):'?'}</span>
+              `;
+            })()}
           </div>`}
+          
           ${thirds.filter(Boolean).length>0&&html`<div style=${{width:'100%'}}>
             <div style=${{fontSize:9,fontWeight:700,color:'rgba(180,83,9,.7)',textAlign:'center',marginBottom:4}}>${'\ud83e\udd49'} 3rd</div>
             ${thirds.slice(0,2).filter(Boolean).map(function(t3){
