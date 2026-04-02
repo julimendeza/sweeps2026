@@ -281,7 +281,7 @@ function HomeView(p) {
 
 
     ${topCh.length > 0 && html`<${Card}>
-      <div style=${{ fontWeight:700, fontSize:13, marginBottom:12, color:"rgba(255,255,255,.65)" }}>\ud83c\udfc6 ${lang==="es"?"Predicciones de los Participantes":"Participant Champion Picks"}</div>
+      <div style=${{ fontWeight:700, fontSize:13, marginBottom:12, color:"rgba(255,255,255,.65)" }}>\ud83c\udfc6 ${lang==="es"?"Predicciones de Campeón de los Participantes":"Participant Champion Picks"}</div>
       <div style=${{ display:"flex", flexWrap:"wrap", gap:7 }}>
         ${topCh.map(function(tc){
           return html`<div key=${tc[0]} style=${{ display:"flex", alignItems:"center", gap:6,
