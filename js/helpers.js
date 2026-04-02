@@ -725,7 +725,9 @@ async function generateReportPDF(participant, results, settings, lang) {
     doc.text(es?"GANADOR 3er LUGAR":"3RD PLACE WINNER",M+1,y); y+=8;
     var twHit=pC.thirdWin&&rC.thirdWin&&pC.thirdWin===rC.thirdWin;
     doc.setFontSize(8);doc.setFont("helvetica","normal");doc.setTextColor(50,60,80);
-    doc.text((es?"Pred: ":"Pred: ")+(pC.thirdWin||"?"), M, y);
+    var twx=M+addFlag(pC.thirdWin,M,y);
+    doc.text((es?"Pred: ":"Pred: ")+(pC.thirdWin||"?"), twx, y);
+    var trx=COL_AWAY+addFlag(rC.thirdWin,COL_AWAY+3,y);
     doc.text((es?"Real: ":"Actual: ")+(rC.thirdWin||"?"), W-M-20, y);
     if(twHit){doc.setFont("helvetica","bold");doc.setTextColor(20,130,50);doc.text("+"+sc.thirdWin,COL_PTS,y,{align:"right"});}
     y+=12;
