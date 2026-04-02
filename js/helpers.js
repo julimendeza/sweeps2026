@@ -357,21 +357,28 @@ function pdfName(str) {
 // Tries rC first (actual result cascade), falls back to pC (player cascade)
 // Checks .home !== null to avoid the truthy-but-empty-object trap
 function resolveKOMatch(fid, rC, pC) {
+  // For the participant score report, prefer pC (participant's predicted bracket)
+  // so team names are always consistent with their predictions.
+  // Fall back to rC only if pC has no resolved teams for this slot.
   var maps = [
-    rC.r32,rC.r16,rC.qf,rC.sf,
-    pC.r32,pC.r16,pC.qf,pC.sf
+    pC.r32, pC.r16, pC.qf, pC.sf,
+    rC.r32, rC.r16, rC.qf, rC.sf
   ];
   for (var i=0; i<maps.length; i++) {
     var m = maps[i] && maps[i][fid];
     if (m && (m.home || m.away)) return m;
   }
-  if (fid==="final") {
-    return { home: (rC.finalTeams&&rC.finalTeams[0])||(pC.finalTeams&&pC.finalTeams[0])||null,
-             away: (rC.finalTeams&&rC.finalTeams[1])||(pC.finalTeams&&pC.finalTeams[1])||null };
+  if (fid === "final") {
+    return {
+      home: (rC.final && rC.final.home) || (pC.final && pC.final.home) || null,
+      away: (rC.final && rC.final.away) || (pC.final && pC.final.away) || null
+    };
   }
-  if (fid==="s3rd") {
-    return { home: (rC.thirdTeams&&rC.thirdTeams[0])||(pC.thirdTeams&&pC.thirdTeams[0])||null,
-             away: (rC.thirdTeams&&rC.thirdTeams[1])||(pC.thirdTeams&&pC.thirdTeams[1])||null };
+  if (fid === "s3rd") {
+    return {
+      home: (rC.s3rd && rC.s3rd.home) || (pC.s3rd && pC.s3rd.home) || null,
+      away: (rC.s3rd && rC.s3rd.away) || (pC.s3rd && pC.s3rd.away) || null
+    };
   }
   return { home:null, away:null };
 }
@@ -666,12 +673,12 @@ async function generateReportPDF(participant, results, settings, lang) {
     doc.text(es?"FASE ELIMINATORIA":"KNOCKOUT STAGE",M+1,y); y+=9;
 
     var koSections=[
-      {label:es?"Ronda de 32":"Round of 32",     ids:R32_FIXTURES.map(function(f){return f.id;})},
-      {label:es?"Ronda de 16":"Round of 16",     ids:KO_BRACKET.r16.map(function(f){return f.id;})},
-      {label:es?"Cuartos de Final":"Quarter-Finals",ids:KO_BRACKET.qf.map(function(f){return f.id;})},
-      {label:es?"Semifinales":"Semi-Finals",     ids:KO_BRACKET.sf.map(function(f){return f.id;})},
-      {label:"Final",                            ids:["final"]},
-      {label:es?"3er Lugar":"3rd Place",         ids:["s3rd"]}
+      {label:es?"Ronda de 32":"Round of 32",        ids:R32_FIXTURES.map(function(f){return f.id;})},
+      {label:es?"Ronda de 16":"Round of 16",         ids:KO_BRACKET.r16.map(function(f){return f.id;})},
+      {label:es?"Cuartos de Final":"Quarter-Finals", ids:KO_BRACKET.qf.map(function(f){return f.id;})},
+      {label:es?"Semifinales":"Semi-Finals",         ids:KO_BRACKET.sf.map(function(f){return f.id;})},
+      {label:es?"3er Lugar":"3rd Place",             ids:["s3rd"]},
+      {label:"Final",                                ids:["final"]}
     ];
 
     koSections.forEach(function(ks){
@@ -683,9 +690,15 @@ async function generateReportPDF(participant, results, settings, lang) {
         var pred=preds.ko&&preds.ko[fid];
         var res =results.ko&&results.ko[fid];
         var pts=scoreMatch(pred,res);
-        var pSc=(pred&&pred.h!==''&&pred.h!==undefined)?pred.h+"-"+pred.a:"?";
-        var rSc=(res&&res.h!==''&&res.h!==undefined)?res.h+"-"+res.a:"?";
         var teams=resolveKOMatch(fid,rC,pC);
+        // For final/s3rd, orient the score so home team = teams.home
+        var pSc, rSc;
+        if(pred&&pred.h!==''&&pred.h!==undefined){
+          pSc=pred.h+"-"+pred.a;
+        } else { pSc="?"; }
+        if(res&&res.h!==''&&res.h!==undefined){
+          rSc=res.h+"-"+res.a;
+        } else { rSc="?"; }
         matchRow(teams.home||"TBD", teams.away||"TBD", pSc, rSc,
           (res&&res.h!==''&&res.h!==undefined)?pts:null);
       });

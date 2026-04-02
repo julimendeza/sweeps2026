@@ -135,8 +135,8 @@ var KO_ROUNDS = [
   {id:"r16",label:"Round of 16",  count:8,  fixtures:KO_BRACKET.r16},
   {id:"qf", label:"Quarter-Finals",count:4, fixtures:KO_BRACKET.qf},
   {id:"sf", label:"Semi-Finals",  count:2,  fixtures:KO_BRACKET.sf},
-  {id:"final",label:"Final",      count:1,  fixtures:[KO_BRACKET.final]},
   {id:"s3rd", label:"3rd Place",  count:1,  fixtures:[KO_BRACKET.s3rd]},
+  {id:"final",label:"Final",      count:1,  fixtures:[KO_BRACKET.final]},
 ];
 
 // ── App defaults ─────────────────────────────────────────────────────
