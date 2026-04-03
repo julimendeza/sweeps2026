@@ -143,9 +143,9 @@ var KO_ROUNDS = [
 var DEF = {
   adminPw:    "PuraFoda888!",
   entryFee:   40,
-  currency:   "COP",
+  currency:   "AUD",
   adminEmail: "",
-  firebase:   "https://polla-col-2026-default-rtdb.firebaseio.com",
+  firebase:   "https://quiniela2026-jema-default-rtdb.asia-southeast1.firebasedatabase.app",
   deadline:   "2026-06-10T23:59",
   tcUrl:      "",
   access:     "off",   // "off" | "simple" | "robust"

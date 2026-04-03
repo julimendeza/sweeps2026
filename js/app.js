@@ -5,11 +5,8 @@ function App() {
   var rState     = useState(Object.assign({}, ER)); var results  = rState[0], setR = rState[1];
   var sState     = useState(Object.assign({}, DEF)); var settings = sState[0], setS = sState[1];
   var readyState = useState(false);     var ready = readyState[0], setReady = readyState[1];
-  var langState  = useState("es"); // locked to Spanish
-  var lang  = langState[0],  setLangRaw = langState[1];
+  var langState  = useState("es");      var lang  = langState[0],  setLangRaw = langState[1];
   var dbStatusState = useState("local"); var dbStatus = dbStatusState[0], setDbStatus = dbStatusState[1];
-  var themeState = useState(function(){ try{ return localStorage.getItem('wc26_theme')||'dark'; }catch(e){ return 'dark'; } });
-  var theme = themeState[0], setThemeRaw = themeState[1];
 
   // ── Load persisted data on mount ─────────────────────────────────
   useEffect(function(){
@@ -64,7 +61,7 @@ function App() {
         var loaded = await Promise.all([
           db.get("wc26_p"),
           db.get("wc26_r"),
-          Promise.resolve("es")
+          db.getLang()
         ]);
         var pp = loaded[0], rr = loaded[1], ll = loaded[2];
 
@@ -89,12 +86,7 @@ function App() {
   function sv(key, setter) {
     return async function(data) { setter(data); await db.set(key, data); };
   }
-  async function setLang(l) { setLangRaw("es"); } // locked to Spanish
-  function setTheme(t) {
-    setThemeRaw(t);
-    try { localStorage.setItem('wc26_theme', t); } catch(e){}
-    document.body.dataset.theme = t;
-  }
+  async function setLang(l) { setLangRaw(l); await db.setLang(l); }
 
   // ── Re-wire Firebase when settings change ────────────────────────
   async function saveSettings(newS) {
@@ -109,19 +101,15 @@ function App() {
     }
   }
 
-  // Apply theme on mount
-  useEffect(function(){ document.body.dataset.theme = theme; }, [theme]);
-
   // ── Loading screen ────────────────────────────────────────────────
-  var thm = THEMES[theme] || THEMES.dark;
   if (!ready) return html`<div style=${{
-    minHeight:"100vh", background:thm.loadBg, display:"flex",
+    minHeight:"100vh", background:"#080f1c", display:"flex",
     alignItems:"center", justifyContent:"center",
-    fontFamily:"'DM Sans',sans-serif", color:thm.loadColor,
+    fontFamily:"'DM Sans',sans-serif", color:"rgba(245,158,11,.4)",
     fontSize:18, letterSpacing:".1em"
-  }}>\u26BD\uFE0E CARGANDO...</div>`;
+  }}>&#x26BD; LOADING...</div>`;
 
-  var lCtx = { lang: lang, t: T[lang], setLang: setLang, thm: THEMES[theme]||THEMES.dark, setTheme: setTheme };
+  var lCtx = { lang: lang, t: T[lang], setLang: setLang };
 
   return html`<${LangCtx.Provider} value=${lCtx}>
     <div style=${{ minHeight:"100vh" }}>
@@ -152,24 +140,6 @@ function App() {
         saveResults=${sv("wc26_r", setR)}
         saveSettings=${saveSettings}
         saveParticipants=${sv("wc26_p", setP)}/>`}
-
-      <!-- Floating theme toggle -->
-      <button
-        onClick=${function(){ setTheme(theme === 'dark' ? 'estadio' : 'dark'); }}
-        title=${theme === 'dark' ? 'Cambiar a tema Estadio' : 'Cambiar a tema Noche'}
-        style=${{
-          position:"fixed", bottom:22, right:18, zIndex:9999,
-          width:44, height:44, borderRadius:"50%",
-          background: thm.accent,
-          color: thm.onAccent,
-          border:"none", cursor:"pointer",
-          fontSize:20, lineHeight:1,
-          boxShadow:"0 4px 16px "+thm.a(.45),
-          display:"flex", alignItems:"center", justifyContent:"center",
-          transition:"all .2s",
-          fontFamily:"'DM Sans',sans-serif"
-        }}
-      >${theme === 'dark' ? '🏟' : '🌙'}</button>
 
     </div>
   </${LangCtx.Provider}>`;
