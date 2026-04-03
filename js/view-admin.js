@@ -1182,9 +1182,7 @@ function AdminSettings(p) {
         style=${{ fontFamily:"monospace", fontSize:12 }}/>
     </${Field}>
     <div style=${{fontSize:11,color:thm.inv(.3),marginBottom:16,lineHeight:1.7}}>
-      Optional. Create a free Firebase Realtime Database at console.firebase.google.com,
-      set rules to public read/write, paste the URL above and save. All data will
-      then sync across all users automatically. Leave blank to use local storage only.
+      Opcional. Crea una base de datos gratuita en console.firebase.google.com, configura las reglas como lectura/escritura pública, pega la URL arriba y guarda. Todos los datos se sincronizarán automáticamente entre usuarios. Déjalo vacío para usar solo almacenamiento local.
     </div>
     <${Field} label="Fecha límite de registro">
       <input type="datetime-local" value=${loc.deadline||""}
