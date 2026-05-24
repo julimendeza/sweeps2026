@@ -167,12 +167,13 @@ async function generateTCPDF(settings, lang) {
     s2b3:"El cuadro de la Ronda de 32 est\u00e1 determinado por las reglas oficiales de la FIFA 2026 y se calcula autom\u00e1ticamente a partir de las predicciones de grupos.",
     s2b4:"Las predicciones se bloquean en el plazo de inscripci\u00f3n. No se permiten cambios despu\u00e9s.",
     s2b5:"Se puede usar el mismo correo electr\u00f3nico para actualizar predicciones antes del plazo.",
-    s3:"3. Puntuaci\u00f3n \u2014 Fase de Grupos (por partido, m\u00e1x 7 pts)",
+    s3:"3. Puntuaci\u00f3n por partido (Fase de Grupos Y Eliminatoria, m\u00e1x 7 pts)",
     s3b1:"Resultado correcto (Ganador correcto o Empate): 3 puntos",
     s3b2:"Goles del Equipo A correctos: 1 punto",
     s3b3:"Goles del Equipo B correctos: 1 punto",
     s3b4:"Diferencia de goles correcta (si el resultado es correcto): 2 puntos",
     s3b5:"Marcador exacto = 7 puntos. Solo resultado correcto = 3 puntos.",
+    s3b6:"Nota: estos puntos por partido aplican tanto en la Fase de Grupos como en todos los partidos de la Eliminatoria (Ronda de 32, 16avos, Cuartos, Semifinales, 3er Lugar y Final).",
     s4:"4. Puntuaci\u00f3n \u2014 Fase Eliminatoria (por equipo que avanza)",
     s4b1:"Ronda de 32: 1 punto por equipo predicho correctamente",
     s4b2:"Ronda de 16: 2 puntos por equipo",
@@ -229,12 +230,13 @@ async function generateTCPDF(settings, lang) {
     s2b3:"The Round of 32 bracket is determined by the official FIFA 2026 fixture rules and is auto-calculated from group stage predictions.",
     s2b4:"Predictions are locked at the registration deadline. No changes permitted after that time.",
     s2b5:"The same email address can be used to update predictions before the deadline.",
-    s3:"3. Scoring \u2014 Group Stage (per match, max 7 pts)",
+    s3:"3. Per-Match Scoring (Group Stage AND Knockout, max 7 pts)",
     s3b1:"Correct result (Win / Draw / Loss): 3 points",
     s3b2:"Correct goals scored by Team A: 1 point",
     s3b3:"Correct goals scored by Team B: 1 point",
     s3b4:"Correct goal difference (if result correct): 2 points",
     s3b5:"Exact scoreline = 7 points. Correct result only = 3 points.",
+    s3b6:"Note: these per-match points apply in both the Group Stage and all Knockout matches (Round of 32, Last 16, Quarters, Semis, 3rd Place and Final).",
     s4:"4. Scoring \u2014 Knockout Stage (per team advancing)",
     s4b1:"Round of 32: 1 point per team correctly predicted",
     s4b2:"Round of 16: 2 points per team",
@@ -295,7 +297,7 @@ async function generateTCPDF(settings, lang) {
     h1(TX.title);body(TX.subtitle);rule();
     h2(TX.s1);bullet(TX.s1b1);bullet(TX.s1b2);bullet(TX.s1b3);bullet(TX.s1b4);bullet(TX.s1b5);chk();
     h2(TX.s2);bullet(TX.s2b1);bullet(TX.s2b2);bullet(TX.s2b3);bullet(TX.s2b4);bullet(TX.s2b5);chk();
-    h2(TX.s3);bullet(TX.s3b1);bullet(TX.s3b2);bullet(TX.s3b3);bullet(TX.s3b4);bullet(TX.s3b5);chk();
+    h2(TX.s3);bullet(TX.s3b1);bullet(TX.s3b2);bullet(TX.s3b3);bullet(TX.s3b4);bullet(TX.s3b5);if(TX.s3b6)body(TX.s3b6);chk();
     h2(TX.s4);bullet(TX.s4b1);bullet(TX.s4b2);bullet(TX.s4b3);bullet(TX.s4b4);bullet(TX.s4b5);bullet(TX.s4b6);bullet(TX.s4b7);bullet(TX.s4b8);
     // Force section 5 onto a new page
     doc.addPage(); y=22;

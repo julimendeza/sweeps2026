@@ -19,6 +19,46 @@ function PredictView(p) {
   var s12=useState(false);   var pinLoading=s12[0],setPinLoading=s12[1];
   var s13=useState(null);    var validPin=s13[0], setValidPin=s13[1]; // the matched pin object
 
+  // First-visit tips
+  var tipsDone = false;
+  try { tipsDone = !!localStorage.getItem("wc26_tips_done"); } catch(e){}
+  var s14=useState(!tipsDone); var showTips=s14[0], setShowTips=s14[1];
+  var s15=useState(0);         var tipStep=s15[0], setTipStep=s15[1];
+
+  var TIPS = [
+    {
+      icon: "\u26bd",
+      title: lang==="es" ? "C\u00f3mo ingresar resultados" : "How to enter scores",
+      body: lang==="es"
+        ? "Escribe el n\u00famero de goles en los cuadros de cada partido. El equipo de la izquierda es el local. Puedes predecir cualquier marcador, incluyendo empates."
+        : "Type the number of goals in each match box. The left team is the home side. You can predict any score, including draws."
+    },
+    {
+      icon: "\ud83d\udcbe",
+      title: lang==="es" ? "C\u00f3mo guardar tus predicciones" : "How to save your predictions",
+      body: lang==="es"
+        ? "Una vez hayas completado todos los partidos, presiona el bot\u00f3n \u2018Guardar Predicciones\u2019 al final de la p\u00e1gina. Recibir\u00e1s una confirmaci\u00f3n cuando se guarden correctamente."
+        : "Once you've filled in all matches, press the \u2018Save Predictions\u2019 button at the bottom of the page. You'll get a confirmation when they're saved successfully."
+    },
+    {
+      icon: "\ud83d\udd04",
+      title: lang==="es" ? "C\u00f3mo volver y continuar" : "How to return and continue",
+      body: lang==="es"
+        ? "Puedes salir de la app y volver cuando quieras. Simplemente vuelve a ingresar tu nombre y correo electr\u00f3nico y tus predicciones anteriores se cargar\u00e1n autom\u00e1ticamente para que puedas seguir editando."
+        : "You can leave the app and come back any time. Just enter your name and email again and your previous predictions will load automatically so you can keep editing."
+    }
+  ];
+
+  function closeTips(){
+    try { localStorage.setItem("wc26_tips_done","1"); } catch(e){}
+    setShowTips(false);
+  }
+
+  function nextTip(){
+    if(tipStep < TIPS.length-1){ setTipStep(tipStep+1); }
+    else { closeTips(); }
+  }
+
   var accessMode = settings.access || "off";
   var needsPin   = accessMode !== "off";
   var isRobust   = accessMode === "robust";
@@ -213,11 +253,54 @@ function PredictView(p) {
   return html`<div class="fade" style=${{maxWidth:780,margin:"0 auto",padding:"16px 16px 60px"}}>
 
     <div style=${{display:"flex",alignItems:"center",gap:12,marginBottom:18}}>
+
+    ${showTips&&html`<div>
+      <div onClick=${closeTips} style=${{position:"fixed",top:0,left:0,right:0,bottom:0,
+        background:"rgba(0,0,0,.65)",zIndex:998,cursor:"pointer"}}></div>
+      <div style=${{position:"fixed",top:"50%",left:"50%",
+        transform:"translate(-50%,-50%)",zIndex:999,
+        background:"#1a2540",border:"2px solid rgba(245,158,11,.5)",
+        borderRadius:18,padding:"24px 28px",maxWidth:340,width:"90vw",
+        boxShadow:"0 20px 60px rgba(0,0,0,.6)"}}>
+        <div style=${{textAlign:"center",fontSize:32,marginBottom:8}}>${TIPS[tipStep].icon}</div>
+        <h3 style=${{fontWeight:700,fontSize:16,color:"#fbbf24",marginBottom:10,textAlign:"center"}}>${TIPS[tipStep].title}</h3>
+        <p style=${{fontSize:14,color:"rgba(255,255,255,.75)",lineHeight:1.7,marginBottom:20}}>${TIPS[tipStep].body}</p>
+        <div style=${{display:"flex",gap:6,justifyContent:"center",marginBottom:16}}>
+          ${TIPS.map(function(_,i){
+            return html`<div key=${i} style=${{
+              width:i===tipStep?20:6,height:6,borderRadius:99,
+              background:i===tipStep?"#f59e0b":"rgba(255,255,255,.2)",
+              transition:"all .2s"
+            }}></div>`;
+          })}
+        </div>
+        <div style=${{display:"flex",gap:8}}>
+          <button onClick=${closeTips} style=${{
+            flex:1,padding:"9px",borderRadius:9,border:"1px solid rgba(255,255,255,.15)",
+            background:"transparent",color:"rgba(255,255,255,.4)",
+            cursor:"pointer",fontSize:13,fontFamily:"'DM Sans',sans-serif"
+          }}>${lang==="es"?"Saltar":"Skip"}</button>
+          <button onClick=${nextTip} style=${{
+            flex:2,padding:"9px",borderRadius:9,border:"none",
+            background:"linear-gradient(135deg,#f59e0b,#d97706)",
+            color:"#000",cursor:"pointer",fontSize:13,fontWeight:700,
+            fontFamily:"'DM Sans',sans-serif"
+          }}>${tipStep<TIPS.length-1?(lang==="es"?"Siguiente \u2192":"Next \u2192"):(lang==="es"?"\u2713 Entendido":"\u2713 Got it")}</button>
+        </div>
+      </div>
+    </div>`}
+
       <${Btn} v="secondary" onClick=${function(){setStep(0);}} sx=${{padding:"7px 14px",fontSize:13}}>${t.back}</${Btn}>
       <div style=${{flex:1}}>
         <${PBar} v=${gFilled+koFilled*3} max=${72+koTotal*3}/>
         <div style=${{fontSize:11,color:"rgba(255,255,255,.3)",marginTop:3}}>${gFilled}/72 ${t.groupStage} - ${koFilled}/${koTotal} ${t.knockout}</div>
       </div>
+      <button onClick=${function(){setTipStep(0);setShowTips(true);}} title=${lang==="es"?"Ayuda":"Help"} style=${{
+        width:30,height:30,borderRadius:"50%",border:"1.5px solid rgba(255,255,255,.2)",
+        background:"rgba(255,255,255,.06)",color:"rgba(255,255,255,.5)",
+        cursor:"pointer",fontSize:14,fontWeight:700,flexShrink:0,
+        fontFamily:"'DM Sans',sans-serif"
+      }}>?</button>
     </div>
 
     <div style=${{display:"flex",gap:8,marginBottom:16}}>
