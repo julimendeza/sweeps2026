@@ -21,7 +21,7 @@ function PredictView(p) {
 
   // First-visit tips
   var tipsDone = false;
-  try { tipsDone = !!localStorage.getItem("wc26_tips_done"); } catch(e){}
+  try { tipsDone = !!localStorage.getItem("wc26_predict_tips_v2"); } catch(e){}
   var s14=useState(!tipsDone); var showTips=s14[0], setShowTips=s14[1];
   var s15=useState(0);         var tipStep=s15[0], setTipStep=s15[1];
 
@@ -50,7 +50,7 @@ function PredictView(p) {
   ];
 
   function closeTips(){
-    try { localStorage.setItem("wc26_tips_done","1"); } catch(e){}
+    try { localStorage.setItem("wc26_predict_tips_v2","1"); } catch(e){}
     setShowTips(false);
   }
 
@@ -252,8 +252,6 @@ function PredictView(p) {
 
   return html`<div class="fade" style=${{maxWidth:780,margin:"0 auto",padding:"16px 16px 60px"}}>
 
-    <div style=${{display:"flex",alignItems:"center",gap:12,marginBottom:18}}>
-
     ${showTips&&html`<div>
       <div onClick=${closeTips} style=${{position:"fixed",top:0,left:0,right:0,bottom:0,
         background:"rgba(0,0,0,.65)",zIndex:998,cursor:"pointer"}}></div>
@@ -289,6 +287,8 @@ function PredictView(p) {
         </div>
       </div>
     </div>`}
+
+    <div style=${{display:"flex",alignItems:"center",gap:12,marginBottom:18}}>
 
       <${Btn} v="secondary" onClick=${function(){setStep(0);}} sx=${{padding:"7px 14px",fontSize:13}}>${t.back}</${Btn}>
       <div style=${{flex:1}}>
