@@ -161,6 +161,9 @@ async function generateTCPDF(settings, lang) {
     s1b3:"Plazo de inscripci\u00f3n: "+dlStr+". No se aceptan inscripciones despu\u00e9s de esta fecha.",
     s1b4:"Todas las predicciones deben ser enviadas a trav\u00e9s del sitio web antes del plazo.",
     s1b5:"Al participar, los participantes aceptan estos t\u00e9rminos y condiciones.",
+    s1b6:"Las predicciones solo pueden realizarse despu\u00e9s de que el organizador confirme el pago de la cuota de inscripci\u00f3n.",
+    s1b7:"Las predicciones quedar\u00e1n bloqueadas al vencer el plazo. No se permitir\u00e1 ning\u00fan cambio despu\u00e9s de esa fecha.",
+    s1b8:"Todos los participantes ser\u00e1n notificados de las predicciones y resultados de todos los dem\u00e1s por correo electr\u00f3nico o WhatsApp.",
     s2:"2. Predicciones",
     s2b1:"Los participantes deben predecir el marcador de los 72 partidos de la fase de grupos.",
     s2b2:"Los participantes deben predecir el marcador de los 32 partidos de la fase eliminatoria (desde Ronda de 32 hasta la Final).",
@@ -183,6 +186,7 @@ async function generateTCPDF(settings, lang) {
     s4b6:"Ganador del 3er Lugar: 15 puntos",
     s4b7:"Finalistas (ambos equipos): 10 puntos por equipo",
     s4b8:"Campe\u00f3n del Mundial: 20 puntos",
+    s4note:"Nota importante: estos puntos por equipo que avanza son ADICIONALES a los puntos por partido (secci\u00f3n 3), que tambi\u00e9n aplican en la fase eliminatoria. Por ejemplo, si predijiste correctamente el marcador de una semifinal Y al equipo ganador avanzando, acumulas puntos de ambas secciones.",
     s5:"5. Criterios de Desempate",
     s5body:"En caso de empate en puntos totales, se aplican los siguientes criterios en orden:",
     s5b1:"1. Predicci\u00f3n correcta del Campe\u00f3n del Mundial",
@@ -204,7 +208,7 @@ async function generateTCPDF(settings, lang) {
     s6b9:"Gastos de organizacion: "+cur+" "+Math.floor(ex10*.1),
     s7:"7. Resultados y Disputas",
     s7b1:"Se usar\u00e1n los resultados oficiales publicados por la FIFA.",
-    s7b2:"Los resultados incluyen el tiempo extra y penales en los partidos eliminatorios.",
+    s7b2:"Para los partidos eliminatorios, el marcador se contabiliza al finalizar el tiempo reglamentario (90 min) m\u00e1s el tiempo extra (si aplica). Los penales NO se cuentan para el puntaje \u2014 si un partido va a penales, el marcador registrado ser\u00e1 el del final del tiempo extra.",
     s7b3:"La decisi\u00f3n del organizador en cualquier asunto en disputa es definitiva.",
     s7b4:"Los resultados se actualizar\u00e1n progresivamente en el sitio web.",
     s8:"8. Disposiciones Generales",
@@ -224,6 +228,9 @@ async function generateTCPDF(settings, lang) {
     s1b3:"Registration deadline: "+dlStr+". No entries accepted after this date.",
     s1b4:"All entries must be submitted via the sweepstake website before the deadline.",
     s1b5:"By entering, participants agree to these terms and conditions.",
+    s1b6:"Predictions can only be made after the organiser has confirmed receipt of the entry fee payment.",
+    s1b7:"Predictions are locked at the registration deadline. No changes are permitted after that date.",
+    s1b8:"All participants will be notified of everyone\u2019s predictions and results by email or WhatsApp.",
     s2:"2. Predictions",
     s2b1:"Participants must predict the score of all 72 group stage matches.",
     s2b2:"Participants must predict the score of all 32 knockout matches (Round of 32 through Final).",
@@ -246,6 +253,7 @@ async function generateTCPDF(settings, lang) {
     s4b6:"3rd Place Winner: 15 points",
     s4b7:"Finalists (both teams): 10 points per team",
     s4b8:"World Cup Champion: 20 points",
+    s4note:"Important: these team-advancement points are IN ADDITION to the per-match points (section 3), which also apply in the knockout stage. For example, if you correctly predicted the scoreline of a semi-final AND had the right team advancing, you earn points from both sections.",
     s5:"5. Tiebreaker Rules",
     s5body:"In the event of a tie on total points, the following criteria apply in order:",
     s5b1:"1. Correct World Cup Champion prediction",
@@ -267,7 +275,7 @@ async function generateTCPDF(settings, lang) {
     s6b9:"Admin fee: "+cur+" "+Math.floor(ex10*.1),
     s7:"7. Results & Disputes",
     s7b1:"Official match results as published by FIFA will be used for scoring.",
-    s7b2:"Results include extra time and penalty shootouts for knockout matches.",
+    s7b2:"For knockout matches, the score is recorded at the end of normal time (90 min) plus extra time (if played). Penalty shootouts are NOT counted for scoring purposes \u2014 if a match goes to penalties, the recorded score will be that at the end of extra time.",
     s7b3:"The organiser's decision on any disputed matter is final.",
     s7b4:"Results will be updated on the website progressively as matches are played.",
     s8:"8. General",
@@ -295,10 +303,10 @@ async function generateTCPDF(settings, lang) {
     doc.text(TX.header,M,9);y=28;
 
     h1(TX.title);body(TX.subtitle);rule();
-    h2(TX.s1);bullet(TX.s1b1);bullet(TX.s1b2);bullet(TX.s1b3);bullet(TX.s1b4);bullet(TX.s1b5);chk();
+    h2(TX.s1);bullet(TX.s1b1);bullet(TX.s1b2);bullet(TX.s1b3);bullet(TX.s1b4);bullet(TX.s1b5);if(TX.s1b6)bullet(TX.s1b6);if(TX.s1b7)bullet(TX.s1b7);if(TX.s1b8)bullet(TX.s1b8);chk();
     h2(TX.s2);bullet(TX.s2b1);bullet(TX.s2b2);bullet(TX.s2b3);bullet(TX.s2b4);bullet(TX.s2b5);chk();
     h2(TX.s3);bullet(TX.s3b1);bullet(TX.s3b2);bullet(TX.s3b3);bullet(TX.s3b4);bullet(TX.s3b5);if(TX.s3b6)body(TX.s3b6);chk();
-    h2(TX.s4);bullet(TX.s4b1);bullet(TX.s4b2);bullet(TX.s4b3);bullet(TX.s4b4);bullet(TX.s4b5);bullet(TX.s4b6);bullet(TX.s4b7);bullet(TX.s4b8);
+    h2(TX.s4);bullet(TX.s4b1);bullet(TX.s4b2);bullet(TX.s4b3);bullet(TX.s4b4);bullet(TX.s4b5);bullet(TX.s4b6);bullet(TX.s4b7);bullet(TX.s4b8);if(TX.s4note)body(TX.s4note);
     // Force section 5 onto a new page
     doc.addPage(); y=22;
     h2(TX.s5);body(TX.s5body);bullet(TX.s5b1);bullet(TX.s5b2);bullet(TX.s5b3);bullet(TX.s5b4);bullet(TX.s5b5);bullet(TX.s5b6);chk();
