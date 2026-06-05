@@ -163,7 +163,6 @@ function PredictView(p) {
     }
     var id = resolvedId || ("p_"+Date.now());
     var np = Object.assign({}, preds);
-    if(tiePick) np.tiebreaker = tiePick;
     var upd = resolvedId
       ? participants.map(function(x){return x.id===resolvedId?Object.assign({},x,{name:name,email:email,preds:np}):x;})
       : participants.concat([{id:id,name:name,email:email,preds:np}]);
