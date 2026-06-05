@@ -152,18 +152,28 @@ function PredictView(p) {
 
   async function handleSave(){
     setSaving(true);
-    var id=existId||("p_"+Date.now());
-    var np=Object.assign({},preds);
-    var upd=existId
-      ? participants.map(function(x){return x.id===existId?Object.assign({},x,{name:name,email:email,preds:np}):x;})
+    // Re-check for existing entry by email at save time (guards against race condition
+    // where Firebase loaded after handleStart ran and existId was never set)
+    var resolvedId = existId;
+    if(!resolvedId){
+      var match = participants.find(function(x){
+        return x.id !== "claude_bot" && x.email.toLowerCase() === email.toLowerCase();
+      });
+      if(match) resolvedId = match.id;
+    }
+    var id = resolvedId || ("p_"+Date.now());
+    var np = Object.assign({}, preds);
+    if(tiePick) np.tiebreaker = tiePick;
+    var upd = resolvedId
+      ? participants.map(function(x){return x.id===resolvedId?Object.assign({},x,{name:name,email:email,preds:np}):x;})
       : participants.concat([{id:id,name:name,email:email,preds:np}]);
     await saveP(upd);
     // Mark PIN as used (only for new registrations, not updates)
-    if(needsPin && !existId && validPin){
+    if(needsPin && !resolvedId && validPin){
       await pins.markUsed(pinCode, name, email);
     }
     try{
-      var sent=await notifyAdmin(np,name,email,settings,upd,!!existId);
+      var sent=await notifyAdmin(np,name,email,settings,upd,!!resolvedId);
       setAdminNotif(sent?"sent":(settings.ejs&&settings.ejs.tpl_admin&&settings.adminEmail?"fail":"skipped"));
     }catch(e){setAdminNotif("fail");}
     setSaving(false); setStep(2);
