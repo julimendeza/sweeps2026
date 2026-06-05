@@ -176,10 +176,10 @@ async function generateTCPDF(settings, lang) {
     s3b3:"Goles del Equipo B correctos: 1 punto",
     s3b4:"Diferencia de goles correcta (si el resultado es correcto): 2 puntos",
     s3b5:"Marcador exacto = 7 puntos. Solo resultado correcto = 3 puntos.",
-    s3b6:"Nota: estos puntos por partido aplican tanto en la Fase de Grupos como en todos los partidos de la Eliminatoria (Ronda de 32, 16avos, Cuartos, Semifinales, 3er Lugar y Final).",
+    s3b6:"Nota: estos puntos por partido aplican tanto en la Fase de Grupos como en todos los partidos de la Eliminatoria (Ronda de 32, Octavos, Cuartos, Semifinales, 3er Lugar y Final).",
     s4:"4. Puntuaci\u00f3n \u2014 Fase Eliminatoria (por equipo que avanza)",
     s4b1:"Ronda de 32: 1 punto por equipo predicho correctamente",
-    s4b2:"Ronda de 16: 2 puntos por equipo",
+    s4b2:"Octavos de Final: 2 puntos por equipo",
     s4b3:"Cuartos de Final: 4 puntos por equipo",
     s4b4:"Semifinales: 6 puntos por equipo",
     s4b5:"Partido por el 3er Lugar (equipos en el partido): 8 puntos por equipo",
@@ -456,7 +456,7 @@ async function generatePredsPDF(preds, name, email, lang) {
 
     var koRows=[
       {label:es?"Ronda de 32":"Round of 32",     ids:R32_FIXTURES.map(function(f){return f.id;})},
-      {label:es?"Ronda de 16":"Round of 16",     ids:KO_BRACKET.r16.map(function(f){return f.id;})},
+      {label:es?"Octavos de Final":"Round of 16",     ids:KO_BRACKET.r16.map(function(f){return f.id;})},
       {label:es?"Cuartos de Final":"Quarter-Finals",ids:KO_BRACKET.qf.map(function(f){return f.id;})},
       {label:es?"Semifinales":"Semi-Finals",     ids:KO_BRACKET.sf.map(function(f){return f.id;})},
       {label:"Final",                            ids:["final"]},
@@ -684,7 +684,7 @@ async function generateReportPDF(participant, results, settings, lang) {
 
     var koSections=[
       {label:es?"Ronda de 32":"Round of 32",        ids:R32_FIXTURES.map(function(f){return f.id;})},
-      {label:es?"Ronda de 16":"Round of 16",         ids:KO_BRACKET.r16.map(function(f){return f.id;})},
+      {label:es?"Octavos de Final":"Round of 16",         ids:KO_BRACKET.r16.map(function(f){return f.id;})},
       {label:es?"Cuartos de Final":"Quarter-Finals", ids:KO_BRACKET.qf.map(function(f){return f.id;})},
       {label:es?"Semifinales":"Semi-Finals",         ids:KO_BRACKET.sf.map(function(f){return f.id;})},
       {label:es?"3er Lugar":"3rd Place",             ids:["s3rd"]},
