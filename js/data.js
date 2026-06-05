@@ -146,7 +146,7 @@ var DEF = {
   currency:   "AUD",
   adminEmail: "",
   firebase:   "https://quiniela2026-jema-default-rtdb.asia-southeast1.firebasedatabase.app",
-  deadline:   "2026-06-10T23:59",
+  deadline:   "2026-06-11T18:00",
   tcUrl:      "",
   access:     "off",   // "off" | "simple" | "robust"
   // Playoff confirmations — set by admin after finals (March 31)

@@ -36,6 +36,7 @@ function HomeView(p) {
   var isPastDeadline = deadline && now > deadline;
   var deadlineStr = deadline ? deadline.toLocaleDateString(lang==="es"?"es-AU":"en-AU",
     {weekday:"short",day:"numeric",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit"}) : null;
+  var utcStr = deadline ? deadline.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit",timeZone:"UTC"})+" UTC" : null;
   var msLeft = deadline ? deadline - now : null;
   var daysLeft = msLeft ? Math.ceil(msLeft / (1000*60*60*24)) : null;
 
