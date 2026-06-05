@@ -309,7 +309,7 @@ async function generateTCPDF(settings, lang) {
     h2(TX.s4);bullet(TX.s4b1);bullet(TX.s4b2);bullet(TX.s4b3);bullet(TX.s4b4);bullet(TX.s4b5);bullet(TX.s4b6);bullet(TX.s4b7);bullet(TX.s4b8);if(TX.s4note)body(TX.s4note);
     // Force section 5 onto a new page
     doc.addPage(); y=22;
-    h2(TX.s5);body(TX.s5body);bullet(TX.s5b1);bullet(TX.s5b2);bullet(TX.s5b3);bullet(TX.s5b4);bullet(TX.s5b5);bullet(TX.s5b6);chk();
+    h2(TX.s5);body(TX.s5body);body(TX.s5b1);body(TX.s5b2);body(TX.s5b3);body(TX.s5b4);body(TX.s5b5);body(TX.s5b6);chk();
     h2(TX.s6);bullet(TX.s6b1);bullet(TX.s6b2);bullet(TX.s6b3);bullet(TX.s6b4);
     if(TX.s6pay){
       y+=3;
