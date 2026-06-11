@@ -208,6 +208,23 @@ function AdminParts(p) {
       .sort(function(a,b){ return cmpTb(a,b,p.results); });
   }, [p.participants, p.results, p.settings]);
 
+  var editState = useState(null); var editId=editState[0], setEditId=editState[1];
+  var editValState = useState(""); var editVal=editValState[0], setEditVal=editValState[1];
+
+  function startEdit(px){
+    setEditId(px.id);
+    setEditVal(px.name);
+  }
+
+  async function saveName(){
+    if(!editVal.trim()){ setEditId(null); return; }
+    var updated = p.participants.map(function(x){
+      return x.id===editId ? Object.assign({},x,{name:editVal.trim()}) : x;
+    });
+    await p.saveParticipants(updated);
+    setEditId(null);
+  }
+
   async function del(id) {
     if (id === "claude_bot") { alert(t.noDelClaude); return; }
     if (!confirm(t.delConfirm)) return;
@@ -229,6 +246,7 @@ function AdminParts(p) {
       </${Btn}>
     </div>
     ${ranked.map(function(px, i){
+      var isEditing = editId===px.id;
       return html`<${Card} key=${px.id} sx=${{
         marginBottom:8,
         background: px.id==="claude_bot" ? "rgba(245,158,11,.05)" : "rgba(255,255,255,.04)",
@@ -241,8 +259,35 @@ function AdminParts(p) {
           </span>
           <div style=${{ flex:1 }}>
             <div style=${{ fontWeight:600, fontSize:14, display:"flex", alignItems:"center", gap:6 }}>
-              ${px.name}
-              ${px.id==="claude_bot" && html`<span style=${{ fontSize:10, background:"rgba(245,158,11,.2)", color:"#f59e0b", borderRadius:4, padding:"1px 5px", fontWeight:700 }}>BOT</span>`}
+              ${isEditing
+                ? html`<div style=${{display:"flex",alignItems:"center",gap:6,flex:1}}>
+                    <input
+                      value=${editVal}
+                      onInput=${function(e){setEditVal(e.target.value);}}
+                      onKeyDown=${function(e){if(e.key==="Enter")saveName();if(e.key==="Escape")setEditId(null);}}
+                      style=${{fontSize:14,fontWeight:600,padding:"3px 8px",borderRadius:7,
+                        border:"1.5px solid #f59e0b",background:"rgba(245,158,11,.1)",
+                        color:"#fff",fontFamily:"'DM Sans',sans-serif",width:"100%",maxWidth:200}}
+                      autoFocus=${true}
+                    />
+                    <button onClick=${saveName} style=${{
+                      background:"rgba(74,222,128,.15)",border:"1px solid rgba(74,222,128,.4)",
+                      color:"#4ade80",borderRadius:7,padding:"4px 8px",cursor:"pointer",
+                      fontSize:12,fontFamily:"'DM Sans',sans-serif"
+                    }}>\u2713</button>
+                    <button onClick=${function(){setEditId(null);}} style=${{
+                      background:"none",border:"1px solid rgba(255,255,255,.15)",
+                      color:"rgba(255,255,255,.4)",borderRadius:7,padding:"4px 8px",
+                      cursor:"pointer",fontSize:12,fontFamily:"'DM Sans',sans-serif"
+                    }}>\u00d7</button>
+                  </div>`
+                : html`<span>${px.name}</span>
+                    ${px.id==="claude_bot" && html`<span style=${{ fontSize:10, background:"rgba(245,158,11,.2)", color:"#f59e0b", borderRadius:4, padding:"1px 5px", fontWeight:700 }}>BOT</span>`}
+                    ${px.id!=="claude_bot" && html`<button onClick=${function(){startEdit(px);}} title=${lang==="es"?"Editar nombre":"Edit name"} style=${{
+                      background:"none",border:"none",color:"rgba(255,255,255,.3)",
+                      cursor:"pointer",fontSize:13,padding:"0 2px",lineHeight:1
+                    }}>\u270f\ufe0f</button>`}`
+              }
             </div>
             <div style=${{ fontSize:12, color:"rgba(255,255,255,.32)" }}>${px.email}</div>
             <div style=${{ fontSize:11, color:"rgba(255,255,255,.22)", marginTop:2, display:"flex", alignItems:"center", gap:4 }}>
