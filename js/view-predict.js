@@ -248,7 +248,10 @@ function PredictView(p) {
       </div>
     </div>
 
-    <div style=${{display:"flex",gap:10,justifyContent:"center"}}>
+    <div style=${{display:"flex",gap:10,justifyContent:"center",flexWrap:"wrap"}}>
+      <${Btn} onClick=${function(){setStep(1);}} sx=${{padding:"10px 20px"}}>
+        \u270f\ufe0f ${lang==="es"?"Seguir editando":"Keep editing"}
+      </${Btn}>
       <${Btn} onClick=${function(){setView("bracket");}} v="secondary">\ud83c\udfc6 ${t.bracket}</${Btn}>
       <${Btn} onClick=${function(){setView("leaderboard");}} v="secondary">${t.table}</${Btn}>
     </div>
