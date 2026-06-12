@@ -607,14 +607,14 @@ function AdminPicks(p) {
   }, [p.results]);
 
   var cols=[
-    {key:"r32teams",   label:"R32",   short:"R32"},
-    {key:"r16teams",   label:"R16",   short:"R16"},
-    {key:"qfteams",    label:es?"Cuartos":"QF",  short:"QF"},
-    {key:"sfteams",    label:es?"Semis":"SF",     short:"SF"},
-    {key:"finalTeams", label:"Final", short:"Fin"},
-    {key:"champion",   label:es?"Camp.":"Champ",  short:"Ch"},
-    {key:"thirdTeams", label:es?"3ro":"3rd",      short:"3rd"},
-    {key:"thirdWin",   label:es?"3ro W":"3rd W",  short:"3W"},
+    {key:"r32qualifiers", label:"R32",   short:"R32"},
+    {key:"r16teams",      label:"R16",   short:"R16"},
+    {key:"qfteams",       label:es?"Cuartos":"QF",  short:"QF"},
+    {key:"sfteams",       label:es?"Semis":"SF",     short:"SF"},
+    {key:"finalTeams",    label:"Final", short:"Fin"},
+    {key:"champion",      label:es?"Camp.":"Champ",  short:"Ch"},
+    {key:"thirdTeams",    label:es?"3ro":"3rd",      short:"3rd"},
+    {key:"thirdWin",      label:es?"3ro W":"3rd W",  short:"3W"},
   ];
 
   // Cascade each participant's predictions

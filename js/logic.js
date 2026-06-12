@@ -201,6 +201,13 @@ function cascadeKO(groupPreds, koScores) {
   function winners(map, ids) {
     return ids.map(function(id){ return map[id]&&map[id].winner; }).filter(Boolean);
   }
+  // r32qualifiers = all 32 teams that qualified from group stage (both sides of every R32 match)
+  var r32qualifiers = R32_FIXTURES.reduce(function(acc, f){
+    var m = r32[f.id];
+    if(m&&m.home) acc.push(m.home);
+    if(m&&m.away) acc.push(m.away);
+    return acc;
+  }, []);
   var r32teams   = winners(r32, R32_FIXTURES.map(function(f){return f.id;}));
   var r16teams   = winners(r16, KO_BRACKET.r16.map(function(f){return f.id;}));
   var qfteams    = winners(qf,  KO_BRACKET.qf.map(function(f){return f.id;}));
@@ -210,10 +217,11 @@ function cascadeKO(groupPreds, koScores) {
 
   return {
     r32:r32, r16:r16, qf:qf, sf:sf, final:finalR, s3rd:s3rdR,
+    r32qualifiers:r32qualifiers,
     r32teams:r32teams, r16teams:r16teams, qfteams:qfteams, sfteams:sfteams,
     finalTeams:finalTeams, thirdTeams:thirdTeams,
     champion:finalR.winner, thirdWin:s3rdR.winner,
-    r32fixtures: r32, // all R32 match objects with home/away resolved
+    r32fixtures: r32,
   };
 }
 
