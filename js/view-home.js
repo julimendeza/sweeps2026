@@ -367,6 +367,48 @@ function BracketPage(p) {
         preds=${me.preds&&me.preds.groups}
         allPreds=${me.preds&&me.preds.groups}
       />`}
+      ${me && html`<div style=${{marginTop:14}}>
+        <div style=${{fontSize:10,fontWeight:700,color:"rgba(255,255,255,.3)",letterSpacing:".08em",marginBottom:8,textTransform:"uppercase"}}>
+          ${lang==="es"?"Predicciones de partidos":"Match predictions"}
+        </div>
+        ${GMS[activeG]&&GMS[activeG].map(function(m){
+          var pred=me.preds&&me.preds.groups&&me.preds.groups[m.id];
+          var res=p.results&&p.results.groups&&p.results.groups[m.id];
+          var hv=pred?pred.h:""; var av=pred?pred.a:"";
+          var hasPred=pred&&pred.h!==''&&pred.h!==undefined;
+          var hasRes=res&&res.h!==''&&res.h!==undefined;
+          var st=hasPred&&hasRes?mSt({h:hv,a:av},res):null;
+          var bg=st==="exact"?"rgba(34,197,94,.12)":st==="result"?"rgba(245,158,11,.1)":st==="partial"?"rgba(59,130,246,.08)":"rgba(255,255,255,.03)";
+          var bd=st==="exact"?"rgba(34,197,94,.35)":st==="result"?"rgba(245,158,11,.25)":st==="partial"?"rgba(59,130,246,.2)":"rgba(255,255,255,.08)";
+          var pts=st?scoreMatch({h:hv,a:av},res):null;
+          return html`<div key=${m.id} style=${{
+            display:"flex",alignItems:"center",gap:8,padding:"7px 10px",
+            borderRadius:10,border:"1.5px solid "+bd,marginBottom:5,
+            background:bg,fontSize:12
+          }}>
+            <div style=${{flex:1,display:"flex",alignItems:"center",justifyContent:"flex-end",gap:5,overflow:"hidden"}}>
+              <span style=${{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",fontWeight:500}}>${teamName(m.home,lang)}</span>
+              <${FlagImg} team=${m.home}/>
+            </div>
+            <div style=${{display:"flex",flexDirection:"column",alignItems:"center",gap:1,flexShrink:0}}>
+              <span style=${{fontWeight:800,fontSize:13,color:hasPred?"#f8fafc":"rgba(255,255,255,.2)",letterSpacing:1}}>
+                ${hasPred?hv+"-"+av:"?-?"}
+              </span>
+              ${hasRes&&html`<span style=${{fontSize:9,color:"rgba(255,255,255,.35)"}}>
+                ${lang==="es"?"Real:":"Act:"} ${res.h}-${res.a}
+              </span>`}
+            </div>
+            <div style=${{flex:1,display:"flex",alignItems:"center",gap:5,overflow:"hidden"}}>
+              <${FlagImg} team=${m.away}/>
+              <span style=${{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",fontWeight:500}}>${teamName(m.away,lang)}</span>
+            </div>
+            ${pts!==null&&html`<span style=${{fontSize:10,fontWeight:700,flexShrink:0,minWidth:24,textAlign:"right",
+              color:pts>=6?"#4ade80":pts>=3?"#fbbf24":pts>0?"#60a5fa":"rgba(255,255,255,.25)"}}>
+              ${pts>0?"+"+pts:pts===0&&hasPred?"0":""}
+            </span>`}
+          </div>`;
+        })}
+      </div>`}
     </div>`}
   </div>`;
 }
