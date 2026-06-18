@@ -75,7 +75,8 @@ function AdminResults(p) {
   var lctx=useLang(); var t=lctx.t; var lang=lctx.lang;
   var locState=useState({
     groups: Object.assign({}, p.results.groups||{}),
-    ko:     Object.assign({}, p.results.ko||{})
+    ko:     Object.assign({}, p.results.ko||{}),
+    fairplay: Object.assign({}, p.results.fairplay||{})
   });
   var loc=locState[0], setLoc=locState[1];
   var secState=useState("groups"); var sec=secState[0],      setSec=secState[1];
@@ -107,6 +108,16 @@ function AdminResults(p) {
     });
   }
 
+  function setFP(group,team,field,val){
+    setLoc(function(prev){
+      var nfp=Object.assign({},prev.fairplay||{});
+      nfp[group]=Object.assign({},nfp[group]||{});
+      nfp[group][team]=Object.assign({},nfp[group][team]||{y:0,r:0});
+      nfp[group][team][field]=val;
+      return Object.assign({},prev,{fairplay:nfp});
+    });
+  }
+
   return html`<div>
     <div style=${{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
       <p style=${{fontSize:13,color:"rgba(255,255,255,.4)"}}>${t.enterRes}</p>
@@ -117,7 +128,7 @@ function AdminResults(p) {
     </div>
 
     <div style=${{display:"flex",gap:8,marginBottom:16}}>
-      ${[{id:"groups",l:t.groupsS},{id:"knockout",l:t.knockoutS}].map(function(s){
+      ${[{id:"groups",l:t.groupsS},{id:"knockout",l:t.knockoutS},{id:"fairplay",l:"\ud83d\udfe8 Fair Play"}].map(function(s){
         return html`<button key=${s.id} onClick=${function(){setSec(s.id);}} style=${{
           flex:1,padding:"10px 16px",borderRadius:10,cursor:"pointer",
           border:"2px solid "+(sec===s.id?"#f59e0b":"rgba(255,255,255,.1)"),
@@ -195,6 +206,52 @@ function AdminResults(p) {
         ${koIdx<KO_ROUNDS.length-1&&html`<${Btn} onClick=${function(){setActiveKO(KO_ROUNDS[koIdx+1].id);}} sx=${{flex:"1",padding:"11px"}}>- ${KO_ROUNDS[koIdx+1].label}</${Btn}>`}
       </div>
     </${Card}>`}
+
+    ${sec==="fairplay"&&html`<${Card}>
+      <p style=${{fontSize:13,color:"rgba(255,255,255,.5)",marginBottom:4}}>
+        ${lang==="es"
+          ?"Ingresa el total de tarjetas por equipo al final de cada grupo. Se usa como criterio de desempate si dos equipos quedan igualados en puntos, DG y GF."
+          :"Enter total cards per team at the end of each group. Used as tiebreaker if teams are level on points, GD and GF."}
+      </p>
+      <p style=${{fontSize:11,color:"rgba(255,255,255,.3)",marginBottom:14}}>
+        \ud83d\udfe8 ${lang==="es"?"Amarilla = -1":"Yellow = -1"} \u00b7
+        \ud83d\udfe5 ${lang==="es"?"Roja directa = -3 \u00b7 Doble amarilla = -3":"Direct red = -3 \u00b7 Second yellow = -3"}
+      </p>
+      ${GROUPS.map(function(g){
+        return html`<div key=${g} style=${{marginBottom:18}}>
+          <div style=${{fontSize:11,fontWeight:700,color:"rgba(255,255,255,.4)",letterSpacing:".08em",marginBottom:8,textTransform:"uppercase"}}>
+            ${lang==="es"?"Grupo":"Group"} ${g}
+          </div>
+          ${TBG[g].map(function(team){
+            var fp=(loc.fairplay&&loc.fairplay[g]&&loc.fairplay[g][team])||{y:0,r:0};
+            var fpPts=(fp.y||0)*-1+(fp.r||0)*-3;
+            return html`<div key=${team} style=${{display:"flex",alignItems:"center",gap:10,marginBottom:5,padding:"7px 10px",borderRadius:10,background:"rgba(255,255,255,.04)"}}>
+              <${FlagImg} team=${team}/>
+              <span style=${{flex:1,fontSize:13,fontWeight:500}}>${teamName(team,lang)}</span>
+              <div style=${{display:"flex",alignItems:"center",gap:6}}>
+                <span style=${{fontSize:11,color:"#fbbf24"}}>\ud83d\udfe8</span>
+                <input type="number" min="0" max="20" value=${fp.y||0}
+                  onInput=${function(e){setFP(g,team,"y",+e.target.value||0);}}
+                  style=${{width:44,textAlign:"center",padding:"4px 6px",borderRadius:7,
+                    border:"1.5px solid rgba(251,191,36,.3)",background:"rgba(251,191,36,.06)",
+                    color:"#fbbf24",fontFamily:"'DM Sans',sans-serif",fontSize:13}}/>
+                <span style=${{fontSize:11,color:"#f87171",marginLeft:4}}>\ud83d\udfe5</span>
+                <input type="number" min="0" max="5" value=${fp.r||0}
+                  onInput=${function(e){setFP(g,team,"r",+e.target.value||0);}}
+                  style=${{width:44,textAlign:"center",padding:"4px 6px",borderRadius:7,
+                    border:"1.5px solid rgba(248,113,113,.3)",background:"rgba(248,113,113,.06)",
+                    color:"#f87171",fontFamily:"'DM Sans',sans-serif",fontSize:13}}/>
+                <span style=${{fontSize:11,fontWeight:700,minWidth:36,textAlign:"right",
+                  color:fpPts<0?"#f87171":"rgba(255,255,255,.3)"}}>
+                  ${fpPts} fp
+                </span>
+              </div>
+            </div>`;
+          })}
+        </div>`;
+      })}
+    </${Card}>`}
+
   </div>`;
 }
 

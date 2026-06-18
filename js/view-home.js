@@ -311,6 +311,10 @@ function BracketPage(p) {
   var activeG = activeGState[0], setActiveG = activeGState[1];
 
   var me = participants.find(function(x){ return x.id === selId; }) || participants[0];
+  // "actual" mode
+  var isActual = selId === "__actual__";
+  var actualPreds = isActual ? {groups: p.results&&p.results.groups||{}, ko: p.results&&p.results.ko||{}} : null;
+  var displayPreds = isActual ? actualPreds : (me && me.preds);
 
   return html`<div className="fade" style=${{ maxWidth:780, margin:"0 auto", padding:"24px 16px 60px" }}>
     <div style=${{ display:"flex", alignItems:"center", gap:12, marginBottom:20 }}>
@@ -322,6 +326,13 @@ function BracketPage(p) {
     </div>
 
     <div style=${{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:16 }}>
+      <button onClick=${function(){ setSelId("__actual__"); }} style=${{
+        padding:"6px 14px", borderRadius:8, fontSize:13, fontWeight:700, cursor:"pointer",
+        border:"1.5px solid " + (selId==="__actual__" ? "#4ade80" : "rgba(74,222,128,.25)"),
+        background: selId==="__actual__" ? "rgba(74,222,128,.15)" : "rgba(74,222,128,.05)",
+        color: selId==="__actual__" ? "#4ade80" : "rgba(74,222,128,.5)",
+        fontFamily:"'DM Sans',sans-serif"
+      }}>\ud83c\udfc6 ${lang==="es"?"Real":"Actual"}</button>
       ${participants.map(function(px){
         return html`<button key=${px.id} onClick=${function(){ setSelId(px.id); }} style=${{
           padding:"6px 14px", borderRadius:8, fontSize:13, fontWeight:600, cursor:"pointer",
@@ -345,8 +356,8 @@ function BracketPage(p) {
       })}
     </div>
 
-    ${activeTab === "bracket" && (me
-      ? html`<${BracketView} preds=${me.preds}/>`
+    ${activeTab === "bracket" && (displayPreds
+      ? html`<${BracketView} preds=${displayPreds}/>`
       : html`<div style=${{ textAlign:"center", padding:"60px", color:"rgba(255,255,255,.3)" }}>${t.bracketNoPreds}</div>`
     )}
 
@@ -362,17 +373,17 @@ function BracketPage(p) {
           }}>${g}</button>`;
         })}
       </div>
-      ${me && html`<${StandingsTable}
+      ${displayPreds && html`<${StandingsTable}
         group=${activeG}
-        preds=${me.preds&&me.preds.groups}
-        allPreds=${me.preds&&me.preds.groups}
+        preds=${displayPreds.groups}
+        allPreds=${displayPreds.groups}
       />`}
-      ${me && html`<div style=${{marginTop:14}}>
+      ${displayPreds && html`<div style=${{marginTop:14}}>
         <div style=${{fontSize:10,fontWeight:700,color:"rgba(255,255,255,.3)",letterSpacing:".08em",marginBottom:8,textTransform:"uppercase"}}>
           ${lang==="es"?"Predicciones de partidos":"Match predictions"}
         </div>
         ${GMS[activeG]&&GMS[activeG].map(function(m){
-          var pred=me.preds&&me.preds.groups&&me.preds.groups[m.id];
+          var pred=displayPreds.groups&&displayPreds.groups[m.id];
           var res=p.results&&p.results.groups&&p.results.groups[m.id];
           var hv=pred?pred.h:""; var av=pred?pred.a:"";
           var hasPred=pred&&pred.h!==''&&pred.h!==undefined;

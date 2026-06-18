@@ -20,10 +20,16 @@ function buildStats(matches, gp) {
 }
 
 // ── Calculate sorted group standings with FIFA tiebreaker ────────────
-function calcStandings(gp, group) {
+function calcStandings(gp, group, fairplay) {
   var teams = TBG[group].slice();
   var ms    = GMS[group];
   var s     = buildStats(ms, gp);
+  var fp    = (fairplay && fairplay[group]) || {};
+
+  function fpPts(team) {
+    var f = fp[team] || {y:0, r:0};
+    return (f.y||0)*-1 + (f.r||0)*-3;
+  }
 
   function cmp(a, b, subset) {
     var h2h = ms.filter(function(m) {
@@ -40,6 +46,8 @@ function calcStandings(gp, group) {
     }
     if (s[b].gd !== s[a].gd) return s[b].gd - s[a].gd;
     if (s[b].gf !== s[a].gf) return s[b].gf - s[a].gf;
+    // FIFA fair play tiebreaker
+    if (fpPts(b) !== fpPts(a)) return fpPts(b) - fpPts(a);
     return a.localeCompare(b);
   }
 
@@ -62,10 +70,10 @@ function groupDone(gp, g) {
 }
 
 // ── Determine the 32 qualifiers from group predictions ───────────────
-function getR32(gp) {
+function getR32(gp, fairplay) {
   var top2 = [], thirds = [], done = 0;
   GROUPS.forEach(function(g) {
-    var st = calcStandings(gp, g);
+    var st = calcStandings(gp, g, fairplay);
     if (groupDone(gp, g)) done++;
     top2.push(st[0].team, st[1].team);
     thirds.push(Object.assign({ group: g }, st[2]));
@@ -136,14 +144,14 @@ function koWinner(score) {
 }
 
 // ── Cascade all KO results from group predictions + KO scores ─────────
-function cascadeKO(groupPreds, koScores) {
+function cascadeKO(groupPreds, koScores, fairplay) {
   groupPreds = groupPreds || {};
   koScores   = koScores   || {};
 
   var standings = {};
-  GROUPS.forEach(function(g) { standings[g] = calcStandings(groupPreds, g); });
+  GROUPS.forEach(function(g) { standings[g] = calcStandings(groupPreds, g, fairplay); });
 
-  var r32info = getR32(groupPreds);
+  var r32info = getR32(groupPreds, fairplay);
   var b3 = assignBest3(r32info.best8);
 
   function resolveSlot(slot) {
@@ -266,7 +274,7 @@ function calcScore(preds, results, sc) {
 
   if (hasResults) {
     var pC = cascadeKO(preds.groups,   preds.ko   || {});
-    var rC = cascadeKO(results.groups, results.ko || {});
+    var rC = cascadeKO(results.groups, results.ko || {}, results.fairplay);
 
     function koHits(pT, rT, ppg) {
       var hits = pT.filter(function(t){return rT.indexOf(t)>=0;}).length;
