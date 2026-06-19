@@ -112,7 +112,7 @@ function AdminResults(p) {
     setLoc(function(prev){
       var nfp=Object.assign({},prev.fairplay||{});
       nfp[group]=Object.assign({},nfp[group]||{});
-      nfp[group][team]=Object.assign({},nfp[group][team]||{y:0,r:0});
+      nfp[group][team]=val; // store score directly
       nfp[group][team][field]=val;
       return Object.assign({},prev,{fairplay:nfp});
     });
@@ -214,8 +214,9 @@ function AdminResults(p) {
           :"Enter total cards per team at the end of each group. Used as tiebreaker if teams are level on points, GD and GF."}
       </p>
       <p style=${{fontSize:11,color:"rgba(255,255,255,.3)",marginBottom:14}}>
-        \ud83d\udfe8 ${lang==="es"?"Amarilla = -1":"Yellow = -1"} \u00b7
-        \ud83d\udfe5 ${lang==="es"?"Roja directa = -3 \u00b7 Doble amarilla = -3":"Direct red = -3 \u00b7 Second yellow = -3"}
+        ${lang==="es"
+          ?"Ingresa el puntaje de fair play de cada equipo tal como aparece en la tabla oficial (n\u00famero negativo, ej: -3). Consulta transfermarkt.com o similar."
+          :"Enter each team's fair play score exactly as shown in the official table (negative number, e.g. -3). Check transfermarkt.com or similar."}
       </p>
       ${GROUPS.map(function(g){
         return html`<div key=${g} style=${{marginBottom:18}}>
@@ -223,27 +224,21 @@ function AdminResults(p) {
             ${lang==="es"?"Grupo":"Group"} ${g}
           </div>
           ${TBG[g].map(function(team){
-            var fp=(loc.fairplay&&loc.fairplay[g]&&loc.fairplay[g][team])||{y:0,r:0};
-            var fpPts=(fp.y||0)*-1+(fp.r||0)*-3;
+            var fp=(loc.fairplay&&loc.fairplay[g]&&loc.fairplay[g][team])||0;
+            var fpPts=typeof fp==="number"?fp:0;
             return html`<div key=${team} style=${{display:"flex",alignItems:"center",gap:10,marginBottom:5,padding:"7px 10px",borderRadius:10,background:"rgba(255,255,255,.04)"}}>
               <${FlagImg} team=${team}/>
               <span style=${{flex:1,fontSize:13,fontWeight:500}}>${teamName(team,lang)}</span>
               <div style=${{display:"flex",alignItems:"center",gap:6}}>
-                <span style=${{fontSize:11,color:"#fbbf24"}}>\ud83d\udfe8</span>
-                <input type="number" min="0" max="20" value=${fp.y||0}
-                  onInput=${function(e){setFP(g,team,"y",+e.target.value||0);}}
-                  style=${{width:44,textAlign:"center",padding:"4px 6px",borderRadius:7,
-                    border:"1.5px solid rgba(251,191,36,.3)",background:"rgba(251,191,36,.06)",
-                    color:"#fbbf24",fontFamily:"'DM Sans',sans-serif",fontSize:13}}/>
-                <span style=${{fontSize:11,color:"#f87171",marginLeft:4}}>\ud83d\udfe5</span>
-                <input type="number" min="0" max="5" value=${fp.r||0}
-                  onInput=${function(e){setFP(g,team,"r",+e.target.value||0);}}
-                  style=${{width:44,textAlign:"center",padding:"4px 6px",borderRadius:7,
+                <span style=${{fontSize:11,color:"rgba(255,255,255,.4)",marginRight:2}}>FP</span>
+                <input type="number" min="-50" max="0" value=${typeof fp==="number"?fp:0}
+                  onInput=${function(e){setFP(g,team,+e.target.value||0);}}
+                  style=${{width:60,textAlign:"center",padding:"4px 8px",borderRadius:7,
                     border:"1.5px solid rgba(248,113,113,.3)",background:"rgba(248,113,113,.06)",
-                    color:"#f87171",fontFamily:"'DM Sans',sans-serif",fontSize:13}}/>
+                    color:"#f87171",fontFamily:"'DM Sans',sans-serif",fontSize:14,fontWeight:700}}/>
                 <span style=${{fontSize:11,fontWeight:700,minWidth:36,textAlign:"right",
                   color:fpPts<0?"#f87171":"rgba(255,255,255,.3)"}}>
-                  ${fpPts} fp
+                  ${fpPts<0?fpPts:"-"}
                 </span>
               </div>
             </div>`;

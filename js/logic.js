@@ -27,8 +27,9 @@ function calcStandings(gp, group, fairplay) {
   var fp    = (fairplay && fairplay[group]) || {};
 
   function fpPts(team) {
-    var f = fp[team] || {y:0, r:0};
-    return (f.y||0)*-1 + (f.r||0)*-3;
+    // Single fair play score entered by admin (negative number, e.g. -3)
+    var f = fp[team];
+    return (typeof f === "number") ? f : (f && typeof f.score === "number" ? f.score : 0);
   }
 
   function cmp(a, b, subset) {
