@@ -222,7 +222,8 @@ function cascadeKO(groupPreds, koScores, fairplay) {
   var qfteams    = winners(qf,  KO_BRACKET.qf.map(function(f){return f.id;}));
   var sfteams    = winners(sf,  KO_BRACKET.sf.map(function(f){return f.id;}));
   var finalTeams = [finalR.winner, finalR.loser].filter(Boolean);
-  var thirdTeams = sfteams.filter(function(t){ return finalTeams.indexOf(t)<0; });
+  // 3rd place match is contested by the two SF losers (s3rd.home and s3rd.away)
+  var thirdTeams = [s3rdR.home, s3rdR.away].filter(Boolean);
 
   return {
     r32:r32, r16:r16, qf:qf, sf:sf, final:finalR, s3rd:s3rdR,
