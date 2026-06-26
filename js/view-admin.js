@@ -108,11 +108,11 @@ function AdminResults(p) {
     });
   }
 
-  function setFP(group,team,field,val){
+  function setFP(group,team,val){
     setLoc(function(prev){
       var nfp=Object.assign({},prev.fairplay||{});
       nfp[group]=Object.assign({},nfp[group]||{});
-      nfp[group][team]=val; // store score directly
+      nfp[group][team]=val; // store score directly as a number
       return Object.assign({},prev,{fairplay:nfp});
     });
   }
@@ -223,21 +223,27 @@ function AdminResults(p) {
             ${lang==="es"?"Grupo":"Group"} ${g}
           </div>
           ${TBG[g].map(function(team){
-            var fp=(loc.fairplay&&loc.fairplay[g]&&loc.fairplay[g][team])||0;
-            var fpPts=typeof fp==="number"?fp:0;
+            var fpRaw=(loc.fairplay&&loc.fairplay[g]&&loc.fairplay[g][team]);
+            var fp=(typeof fpRaw==="number")?fpRaw:0;
             return html`<div key=${team} style=${{display:"flex",alignItems:"center",gap:10,marginBottom:5,padding:"7px 10px",borderRadius:10,background:"rgba(255,255,255,.04)"}}>
               <${FlagImg} team=${team}/>
               <span style=${{flex:1,fontSize:13,fontWeight:500}}>${teamName(team,lang)}</span>
               <div style=${{display:"flex",alignItems:"center",gap:6}}>
                 <span style=${{fontSize:11,color:"rgba(255,255,255,.4)",marginRight:2}}>FP</span>
-                <input type="number" min="-50" max="0" value=${typeof fp==="number"?fp:0}
-                  onInput=${function(e){setFP(g,team,+e.target.value||0);}}
+                <input type="number" max="0" inputmode="numeric" value=${fp===0?"":fp}
+                  placeholder="0"
+                  onInput=${function(e){
+                    var v=e.target.value;
+                    if(v===""||v==="-"){ setFP(g,team,0); return; }
+                    var n=parseInt(v,10);
+                    setFP(g,team,isNaN(n)?0:n);
+                  }}
                   style=${{width:60,textAlign:"center",padding:"4px 8px",borderRadius:7,
                     border:"1.5px solid rgba(248,113,113,.3)",background:"rgba(248,113,113,.06)",
                     color:"#f87171",fontFamily:"'DM Sans',sans-serif",fontSize:14,fontWeight:700}}/>
                 <span style=${{fontSize:11,fontWeight:700,minWidth:36,textAlign:"right",
-                  color:fpPts<0?"#f87171":"rgba(255,255,255,.3)"}}>
-                  ${fpPts<0?fpPts:"-"}
+                  color:fp<0?"#f87171":"rgba(255,255,255,.3)"}}>
+                  ${fp<0?fp:"-"}
                 </span>
               </div>
             </div>`;
