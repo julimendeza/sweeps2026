@@ -212,8 +212,8 @@ function HomeView(p) {
         WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>${t.title}</h1>
       <p style=${{ color:"rgba(255,255,255,.42)", fontSize:13, marginTop:10, lineHeight:1.7 }}>${t.sub}</p>
       <div style=${{ marginTop:20, display:"flex", gap:10, justifyContent:"center", flexWrap:"wrap" }}>
-        ${!isPastDeadline&&html`<${Btn} onClick=${function(){ setView("predict"); }} sx=${{ padding:"12px 28px", fontSize:15 }}>\u26bd ${t.predict}</${Btn}>`}
-        ${isPastDeadline&&html`<${Btn} v="secondary" disabled=${true} sx=${{ padding:"12px 28px", fontSize:15 }}>\ud83d\udd12 ${lang==="es"?"Predicciones cerradas":"Predictions closed"}</${Btn}>`}
+        ${(!isPastDeadline||settings.koReopen)&&html`<${Btn} onClick=${function(){ setView("predict"); }} sx=${{ padding:"12px 28px", fontSize:15 }}>\u26bd ${settings.koReopen&&isPastDeadline?(lang==="es"?"Editar eliminatoria":"Edit knockout"):t.predict}</${Btn}>`}
+        ${isPastDeadline&&!settings.koReopen&&html`<${Btn} v="secondary" disabled=${true} sx=${{ padding:"12px 28px", fontSize:15 }}>\ud83d\udd12 ${lang==="es"?"Predicciones cerradas":"Predictions closed"}</${Btn}>`}
         <${Btn} v="secondary" onClick=${function(){ setView("bracket"); }} sx=${{ padding:"12px 20px", fontSize:15 }}>\ud83c\udfc6 ${t.bracket}</${Btn}>
         <${Btn} v="secondary" onClick=${function(){ setView("leaderboard"); }} sx=${{ padding:"12px 20px", fontSize:15 }}>${t.table}</${Btn}>
       </div>

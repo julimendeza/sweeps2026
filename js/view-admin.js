@@ -1286,6 +1286,26 @@ function AdminSettings(p) {
     <div style=${{fontSize:11,color:"rgba(255,255,255,.3)",marginBottom:16,lineHeight:1.7}}>
       After this date/time, the Predict button on the home page is hidden and new predictions are blocked.
     </div>
+
+    <div style=${{
+      background:loc.koReopen?"rgba(74,222,128,.08)":"rgba(255,255,255,.03)",
+      border:"1.5px solid "+(loc.koReopen?"rgba(74,222,128,.4)":"rgba(255,255,255,.1)"),
+      borderRadius:12,padding:"14px 16px",marginBottom:16
+    }}>
+      <label style=${{display:"flex",alignItems:"center",gap:12,cursor:"pointer"}}>
+        <input type="checkbox" checked=${!!loc.koReopen}
+          onChange=${function(e){ var v=e.target.checked; setLoc(function(prev){ return Object.assign({},prev,{koReopen:v}); }); }}
+          style=${{width:20,height:20,cursor:"pointer",accentColor:"#4ade80"}}/>
+        <div>
+          <div style=${{fontWeight:700,fontSize:14,color:loc.koReopen?"#4ade80":"rgba(255,255,255,.7)"}}>
+            \ud83d\udd13 Reopen knockout predictions
+          </div>
+          <div style=${{fontSize:12,color:"rgba(255,255,255,.45)",marginTop:3,lineHeight:1.5}}>
+            Lets participants edit their knockout picks even after the deadline, while group-stage predictions stay locked. Use this after a bracket correction, then turn off before the Round of 32 starts.
+          </div>
+        </div>
+      </label>
+    </div>
     <${Field} label=${t.adminEmailSettings}>
       <input type="email" value=${loc.adminEmail||""}
         onInput=${function(e){ setLoc(function(prev){ return Object.assign({},prev,{adminEmail:e.target.value}); }); }}

@@ -106,19 +106,19 @@ var BEST3_SLOTS = {
 // KO bracket cascade: which two R32/R16/QF winners meet in the next round
 var KO_BRACKET = {
   r16:[
-    {id:"r16_0",num:89, home:"r32_0", away:"r32_1"},
-    {id:"r16_1",num:90, home:"r32_2", away:"r32_3"},
-    {id:"r16_2",num:91, home:"r32_4", away:"r32_5"},
+    {id:"r16_0",num:89, home:"r32_1", away:"r32_4"},
+    {id:"r16_1",num:90, home:"r32_0", away:"r32_2"},
+    {id:"r16_2",num:91, home:"r32_3", away:"r32_5"},
     {id:"r16_3",num:92, home:"r32_6", away:"r32_7"},
-    {id:"r16_4",num:93, home:"r32_8", away:"r32_9"},
-    {id:"r16_5",num:94, home:"r32_10",away:"r32_11"},
-    {id:"r16_6",num:95, home:"r32_12",away:"r32_13"},
-    {id:"r16_7",num:96, home:"r32_14",away:"r32_15"},
+    {id:"r16_4",num:93, home:"r32_10",away:"r32_11"},
+    {id:"r16_5",num:94, home:"r32_8", away:"r32_9"},
+    {id:"r16_6",num:95, home:"r32_13",away:"r32_15"},
+    {id:"r16_7",num:96, home:"r32_12",away:"r32_14"},
   ],
   qf:[
     {id:"qf_0",num:97,  home:"r16_0",away:"r16_1"},
-    {id:"qf_1",num:98,  home:"r16_2",away:"r16_3"},
-    {id:"qf_2",num:99,  home:"r16_4",away:"r16_5"},
+    {id:"qf_1",num:98,  home:"r16_4",away:"r16_5"},
+    {id:"qf_2",num:99,  home:"r16_2",away:"r16_3"},
     {id:"qf_3",num:100, home:"r16_6",away:"r16_7"},
   ],
   sf:[

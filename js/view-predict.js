@@ -66,7 +66,13 @@ function PredictView(p) {
   // Deadline guard
   var deadline = settings.deadline ? new Date(settings.deadline) : null;
   var isPastDeadline = deadline && new Date() > deadline;
-  if (isPastDeadline) return html`<div class="fade" style=${{maxWidth:440,margin:"0 auto",padding:"80px 16px",textAlign:"center"}}>
+  // Knockout re-open: when admin enables settings.koReopen, the deadline still
+  // locks the GROUP STAGE, but the knockout tabs remain editable so participants
+  // can re-confirm KO predictions (e.g. after a bracket correction).
+  var koReopen = !!settings.koReopen;
+  var fullyLocked = isPastDeadline && !koReopen;
+
+  if (fullyLocked) return html`<div class="fade" style=${{maxWidth:440,margin:"0 auto",padding:"80px 16px",textAlign:"center"}}>
     <div style=${{fontSize:52,marginBottom:12}}>\ud83d\udd12</div>
     <h2 class="bb" style=${{fontSize:32,marginBottom:12}}>${lang==="es"?"PREDICCIONES CERRADAS":"PREDICTIONS CLOSED"}</h2>
     <p style=${{color:"rgba(255,255,255,.4)",fontSize:14,lineHeight:1.8}}>
@@ -79,6 +85,9 @@ function PredictView(p) {
       <${Btn} onClick=${function(){setView("bracket");}}>\ud83c\udfc6 ${t.bracket}</${Btn}>
     </div>
   </div>`;
+
+  // When in KO-reopen mode, group-stage scores are read-only (already locked at deadline)
+  var groupsLocked = isPastDeadline && koReopen;
 
   // Cascade from current predictions
   var C = useMemo(function(){
@@ -315,6 +324,20 @@ function PredictView(p) {
       }}>?</button>
     </div>
 
+    ${groupsLocked&&html`<div style=${{
+      background:"rgba(245,158,11,.12)",border:"1.5px solid rgba(245,158,11,.4)",
+      borderRadius:12,padding:"12px 16px",marginBottom:16,fontSize:13,lineHeight:1.6
+    }}>
+      <div style=${{fontWeight:700,color:"#fbbf24",marginBottom:4}}>
+        ${lang==="es"?"\ud83d\udd13 Predicciones de eliminatoria reabiertas":"\ud83d\udd13 Knockout predictions reopened"}
+      </div>
+      <div style=${{color:"rgba(255,255,255,.7)"}}>
+        ${lang==="es"
+          ?"Se corrigi\u00f3 la estructura del cuadro de eliminatoria para coincidir con la oficial de la FIFA. Tus predicciones de fase de grupos est\u00e1n bloqueadas y sin cambios, pero por favor revisa y vuelve a confirmar tus predicciones de eliminatoria (Ronda de 32 en adelante)."
+          :"The knockout bracket structure was corrected to match FIFA's official layout. Your group-stage predictions are locked and unchanged, but please review and re-confirm your knockout predictions (Round of 32 onward)."}
+      </div>
+    </div>`}
+
     <div style=${{display:"flex",gap:8,marginBottom:16}}>
       ${[
         {id:"groups",l:t.groupStage,sub:gFilled+"/72"},
@@ -346,8 +369,9 @@ function PredictView(p) {
             return html`<${MRow} key=${m.id} match=${m}
               hv=${preds.groups&&preds.groups[m.id]&&preds.groups[m.id].h||""}
               av=${preds.groups&&preds.groups[m.id]&&preds.groups[m.id].a||""}
-              onH=${function(v){setGM(m.id,"h",v);}}
-              onA=${function(v){setGM(m.id,"a",v);}}/>`;
+              readOnly=${groupsLocked}
+              onH=${function(v){if(!groupsLocked)setGM(m.id,"h",v);}}
+              onA=${function(v){if(!groupsLocked)setGM(m.id,"a",v);}}/>`;
           })}
         </div>`;
       })}

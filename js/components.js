@@ -47,7 +47,10 @@ function SI(p) {
   return html`<input
     type="number" min="0" max="20" className="si"
     value=${p.val || ""}
-    onChange=${function(e){ p.onChange(e.target.value.replace(/\D/g,"").slice(0,2)); }}
+    readOnly=${!!p.readOnly}
+    disabled=${!!p.readOnly}
+    style=${p.readOnly?{opacity:.55,cursor:"not-allowed"}:{}}
+    onChange=${function(e){ if(!p.readOnly) p.onChange(e.target.value.replace(/\D/g,"").slice(0,2)); }}
     placeholder="?"/>`;
 }
 
@@ -70,9 +73,9 @@ function MRow(p) {
       <${FlagImg} team=${p.match.home}/>
     </div>
     <div style=${{ display:"flex", alignItems:"center", gap:4, flexShrink:0 }}>
-      <${SI} val=${hv} onChange=${p.onH}/>
+      <${SI} val=${hv} onChange=${p.onH} readOnly=${p.readOnly}/>
       <span style=${{ color:"rgba(255,255,255,.2)", fontSize:10 }}>-</span>
-      <${SI} val=${av} onChange=${p.onA}/>
+      <${SI} val=${av} onChange=${p.onA} readOnly=${p.readOnly}/>
     </div>
     <div style=${{ flex:1, display:"flex", alignItems:"center", gap:5, overflow:"hidden" }}>
       <${FlagImg} team=${p.match.away}/>
