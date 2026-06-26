@@ -113,7 +113,6 @@ function AdminResults(p) {
       var nfp=Object.assign({},prev.fairplay||{});
       nfp[group]=Object.assign({},nfp[group]||{});
       nfp[group][team]=val; // store score directly
-      nfp[group][team][field]=val;
       return Object.assign({},prev,{fairplay:nfp});
     });
   }
