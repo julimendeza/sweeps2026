@@ -453,55 +453,52 @@ function BracketView(p) {
 
   var H=512, PH=20, PW=160, CW=20;
 
-  // Build flat team arrays for each column half
-  // Each round: pairs of [home,away] from fixtures in order
-  // Left half = first 8 R32 fixtures, Right half = last 8
-  function colFromFixtures(fixtures, resultMap, half) {
-    var half8 = half==='left' ? fixtures.slice(0,8) : fixtures.slice(8);
-    var out = [];
-    half8.forEach(function(f){
-      var r = resultMap[f.id];
-      out.push(r&&r.home||null);
-      out.push(r&&r.away||null);
-    });
-    return out;
-  }
-
-  function colFromKO(fixtures, resultMap, half) {
-    var n=fixtures.length, h=n/2;
-    var half_f = half==='left' ? fixtures.slice(0,h) : fixtures.slice(h);
+  // Build flat team arrays for each column half.
+  // FIFA pairs R32 winners in an INTERLEAVED order (R16 M89 = M74+M77, M90 = M73+M75, ...),
+  // NOT sequentially. The visual columns must follow the bracket tree, or the connector lines
+  // link the wrong matches. Derive each column's match order from KO_BRACKET by walking the
+  // tree down from each semi-final (home before away), so the drawing always matches the cascade.
+  var koChildren = {};
+  KO_BRACKET.r16.forEach(function(f){ koChildren[f.id]=[f.home,f.away]; });
+  KO_BRACKET.qf .forEach(function(f){ koChildren[f.id]=[f.home,f.away]; });
+  KO_BRACKET.sf .forEach(function(f){ koChildren[f.id]=[f.home,f.away]; });
+  function descendants(rootId, prefix){
     var out=[];
-    half_f.forEach(function(f){
-      var r=resultMap[f.id];
+    (function rec(id){
+      if(id.indexOf(prefix)===0) out.push(id);
+      var ch=koChildren[id];
+      if(ch){ rec(ch[0]); rec(ch[1]); }
+    })(rootId);
+    return out;
+  }
+  var lR32ids = descendants('sf_0','r32_'), rR32ids = descendants('sf_1','r32_');
+  var lR16ids = descendants('sf_0','r16_'), rR16ids = descendants('sf_1','r16_');
+  var lQFids  = descendants('sf_0','qf_'),  rQFids  = descendants('sf_1','qf_');
+  var lSFids  = ['sf_0'], rSFids = ['sf_1'];
+
+  function teamsFromIds(ids, resultMap){
+    var out=[];
+    ids.forEach(function(id){
+      var r=resultMap[id];
       out.push(r&&r.home||null);
       out.push(r&&r.away||null);
     });
     return out;
   }
+  function nn(arr){ return arr.filter(Boolean); }
 
-  var lR32 = colFromFixtures(R32_FIXTURES, C.r32, 'left');
-  var rR32 = colFromFixtures(R32_FIXTURES, C.r32, 'right');
-  var lR16 = colFromKO(KO_BRACKET.r16, C.r16, 'left');
-  var rR16 = colFromKO(KO_BRACKET.r16, C.r16, 'right');
-  var lQF  = colFromKO(KO_BRACKET.qf,  C.qf,  'left');
-  var rQF  = colFromKO(KO_BRACKET.qf,  C.qf,  'right');
-  var lSF  = [C.sf['sf_0']&&C.sf['sf_0'].home||null, C.sf['sf_0']&&C.sf['sf_0'].away||null];
-  var rSF  = [C.sf['sf_1']&&C.sf['sf_1'].home||null, C.sf['sf_1']&&C.sf['sf_1'].away||null];
+  var lR32 = teamsFromIds(lR32ids, C.r32), rR32 = teamsFromIds(rR32ids, C.r32);
+  var lR16 = teamsFromIds(lR16ids, C.r16), rR16 = teamsFromIds(rR16ids, C.r16);
+  var lQF  = teamsFromIds(lQFids,  C.qf),  rQF  = teamsFromIds(rQFids,  C.qf);
+  var lSF  = teamsFromIds(lSFids,  C.sf),  rSF  = teamsFromIds(rSFids,  C.sf);
 
-  
-  // r32teams = R32 winners (advance to R16), r16teams = R16 winners (advance to QF), etc.
-  var lR32adv = C.r32teams.slice(0, 8);   // winners of fixtures 0-7
-  var rR32adv = C.r32teams.slice(8);      // winners of fixtures 8-15
-  var lR16adv = C.r16teams.slice(0, 4);   // winners of r16 0-3
-  var rR16adv = C.r16teams.slice(4);      // winners of r16 4-7
-  var lQFadv  = C.qfteams.slice(0, 2);
-  var rQFadv  = C.qfteams.slice(2);
-  // SF advancing: winner of each SF goes to the Final
+  // A team "advances" if it appears in the next column toward the centre.
+  var lR32adv = nn(lR16), rR32adv = nn(rR16);
+  var lR16adv = nn(lQF),  rR16adv = nn(rQF);
+  var lQFadv  = nn(lSF),  rQFadv  = nn(rSF);
   var lSFadv  = C.sf['sf_0']&&C.sf['sf_0'].winner ? [C.sf['sf_0'].winner] : [];
   var rSFadv  = C.sf['sf_1']&&C.sf['sf_1'].winner ? [C.sf['sf_1'].winner] : [];
 
-  
-  // e.g. lR32 pair 0 = r32_0, pair 1 = r32_1, ...
   function scoreMap(matchIds) {
     var out = {};
     matchIds.forEach(function(id, i) {
@@ -512,15 +509,6 @@ function BracketView(p) {
     });
     return out;
   }
-
-  var lR32ids = ['r32_0','r32_1','r32_2','r32_3','r32_4','r32_5','r32_6','r32_7'];
-  var rR32ids = ['r32_8','r32_9','r32_10','r32_11','r32_12','r32_13','r32_14','r32_15'];
-  var lR16ids = ['r16_0','r16_1','r16_2','r16_3'];
-  var rR16ids = ['r16_4','r16_5','r16_6','r16_7'];
-  var lQFids  = ['qf_0','qf_1'];
-  var rQFids  = ['qf_2','qf_3'];
-  var lSFids  = ['sf_0'];
-  var rSFids  = ['sf_1'];
 
   function col(label, teams, adv, matchIds) {
     var nums = (matchIds||[]).map(function(id){ return KO_MATCH_NUM[id]; });
