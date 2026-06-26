@@ -261,10 +261,24 @@ function SinglePick(p) {
 
 // - Build properly ordered bracket halves -
 
+// Map every KO fixture id -> its official FIFA match number (Match 73-104),
+// so knockout rows can show "M73" etc., matching the FIFA bracket.
+var KO_MATCH_NUM = (function(){
+  var m = {};
+  if (typeof R32_FIXTURES !== "undefined") R32_FIXTURES.forEach(function(f){ m[f.id] = f.num; });
+  if (typeof KO_BRACKET !== "undefined") {
+    ["r16","qf","sf"].forEach(function(rd){ (KO_BRACKET[rd]||[]).forEach(function(f){ m[f.id] = f.num; }); });
+    if (KO_BRACKET.final) m[KO_BRACKET.final.id] = KO_BRACKET.final.num;
+    if (KO_BRACKET.s3rd)  m[KO_BRACKET.s3rd.id]  = KO_BRACKET.s3rd.num;
+  }
+  return m;
+})();
+
 // - KO Match Row (score entry for knockout matches) -
 function KOMatchRow(p) {
   var lctx=useLang(); var t=lctx.t; var lang=lctx.lang;
   var match=p.match; // { id, home, away, score, winner, loser }
+  var matchNum=(match&&match.num)||(match&&KO_MATCH_NUM[match.id]); // FIFA match number 73-104
   var sc=p.sc||{}; // current prediction score object { h, a, winner }
   var onChange=p.onChange;
   var isResult=p.isResult; // admin mode
@@ -294,6 +308,7 @@ function KOMatchRow(p) {
     borderRadius:10,marginBottom:5,
     background:bgCol,border:'1.5px solid '+borderCol,transition:'all .15s'
   }}>
+    ${matchNum?html`<span style=${{flexShrink:0,fontSize:9,fontWeight:700,color:'rgba(255,255,255,.3)',fontFamily:"'DM Sans',sans-serif",minWidth:24,textAlign:'left',letterSpacing:'.02em'}}>M${matchNum}</span>`:''}
     <div style=${{flex:1,display:'flex',alignItems:'center',justifyContent:'flex-end',gap:5,overflow:'hidden'}}>
       ${homeTeam
         ? html`<span style=${{fontSize:11,fontWeight:predictedWinner===homeTeam?600:400,
@@ -344,7 +359,7 @@ function KOMatchRow(p) {
 
 function BCol(p) {
   var lang=useLang().lang;
-  var teams=p.teams, next=p.next||[], H=p.H, PW=p.PW, PH=p.PH, scores=p.scores||{};
+  var teams=p.teams, next=p.next||[], H=p.H, PW=p.PW, PH=p.PH, scores=p.scores||{}, nums=p.nums||[];
   var n=teams.length;
   var slotH=H/n;
   function isAdv(team){return team&&next.filter(Boolean).length>0&&next.indexOf(team)>=0;}
@@ -373,6 +388,14 @@ function BCol(p) {
           `
           : html`<span style=${{fontSize:8,color:'rgba(255,255,255,.18)',fontStyle:'italic',flex:1}}>TBD</span>`
         }
+      </div>`;
+    })}
+    ${nums.map(function(num,k){
+      if(num==null) return null;
+      return html`<div key=${'m'+k} style=${{position:'absolute',top:((2*k+1)*slotH-6)+'px',left:0,right:0,height:'12px',
+        display:'flex',alignItems:'center',justifyContent:'center',pointerEvents:'none'}}>
+        <span style=${{fontSize:7,fontWeight:700,color:'rgba(255,255,255,.32)',background:'rgba(255,255,255,.05)',
+          borderRadius:3,padding:'0 3px',fontFamily:"'DM Sans',sans-serif",letterSpacing:'.02em'}}>M${num}</span>
       </div>`;
     })}
   </div>`;
@@ -500,7 +523,8 @@ function BracketView(p) {
   var rSFids  = ['sf_1'];
 
   function col(label, teams, adv, matchIds) {
-    return html`<${BCol} label=${label} teams=${teams} next=${adv} H=${H} PW=${PW} PH=${PH} scores=${scoreMap(matchIds)}/>`;
+    var nums = (matchIds||[]).map(function(id){ return KO_MATCH_NUM[id]; });
+    return html`<${BCol} label=${label} teams=${teams} next=${adv} H=${H} PW=${PW} PH=${PH} scores=${scoreMap(matchIds)} nums=${nums}/>`;
   }
   function cn(outer, inner, dir) {
     return html`<${BConn} outer=${outer} inner=${inner} dir=${dir} H=${H} CW=${CW}/>`;
