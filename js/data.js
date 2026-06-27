@@ -1,4 +1,8 @@
 // ── Group / Team definitions ─────────────────────────────────────────
+// Playoff winners are now decided, so the real qualified teams are baked in
+// directly (was: "Playoff A/B/C/D/1/2" placeholders). This is independent of the
+// Firebase settings.playoffs confirmation flow, so the bracket always resolves
+// real teams. A->Bosnia & Herz., B->Sweden, C->Turkey, D->Czechia, 1->DR Congo, 2->Iraq.
 var TBG = {
   A: ["Mexico","South Africa","South Korea","Czechia"],
   B: ["Canada","Bosnia & Herz.","Qatar","Switzerland"],
@@ -273,21 +277,21 @@ var KO_ROUNDS = [
 var DEF = {
   adminPw:    "PuraFoda888!",
   entryFee:   40,
-  currency:   "COP",
+  currency:   "AUD",
   adminEmail: "",
-  firebase:   "https://polla-col-2026-default-rtdb.firebaseio.com",
-  deadline:   "2026-06-11T20:00:00",
+  firebase:   "https://quiniela2026-jema-default-rtdb.asia-southeast1.firebasedatabase.app",
+  deadline:   "2026-06-11T18:00",
   tcUrl:      "",
   access:     "off",   // "off" | "simple" | "robust"
   // Playoff confirmations — set by admin after finals (March 31)
   // Each entry: { teamA, teamB, confirmed, winner }
   playoffs: {
-    "Playoff A": { teamA:"Bosnia & Herz.", teamB:"Italy",    confirmed:true, winner:"Bosnia & Herz." },
-    "Sweden": { teamA:"Sweden",         teamB:"Poland",   confirmed:true, winner:"Sweden" },
-    "Turkey": { teamA:"Kosovo",         teamB:"Turkey",   confirmed:true, winner:"Turkey" },
-    "Playoff D": { teamA:"Denmark",        teamB:"Czechia",  confirmed:true, winner:"Czechia" },
-    "DR Congo": { teamA:"Jamaica",        teamB:"DR Congo", confirmed:true, winner:"DR Congo" },
-    "Iraq": { teamA:"Bolivia",        teamB:"Iraq",     confirmed:true, winner:"Iraq" }
+    "Playoff A": { teamA:"Bosnia & Herz.", teamB:"Italy",    confirmed:false, winner:"" },
+    "Playoff B": { teamA:"Sweden",         teamB:"Poland",   confirmed:false, winner:"" },
+    "Playoff C": { teamA:"Kosovo",         teamB:"Turkey",   confirmed:false, winner:"" },
+    "Playoff D": { teamA:"Denmark",        teamB:"Czechia",  confirmed:false, winner:"" },
+    "Playoff 1": { teamA:"Jamaica",        teamB:"DR Congo", confirmed:false, winner:"" },
+    "Playoff 2": { teamA:"Bolivia",        teamB:"Iraq",     confirmed:false, winner:"" }
   },
   scoring: {
     groupResult: 3,
