@@ -1,4 +1,4 @@
-// - Primitive components -
+// - Primitive componentss -
 
 var btnBase = {
   borderRadius: 10, fontWeight: 600, fontSize: 14,
