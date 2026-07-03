@@ -594,7 +594,7 @@ function BracketView(p) {
       var r=pResults.ko&&pResults.ko[id]; if(r&&r.h!==''&&r.h!==undefined) koScoreTotal+=scoreMatch(preds.ko&&preds.ko[id],r);
     });
   }
-  var greenChip={fontSize:9,fontWeight:800,background:'rgba(74,222,128,.22)',border:'1px solid rgba(74,222,128,.5)',borderRadius:4,padding:'0 4px',color:'#86efac',whiteSpace:'nowrap'};
+  var greenChip={fontSize:9,fontWeight:800,background:'rgba(255,255,255,.08)',border:'1px solid rgba(255,255,255,.25)',borderRadius:4,padding:'0 4px',color:'#d6dae0',whiteSpace:'nowrap'};
 
   return html`<div>
     ${anyKoResult&&html`<div style=${{display:'flex',alignItems:'center',justifyContent:'center',gap:12,flexWrap:'wrap',marginBottom:10,
