@@ -357,7 +357,7 @@ function BracketPage(p) {
     </div>
 
     ${activeTab === "bracket" && (displayPreds
-      ? html`<${BracketView} preds=${displayPreds}/>`
+      ? html`<${BracketView} preds=${displayPreds} results=${results} scoring=${settings.scoring} showPoints=${!isActual}/>`
       : html`<div style=${{ textAlign:"center", padding:"60px", color:"rgba(255,255,255,.3)" }}>${t.bracketNoPreds}</div>`
     )}
 

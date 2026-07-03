@@ -283,6 +283,10 @@ function KOMatchRow(p) {
   var onChange=p.onChange;
   var isResult=p.isResult; // admin mode
   var resMatch=p.resMatch; // actual result match object (for highlighting)
+  // Kickoff lock: once a match has kicked off, its PREDICTION becomes read-only.
+  // Never applies in admin/result-entry mode (isResult), so results stay editable.
+  var koKick=matchNum?KO_KICKOFF[matchNum]:null;
+  var matchLocked=!isResult && !!koKick && (new Date() > new Date(koKick));
 
   var homeTeam=match.home, awayTeam=match.away;
   var h=sc.h!==undefined?sc.h:'', a=sc.a!==undefined?sc.a:'';
@@ -299,16 +303,16 @@ function KOMatchRow(p) {
   var borderCol = status==='correct'?'rgba(74,222,128,.4)':status==='wrong'?'rgba(248,113,113,.3)':'rgba(255,255,255,.1)';
   var bgCol     = status==='correct'?'rgba(74,222,128,.06)':status==='wrong'?'rgba(248,113,113,.04)':'rgba(255,255,255,.04)';
 
-  function setH(v){ onChange(Object.assign({},sc,{h:v.replace(/\D/g,'').slice(0,2)})); }
-  function setA(v){ onChange(Object.assign({},sc,{a:v.replace(/\D/g,'').slice(0,2)})); }
-  function setW(v){ onChange(Object.assign({},sc,{winner:v})); }
+  function setH(v){ if(matchLocked)return; onChange(Object.assign({},sc,{h:v.replace(/\D/g,'').slice(0,2)})); }
+  function setA(v){ if(matchLocked)return; onChange(Object.assign({},sc,{a:v.replace(/\D/g,'').slice(0,2)})); }
+  function setW(v){ if(matchLocked)return; onChange(Object.assign({},sc,{winner:v})); }
 
   return html`<div style=${{
     display:'flex',alignItems:'center',gap:6,padding:'8px 10px',
     borderRadius:10,marginBottom:5,
     background:bgCol,border:'1.5px solid '+borderCol,transition:'all .15s'
   }}>
-    ${matchNum?html`<span style=${{flexShrink:0,fontSize:9,fontWeight:700,color:'rgba(255,255,255,.3)',fontFamily:"'DM Sans',sans-serif",minWidth:24,textAlign:'left',letterSpacing:'.02em'}}>M${matchNum}</span>`:''}
+    ${matchNum?html`<span style=${{flexShrink:0,fontSize:9,fontWeight:700,color:matchLocked?'#fbbf24':'rgba(255,255,255,.3)',fontFamily:"'DM Sans',sans-serif",minWidth:24,textAlign:'left',letterSpacing:'.02em'}}>M${matchNum}</span>`:''}
     <div style=${{flex:1,display:'flex',alignItems:'center',justifyContent:'flex-end',gap:5,overflow:'hidden'}}>
       ${homeTeam
         ? html`<span style=${{fontSize:11,fontWeight:predictedWinner===homeTeam?600:400,
@@ -320,10 +324,12 @@ function KOMatchRow(p) {
     </div>
 
     <div style=${{display:'flex',alignItems:'center',gap:3,flexShrink:0}}>
-      <input type="number" min="0" max="20" className="si" value=${h}
+      <input type="number" min="0" max="20" className="si" value=${h} disabled=${matchLocked}
+        style=${matchLocked?{opacity:.4,cursor:'not-allowed'}:null}
         onChange=${function(e){setH(e.target.value);}} placeholder="?"/>
       <span style=${{color:'rgba(255,255,255,.2)',fontSize:10}}>-</span>
-      <input type="number" min="0" max="20" className="si" value=${a}
+      <input type="number" min="0" max="20" className="si" value=${a} disabled=${matchLocked}
+        style=${matchLocked?{opacity:.4,cursor:'not-allowed'}:null}
         onChange=${function(e){setA(e.target.value);}} placeholder="?"/>
     </div>
 
@@ -337,7 +343,7 @@ function KOMatchRow(p) {
       }
     </div>
 
-    ${isDraw&&homeTeam&&awayTeam&&html`<div style=${{display:'flex',gap:3,flexShrink:0}}>
+    ${isDraw&&homeTeam&&awayTeam&&!matchLocked&&html`<div style=${{display:'flex',gap:3,flexShrink:0}}>
       <button onClick=${function(){setW('home');}} style=${{
         padding:'2px 7px',borderRadius:5,fontSize:9,fontWeight:700,cursor:'pointer',
         border:'1px solid '+(sc.winner==='home'?'rgba(74,222,128,.6)':'rgba(255,255,255,.15)'),
@@ -353,13 +359,25 @@ function KOMatchRow(p) {
         fontFamily:"'DM Sans',sans-serif"
       }}>A</button>
     </div>`}
+    ${matchLocked&&html`<span title=${lang==="es"?"Partido iniciado \u2014 predicci\u00f3n bloqueada":"Match started \u2014 prediction locked"} style=${{flexShrink:0,fontSize:11,marginLeft:1,opacity:.9}}>\ud83d\udd12</span>`}
   </div>`;
 }
 
 
+// Colour ladder for a KO per-match score chip (0-7): green climbs 3->4->5, gold for a perfect 7.
+function koPtChipStyle(v){
+  var c = v>=7 ? {b:'rgba(245,158,11,.28)',br:'rgba(245,158,11,.6)', t:'#fbbf24'} :
+          v>=5 ? {b:'rgba(34,197,94,.24)', br:'rgba(34,197,94,.55)', t:'#22c55e'} :
+          v>=4 ? {b:'rgba(74,222,128,.20)',br:'rgba(74,222,128,.5)', t:'#4ade80'} :
+          v>=3 ? {b:'rgba(134,239,172,.18)',br:'rgba(134,239,172,.45)',t:'#86efac'} :
+          v>=1 ? {b:'rgba(96,165,250,.18)',br:'rgba(96,165,250,.45)',t:'#93c5fd'} :
+                 {b:'rgba(255,255,255,.06)',br:'rgba(255,255,255,.15)',t:'rgba(255,255,255,.4)'};
+  return {fontSize:8,fontWeight:800,background:c.b,border:'1px solid '+c.br,borderRadius:3,padding:'0 3px',color:c.t,whiteSpace:'nowrap'};
+}
+
 function BCol(p) {
   var lang=useLang().lang;
-  var teams=p.teams, next=p.next||[], H=p.H, PW=p.PW, PH=p.PH, scores=p.scores||{}, nums=p.nums||[];
+  var teams=p.teams, next=p.next||[], H=p.H, PW=p.PW, PH=p.PH, scores=p.scores||{}, nums=p.nums||[], teamPts=p.teamPts||[], matchPts=p.matchPts||[];
   var n=teams.length;
   var slotH=H/n;
   function isAdv(team){return team&&next.filter(Boolean).length>0&&next.indexOf(team)>=0;}
@@ -385,17 +403,20 @@ function BCol(p) {
             ${score&&html`<span style=${{flexShrink:0,fontSize:8,fontWeight:800,background:'rgba(245,158,11,.3)',
               border:'1px solid rgba(245,158,11,.6)',borderRadius:3,padding:'0 3px',
               color:'#fde68a',whiteSpace:'nowrap'}}>${score}</span>`}
+            ${teamPts[i]!=null&&html`<span style=${{flexShrink:0,fontSize:7,fontWeight:800,background:'rgba(74,222,128,.22)',
+              border:'1px solid rgba(74,222,128,.5)',borderRadius:3,padding:'0 2px',color:'#86efac',whiteSpace:'nowrap'}}>+${teamPts[i]}</span>`}
           `
           : html`<span style=${{fontSize:8,color:'rgba(255,255,255,.18)',fontStyle:'italic',flex:1}}>TBD</span>`
         }
       </div>`;
     })}
     ${nums.map(function(num,k){
-      if(num==null) return null;
+      if(num==null && matchPts[k]==null) return null;
       return html`<div key=${'m'+k} style=${{position:'absolute',top:((2*k+1)*slotH-6)+'px',left:0,right:0,height:'12px',
-        display:'flex',alignItems:'center',justifyContent:'center',pointerEvents:'none'}}>
-        <span style=${{fontSize:7,fontWeight:700,color:'rgba(255,255,255,.32)',background:'rgba(255,255,255,.05)',
-          borderRadius:3,padding:'0 3px',fontFamily:"'DM Sans',sans-serif",letterSpacing:'.02em'}}>M${num}</span>
+        display:'flex',alignItems:'center',justifyContent:'center',gap:2,pointerEvents:'none'}}>
+        ${num!=null&&html`<span style=${{fontSize:7,fontWeight:700,color:'rgba(255,255,255,.32)',background:'rgba(255,255,255,.05)',
+          borderRadius:3,padding:'0 3px',fontFamily:"'DM Sans',sans-serif",letterSpacing:'.02em'}}>M${num}</span>`}
+        ${matchPts[k]!=null&&html`<span style=${koPtChipStyle(matchPts[k])}>+${matchPts[k]}</span>`}
       </div>`;
     })}
   </div>`;
@@ -445,6 +466,34 @@ function BracketView(p) {
   var C = useMemo(function(){
     return cascadeKO(preds.groups, preds.ko||{});
   }, [preds]);
+
+  // --- KO points overlay (shown only when viewing a player's bracket with results in) ---
+  var showPts = !!p.showPoints;
+  var pResults = p.results || {groups:{}, ko:{}};
+  var psc = p.scoring || {};
+  var rC = useMemo(function(){
+    return showPts ? cascadeKO(pResults.groups||{}, pResults.ko||{}) : null;
+  }, [pResults, showPts]);
+  function inArr(arr, tm){ return !!(tm && arr && arr.indexOf(tm)>=0); }
+  var reachedR32 = rC ? (rC.r32qualifiers||[]) : [];
+  var reachedR16 = rC ? (rC.r32teams||[]) : [];
+  var reachedQF  = rC ? (rC.r16teams||[]) : [];
+  var reachedSF  = rC ? (rC.qfteams||[]) : [];
+  var reachedFin = rC ? (rC.sfteams||[]) : [];
+  var actualCh   = rC ? rC.champion : null;
+  // parallel arrays for BCol: +N per team that actually reached that round, and score pts per match
+  function progArr(teams, reachedSet, bonus){
+    if(!showPts) return [];
+    return teams.map(function(tm){ return inArr(reachedSet, tm) ? (bonus||0) : null; });
+  }
+  function matchArr(matchIds){
+    if(!showPts) return [];
+    return (matchIds||[]).map(function(id){
+      var r=pResults.ko&&pResults.ko[id];
+      if(!r||r.h===''||r.h===undefined) return null;
+      return scoreMatch(preds.ko&&preds.ko[id], r);
+    });
+  }
 
   var ch=C.champion, ru=null;
   if(C.finalTeams&&C.finalTeams.length>0) ru=C.finalTeams.find(function(x){return x!==ch;})||null;
@@ -510,9 +559,9 @@ function BracketView(p) {
     return out;
   }
 
-  function col(label, teams, adv, matchIds) {
+  function col(label, teams, adv, matchIds, reachedSet, bonus) {
     var nums = (matchIds||[]).map(function(id){ return KO_MATCH_NUM[id]; });
-    return html`<${BCol} label=${label} teams=${teams} next=${adv} H=${H} PW=${PW} PH=${PH} scores=${scoreMap(matchIds)} nums=${nums}/>`;
+    return html`<${BCol} label=${label} teams=${teams} next=${adv} H=${H} PW=${PW} PH=${PH} scores=${scoreMap(matchIds)} nums=${nums} teamPts=${progArr(teams, reachedSet, bonus)} matchPts=${matchArr(matchIds)}/>`;
   }
   function cn(outer, inner, dir) {
     return html`<${BConn} outer=${outer} inner=${inner} dir=${dir} H=${H} CW=${CW}/>`;
@@ -521,7 +570,38 @@ function BracketView(p) {
     return html`<${BFinalConn} H=${H} CW=${CW} dir=${dir}/>`;
   }
 
+  // Center + 3rd-place points and header totals (only when showing a player's bracket with results)
+  var champPts=null, ruPts=null, finalScorePts=null, koProgTotal=0, koScoreTotal=0;
+  var reachedThird = rC ? (rC.thirdTeams||[]) : [];
+  var actualThirdWin = rC ? rC.thirdWin : null;
+  function thirdPts(t3){ return (showPts && inArr(reachedThird,t3)) ? (psc.thirdMatch||0) : null; }
+  var anyKoResult = showPts && pResults.ko && Object.keys(pResults.ko).some(function(k){ var r=pResults.ko[k]; return r&&r.h!==''&&r.h!==undefined; });
+  if(showPts){
+    if(inArr(reachedFin, ch)) champPts=(champPts||0)+(psc.final||0);
+    if(ch && actualCh && ch===actualCh) champPts=(champPts||0)+(psc.champion||0);
+    if(inArr(reachedFin, ru)) ruPts=(psc.final||0);
+    var _fr=pResults.ko&&pResults.ko['final'];
+    if(_fr&&_fr.h!==''&&_fr.h!==undefined) finalScorePts=scoreMatch(preds.ko&&preds.ko['final'], _fr);
+    [{ts:lR32.concat(rR32),set:reachedR32,b:psc.r32},{ts:lR16.concat(rR16),set:reachedR16,b:psc.r16},
+     {ts:lQF.concat(rQF),set:reachedQF,b:psc.qf},{ts:lSF.concat(rSF),set:reachedSF,b:psc.sf}
+    ].forEach(function(c){ c.ts.forEach(function(tm){ if(inArr(c.set,tm)) koProgTotal+=(c.b||0); }); });
+    if(inArr(reachedFin,ch)) koProgTotal+=(psc.final||0);
+    if(inArr(reachedFin,ru)) koProgTotal+=(psc.final||0);
+    if(ch&&actualCh&&ch===actualCh) koProgTotal+=(psc.champion||0);
+    thirds.filter(Boolean).forEach(function(t3){ if(inArr(reachedThird,t3)) koProgTotal+=(psc.thirdMatch||0); });
+    if(thirdWin && actualThirdWin && thirdWin===actualThirdWin) koProgTotal+=(psc.thirdWin||0);
+    lR32ids.concat(rR32ids,lR16ids,rR16ids,lQFids,rQFids,lSFids,rSFids,['final','s3rd']).forEach(function(id){
+      var r=pResults.ko&&pResults.ko[id]; if(r&&r.h!==''&&r.h!==undefined) koScoreTotal+=scoreMatch(preds.ko&&preds.ko[id],r);
+    });
+  }
+  var greenChip={fontSize:9,fontWeight:800,background:'rgba(74,222,128,.22)',border:'1px solid rgba(74,222,128,.5)',borderRadius:4,padding:'0 4px',color:'#86efac',whiteSpace:'nowrap'};
+
   return html`<div>
+    ${anyKoResult&&html`<div style=${{display:'flex',alignItems:'center',justifyContent:'center',gap:12,flexWrap:'wrap',marginBottom:10,
+      padding:'8px 14px',borderRadius:10,background:'rgba(245,158,11,.08)',border:'1px solid rgba(245,158,11,.25)'}}>
+      <span style=${{fontSize:13,fontWeight:800,color:'#fbbf24',fontFamily:"'DM Sans',sans-serif"}}>${lang==="es"?"Eliminatoria":"Knockout"}: ${koProgTotal+koScoreTotal} pts</span>
+      <span style=${{fontSize:11,color:'rgba(255,255,255,.55)'}}>${lang==="es"?"progresión":"progression"} ${koProgTotal} \u00b7 ${lang==="es"?"marcadores":"scores"} ${koScoreTotal}</span>
+    </div>`}
     <div class="bscroll" style=${{paddingTop:4,paddingBottom:12}}>
 
       <div style=${{display:'flex',alignItems:'flex-end',gap:0,minWidth:'1700px',marginBottom:6}}>
@@ -555,13 +635,13 @@ function BracketView(p) {
 
       <div style=${{display:'flex',alignItems:'flex-start',gap:0,minWidth:'1700px'}}>
 
-        ${col(t.r32, lR32, lR32adv, lR32ids)}
+        ${col(t.r32, lR32, lR32adv, lR32ids, reachedR32, psc.r32)}
         ${cn(lR32, lR16, 'lr')}
-        ${col(t.r16, lR16, lR16adv, lR16ids)}
+        ${col(t.r16, lR16, lR16adv, lR16ids, reachedR16, psc.r16)}
         ${cn(lR16, lQF, 'lr')}
-        ${col(t.qf,  lQF,  lQFadv, lQFids)}
+        ${col(t.qf,  lQF,  lQFadv, lQFids, reachedQF, psc.qf)}
         ${cn(lQF, lSF, 'lr')}
-        ${col(t.sf,  lSF,  lSFadv, lSFids)}
+        ${col(t.sf,  lSF,  lSFadv, lSFids, reachedSF, psc.sf)}
         ${fc('lr')}
 
         <div style=${{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',
@@ -570,7 +650,8 @@ function BracketView(p) {
             background:ch?'rgba(245,158,11,.15)':'rgba(255,255,255,.04)',
             border:'2px solid '+(ch?'rgba(245,158,11,.5)':'rgba(255,255,255,.1)')}}>
             ${ch
-              ? html`<${FlagImg} team=${ch}/><div style=${{fontWeight:700,color:'#fbbf24',fontSize:12,marginTop:3}}>${teamName(ch,lang)}</div>`
+              ? html`<${FlagImg} team=${ch}/><div style=${{fontWeight:700,color:'#fbbf24',fontSize:12,marginTop:3}}>${teamName(ch,lang)}</div>
+                ${champPts!=null&&html`<div style=${{marginTop:4}}><span style=${greenChip}>+${champPts}</span></div>`}`
               : html`<div style=${{fontSize:9,color:'rgba(255,255,255,.25)',fontStyle:'italic',padding:'4px 0'}}>TBD</div>`}
           </div>       
 
@@ -584,7 +665,9 @@ function BracketView(p) {
               return html`
                 <span style=${{fontSize:9,color:'rgba(255,255,255,.5)'}}>${ch?teamName(ch,lang):'?'}</span>
                 <span style=${{fontWeight:800,fontSize:14,color:'#fbbf24',letterSpacing:2}}>${cs}-${rs}</span>
+                ${finalScorePts!=null&&html`<span style=${koPtChipStyle(finalScorePts)}>+${finalScorePts}</span>`}
                 <span style=${{fontSize:9,color:'rgba(255,255,255,.5)'}}>${ru?teamName(ru,lang):'?'}</span>
+                ${ruPts!=null&&html`<span style=${greenChip}>+${ruPts}</span>`}
               `;
             })()}
           </div>`}
@@ -593,26 +676,32 @@ function BracketView(p) {
             <div style=${{fontSize:9,fontWeight:700,color:'rgba(180,83,9,.7)',textAlign:'center',marginBottom:4}}>${'\ud83e\udd49'} 3rd</div>
             ${thirds.slice(0,2).filter(Boolean).map(function(t3){
               var isW=t3===thirdWin;
+              var t3pts=null;
+              if(showPts){
+                var _b=inArr(reachedThird,t3)?(psc.thirdMatch||0):0;
+                var _w=(isW && thirdWin && actualThirdWin && thirdWin===actualThirdWin)?(psc.thirdWin||0):0;
+                if(_b+_w>0) t3pts=_b+_w;
+              }
               return html`<div key=${t3} style=${{display:'flex',alignItems:'center',gap:5,padding:'3px 6px',borderRadius:5,marginBottom:3,
                 background:isW?'rgba(180,83,9,.15)':'rgba(255,255,255,.04)',
                 border:'1px solid '+(isW?'rgba(180,83,9,.4)':'rgba(255,255,255,.08)')}}>
                 <${FlagImg} team=${t3}/>
                 <span style=${{fontSize:9,flex:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',
                   color:isW?'#fb923c':'rgba(255,255,255,.5)'}}>${teamName(t3,lang)}</span>
-                ${isW&&html`<span style=${{fontSize:8,color:'#fb923c'}}>-</span>`}
+                ${t3pts!=null&&html`<span style=${greenChip}>+${t3pts}</span>`}
               </div>`;
             })}
           </div>`}
         </div>
 
         ${fc('rl')}
-        ${col(t.sf,  rSF,  rSFadv, rSFids)}
+        ${col(t.sf,  rSF,  rSFadv, rSFids, reachedSF, psc.sf)}
         ${cn(rQF, rSF, 'rl')}
-        ${col(t.qf,  rQF,  rQFadv, rQFids)}
+        ${col(t.qf,  rQF,  rQFadv, rQFids, reachedQF, psc.qf)}
         ${cn(rR16, rQF, 'rl')}
-        ${col(t.r16, rR16, rR16adv, rR16ids)}
+        ${col(t.r16, rR16, rR16adv, rR16ids, reachedR16, psc.r16)}
         ${cn(rR32, rR16, 'rl')}
-        ${col(t.r32, rR32, rR32adv, rR32ids)}
+        ${col(t.r32, rR32, rR32adv, rR32ids, reachedR32, psc.r32)}
 
       </div>
     </div>
