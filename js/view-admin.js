@@ -848,11 +848,12 @@ function AdminStats(p) {
     {key:"champion",  label:"Champ",   color:"#4ade80"},
   ];
 
-  // Find max per column for color intensity
+  // Find max per column for color intensity (stage total = progression + match scores)
   var maxVals={};
   cols.forEach(function(c){
     maxVals[c.key]=Math.max.apply(null,scored.map(function(px){
-      return px.detail&&px.detail[c.key]?px.detail[c.key].earned||0:0;
+      var d=px.detail&&px.detail[c.key]||{};
+      return (d.earned||0)+(d.mpts||0);
     }).concat([1]));
   });
 
@@ -860,6 +861,9 @@ function AdminStats(p) {
     <div style=${{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16,flexWrap:"wrap",gap:8}}>
       <div style=${{fontSize:13,color:"rgba(255,255,255,.4)"}}>
         ${scored.length} participants \u00b7 sorted by total points
+        <div style=${{fontSize:10,color:"rgba(255,255,255,.3)",marginTop:2}}>
+          ${lang==="es"?"Celdas R32\u2013Final: total (progresi\u00f3n + marcadores)":"R32\u2013Final cells: total (progression + match scores)"}
+        </div>
       </div>
       <${Btn} v="secondary" onClick=${function(){ generateSummaryPDF(p.participants,p.results,p.settings,lang); }}
         sx=${{padding:"8px 14px",fontSize:12}}>
@@ -908,7 +912,10 @@ function AdminStats(p) {
                 </div>
               </td>
               ${cols.map(function(c){
-                var v=px.detail&&px.detail[c.key]?px.detail[c.key].earned||0:0;
+                var d=px.detail&&px.detail[c.key]||{};
+                var mp=d.mpts||0;
+                var v=(d.earned||0)+mp;
+                var hasSplit=["r32","r16","qf","sf","thirdMatch","final"].indexOf(c.key)>=0;
                 var ratio=maxVals[c.key]>0?v/maxVals[c.key]:0;
                 var alpha=ratio*0.7;
                 return html`<td key=${c.key} style=${{
@@ -917,7 +924,8 @@ function AdminStats(p) {
                   borderRadius:4
                 }}>
                   ${v>0
-                    ? html`<span style=${{fontWeight:700,color:v===maxVals[c.key]?"#fff":c.color,fontSize:12}}>${v}</span>`
+                    ? html`<span style=${{fontWeight:700,color:v===maxVals[c.key]?"#fff":c.color,fontSize:12}}>${v}</span>
+                      ${hasSplit&&html`<div style=${{fontSize:8,color:"rgba(255,255,255,.55)",marginTop:1,whiteSpace:"nowrap"}}>${d.earned||0}+${mp}</div>`}`
                     : html`<span style=${{color:"rgba(255,255,255,.15)",fontSize:11}}>-</span>`}
                 </td>`;
               })}
