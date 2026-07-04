@@ -5,7 +5,7 @@ function LeaderboardView(p) {
   var results      = p.results;
   var settings     = p.settings;
 
-  var rC = useMemo(function(){ return cascadeKO(results.groups, results.ko||{}); }, [results]);
+  var rC = useMemo(function(){ return cascadeKO(results.groups, results.ko||{}, results.fairplay); }, [results]);
   var ranked = useMemo(function(){
     return participants
       .map(function(x){ return Object.assign({}, x, calcScore(x.preds, results, settings.scoring)); })
@@ -64,7 +64,7 @@ function LeaderboardView(p) {
           ${ranked.map(function(px, i){
             var isOpen = exp === px.id;
             var pxC=cascadeKO(px.preds&&px.preds.groups,px.preds&&px.preds.ko||{}); var ch=pxC.champion;
-            var chHit  = ch && results.champion && ch === results.champion;
+            var chHit  = ch && rC.champion && ch === rC.champion;
 
             return html`<div key=${px.id}>
 

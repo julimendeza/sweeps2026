@@ -84,8 +84,8 @@ function AdminResults(p) {
   var koState =useState("r32");    var activeKO=koState[0],  setActiveKO=koState[1];
   var msgState=useState("");       var msg=msgState[0],      setMsg=msgState[1];
 
-  var r32info=useMemo(function(){return getR32(loc.groups);}, [loc.groups]);
-  var C=useMemo(function(){return cascadeKO(loc.groups,loc.ko||{});}, [loc]);
+  var r32info=useMemo(function(){return getR32(loc.groups, loc.fairplay);}, [loc.groups, loc.fairplay]);
+  var C=useMemo(function(){return cascadeKO(loc.groups,loc.ko||{},loc.fairplay);}, [loc]);
   var gIdx=GROUPS.indexOf(activeG);
   var koRoundDef=KO_ROUNDS.find(function(r){return r.id===activeKO;})||KO_ROUNDS[0];
   var koIdx=KO_ROUNDS.findIndex(function(r){return r.id===activeKO;});
@@ -154,7 +154,7 @@ function AdminResults(p) {
           })}
         </div>`;
       })}
-      <${StandingsTable} group=${activeG} preds=${loc.groups} allPreds=${loc.groups}/>
+      <${StandingsTable} group=${activeG} preds=${loc.groups} allPreds=${loc.groups} fairplay=${loc.fairplay}/>
       <div style=${{display:"flex",justifyContent:"space-between",marginTop:14}}>
         <${Btn} v="secondary" disabled=${gIdx===0} onClick=${function(){setActiveG(GROUPS[gIdx-1]);}} sx=${{padding:"7px 14px",fontSize:13}}>- ${GROUPS[gIdx-1]||""}</${Btn}>
         <${Btn} v="secondary" disabled=${gIdx===11} onClick=${function(){setActiveG(GROUPS[gIdx+1]);}} sx=${{padding:"7px 14px",fontSize:13}}>${GROUPS[gIdx+1]||""} -</${Btn}>
@@ -260,9 +260,10 @@ function AdminResults(p) {
 function AdminParts(p) {
   var lctx=useLang();var t=lctx.t;var lang=lctx.lang;
   var ranked = useMemo(function(){
+    var tbC = cascadeKO(p.results.groups, p.results.ko || {}, p.results.fairplay);
     return p.participants
       .map(function(x){ return Object.assign({}, x, calcScore(x.preds, p.results, p.settings.scoring)); })
-      .sort(function(a,b){ return cmpTb(a,b,p.results); });
+      .sort(function(a,b){ return cmpTb(a,b,tbC); });
   }, [p.participants, p.results, p.settings]);
 
   var editState = useState(null); var editId=editState[0], setEditId=editState[1];
@@ -349,9 +350,12 @@ function AdminParts(p) {
             <div style=${{ fontSize:12, color:"rgba(255,255,255,.32)" }}>${px.email}</div>
             <div style=${{ fontSize:11, color:"rgba(255,255,255,.22)", marginTop:2, display:"flex", alignItems:"center", gap:4 }}>
               \ud83c\udfc6
-              ${px.preds && px.preds.champion
-                ? html`<${FlagImg} team=${px.preds.champion}/> ${px.preds.champion}`
-                : "\u2014"}
+              ${(function(){
+                var pch = px.preds && cascadeKO(px.preds.groups, px.preds.ko||{}).champion;
+                return pch
+                  ? html`<${FlagImg} team=${pch}/> ${pch}`
+                  : "\u2014";
+              })()}
             </div>
           </div>
           <div style=${{display:"flex",alignItems:"center",gap:8}}>
@@ -385,7 +389,7 @@ function AdminEmail(p) {
   var total = human.length * p.settings.entryFee;
 
   var chC = {};
-  human.forEach(function(x){ if(x.preds&&x.preds.champion) chC[x.preds.champion]=(chC[x.preds.champion]||0)+1; });
+  human.forEach(function(x){ var xch = x.preds && cascadeKO(x.preds.groups, x.preds.ko||{}).champion; if(xch) chC[xch]=(chC[xch]||0)+1; });
   var topCh = Object.entries(chC).sort(function(a,b){ return b[1]-a[1]; })[0];
 
   async function saveCfg() {
@@ -401,8 +405,9 @@ function AdminEmail(p) {
     try {
       await loadEJS();
       window.emailjs.init(cfg.key);
+      var tbC = cascadeKO(p.results.groups, p.results.ko || {}, p.results.fairplay);
       var ranked = human.map(function(x){ return Object.assign({},x,calcScore(x.preds,p.results,p.settings.scoring)); })
-                        .sort(function(a,b){ return cmpTb(a,b,p.results); });
+                        .sort(function(a,b){ return cmpTb(a,b,tbC); });
       var cs = Object.entries(chC).sort(function(a,b){return b[1]-a[1];}).map(function(e){return e[0]+" ("+e[1]+")";}).join(", ");
       var ok = 0;
       for (var i = 0; i < ranked.length; i++) {

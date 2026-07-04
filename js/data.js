@@ -373,8 +373,8 @@ var CLAUDE_ENTRY = {
       // Prediction: England 1st, Croatia 2nd, Ghana 3rd, Panama 4th
       L1:{h:"2",a:"0"},L2:{h:"1",a:"1"},L3:{h:"3",a:"1"},L4:{h:"2",a:"0"},L5:{h:"4",a:"0"},L6:{h:"2",a:"1"}
     },
-    champion: "Spain",
-    thirdWin: "Brazil",
+    champion: "England",
+    thirdWin: "Netherlands",
     ko: {
       // Round of 32 — using real playoff teams
       // r32_0: Switzerland vs Canada      r32_1: Germany vs Bosnia

@@ -58,14 +58,14 @@ function SI(p) {
 function MRow(p) {
   var lang=useLang().lang;
   var res = p.res, hv = p.hv || "", av = p.av || "";
-  var st  = (res && res.h !== "") ? mSt({ h:hv, a:av }, res) : null;
+  var st  = (res && res.h !== "") ? mSt({ h:hv, a:av }, res, p.sc) : null;
   var bg  = st==="exact"  ? "rgba(34,197,94,.12)"  :
             st==="result" ? "rgba(245,158,11,.1)"  :
             st==="partial"? "rgba(59,130,246,.08)" : "rgba(255,255,255,.04)";
   var bd  = st==="exact"  ? "rgba(34,197,94,.35)"  :
             st==="result" ? "rgba(245,158,11,.25)" :
             st==="partial"? "rgba(59,130,246,.2)"  : "rgba(255,255,255,.09)";
-  var pts = st ? scoreMatch({ h:hv, a:av }, res) : null;
+  var pts = st ? scoreMatch({ h:hv, a:av }, res, p.sc) : null;
 
   return html`<div style=${{ display:"flex", alignItems:"center", gap:8, padding:"8px 10px", borderRadius:12, border:"1.5px solid "+bd, marginBottom:5, background:bg, transition:"all .15s" }}>
     <div style=${{ flex:1, display:"flex", alignItems:"center", justifyContent:"flex-end", gap:5, overflow:"hidden" }}>
@@ -92,14 +92,14 @@ function MRow(p) {
 function StandingsTable(p) {
   var lang=useLang().lang;
   var t    = useLang().t;
-  var st   = calcStandings(p.preds || {}, p.group);
+  var st   = calcStandings(p.preds || {}, p.group, p.fairplay);
   var done = groupDone(p.preds || {}, p.group);
 
   // Work out which 3rd-place teams qualify across all groups
   // allPreds = full groups predictions object (needed to rank all thirds)
   var qualifiedThirds = [];
   if (p.allPreds) {
-    var r32info = getR32(p.allPreds);
+    var r32info = getR32(p.allPreds, p.fairplay);
     qualifiedThirds = r32info.best8.map(function(x){ return x.team; });
   }
   var third = st[2] && st[2].team;
@@ -292,12 +292,15 @@ function KOMatchRow(p) {
   var h=sc.h!==undefined?sc.h:'', a=sc.a!==undefined?sc.a:'';
   var isDraw=(h!==''&&a!==''&&+h===+a);
   var predictedWinner=koWinner(sc);
+  // koWinner returns a SIDE ("home"/"away"); map it to the team name for comparisons
+  var predictedWinnerTeam = predictedWinner==='home' ? homeTeam :
+                            predictedWinner==='away' ? awayTeam : null;
   var actualWinner=resMatch?resMatch.winner:null;
 
   // Status for highlighting
   var status=null;
-  if(actualWinner&&predictedWinner) {
-    status=(predictedWinner===actualWinner)?'correct':'wrong';
+  if(actualWinner&&predictedWinnerTeam) {
+    status=(predictedWinnerTeam===actualWinner)?'correct':'wrong';
   }
 
   var borderCol = status==='correct'?'rgba(74,222,128,.4)':status==='wrong'?'rgba(248,113,113,.3)':'rgba(255,255,255,.1)';
@@ -315,8 +318,8 @@ function KOMatchRow(p) {
     ${matchNum?html`<span style=${{flexShrink:0,fontSize:9,fontWeight:700,color:matchLocked?'#fbbf24':'rgba(255,255,255,.3)',fontFamily:"'DM Sans',sans-serif",minWidth:24,textAlign:'left',letterSpacing:'.02em'}}>M${matchNum}</span>`:''}
     <div style=${{flex:1,display:'flex',alignItems:'center',justifyContent:'flex-end',gap:5,overflow:'hidden'}}>
       ${homeTeam
-        ? html`<span style=${{fontSize:11,fontWeight:predictedWinner===homeTeam?600:400,
-            color:predictedWinner===homeTeam?'rgba(255,255,255,.9)':'rgba(255,255,255,.65)',
+        ? html`<span style=${{fontSize:11,fontWeight:predictedWinnerTeam===homeTeam?600:400,
+            color:predictedWinnerTeam===homeTeam?'rgba(255,255,255,.9)':'rgba(255,255,255,.65)',
             overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>${teamName(homeTeam,lang)}</span>
            <${FlagImg} team=${homeTeam}/>`
         : html`<span style=${{fontSize:10,color:'rgba(255,255,255,.25)',fontStyle:'italic'}}>TBD</span>`
@@ -336,8 +339,8 @@ function KOMatchRow(p) {
     <div style=${{flex:1,display:'flex',alignItems:'center',gap:5,overflow:'hidden'}}>
       ${awayTeam
         ? html`<${FlagImg} team=${awayTeam}/>
-           <span style=${{fontSize:11,fontWeight:predictedWinner===awayTeam?600:400,
-            color:predictedWinner===awayTeam?'rgba(255,255,255,.9)':'rgba(255,255,255,.65)',
+           <span style=${{fontSize:11,fontWeight:predictedWinnerTeam===awayTeam?600:400,
+            color:predictedWinnerTeam===awayTeam?'rgba(255,255,255,.9)':'rgba(255,255,255,.65)',
             overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>${teamName(awayTeam,lang)}</span>`
         : html`<span style=${{fontSize:10,color:'rgba(255,255,255,.25)',fontStyle:'italic'}}>TBD</span>`
       }
@@ -472,10 +475,12 @@ function BracketView(p) {
   var pResults = p.results || {groups:{}, ko:{}};
   var psc = p.scoring || {};
   var rC = useMemo(function(){
-    return showPts ? cascadeKO(pResults.groups||{}, pResults.ko||{}) : null;
+    return showPts ? cascadeKO(pResults.groups||{}, pResults.ko||{}, pResults.fairplay) : null;
   }, [pResults, showPts]);
   function inArr(arr, tm){ return !!(tm && arr && arr.indexOf(tm)>=0); }
-  var reachedR32 = rC ? (rC.r32qualifiers||[]) : [];
+  // Same gate as calcScore: R32 qualification only counts once ALL groups are complete
+  var rGroupsComplete = rC ? GROUPS.every(function(g){ return groupDone(pResults.groups||{}, g); }) : false;
+  var reachedR32 = (rC && rGroupsComplete) ? (rC.r32qualifiers||[]) : [];
   var reachedR16 = rC ? (rC.r32teams||[]) : [];
   var reachedQF  = rC ? (rC.r16teams||[]) : [];
   var reachedSF  = rC ? (rC.qfteams||[]) : [];
@@ -491,7 +496,7 @@ function BracketView(p) {
     return (matchIds||[]).map(function(id){
       var r=pResults.ko&&pResults.ko[id];
       if(!r||r.h===''||r.h===undefined) return null;
-      return scoreMatch(preds.ko&&preds.ko[id], r);
+      return scoreMatch(preds.ko&&preds.ko[id], r, psc);
     });
   }
 
@@ -581,7 +586,7 @@ function BracketView(p) {
     if(ch && actualCh && ch===actualCh) champPts=(champPts||0)+(psc.champion||0);
     if(inArr(reachedFin, ru)) ruPts=(psc.final||0);
     var _fr=pResults.ko&&pResults.ko['final'];
-    if(_fr&&_fr.h!==''&&_fr.h!==undefined) finalScorePts=scoreMatch(preds.ko&&preds.ko['final'], _fr);
+    if(_fr&&_fr.h!==''&&_fr.h!==undefined) finalScorePts=scoreMatch(preds.ko&&preds.ko['final'], _fr, psc);
     [{ts:lR32.concat(rR32),set:reachedR32,b:psc.r32},{ts:lR16.concat(rR16),set:reachedR16,b:psc.r16},
      {ts:lQF.concat(rQF),set:reachedQF,b:psc.qf},{ts:lSF.concat(rSF),set:reachedSF,b:psc.sf}
     ].forEach(function(c){ c.ts.forEach(function(tm){ if(inArr(c.set,tm)) koProgTotal+=(c.b||0); }); });
@@ -591,7 +596,7 @@ function BracketView(p) {
     thirds.filter(Boolean).forEach(function(t3){ if(inArr(reachedThird,t3)) koProgTotal+=(psc.thirdMatch||0); });
     if(thirdWin && actualThirdWin && thirdWin===actualThirdWin) koProgTotal+=(psc.thirdWin||0);
     lR32ids.concat(rR32ids,lR16ids,rR16ids,lQFids,rQFids,lSFids,rSFids,['final','s3rd']).forEach(function(id){
-      var r=pResults.ko&&pResults.ko[id]; if(r&&r.h!==''&&r.h!==undefined) koScoreTotal+=scoreMatch(preds.ko&&preds.ko[id],r);
+      var r=pResults.ko&&pResults.ko[id]; if(r&&r.h!==''&&r.h!==undefined) koScoreTotal+=scoreMatch(preds.ko&&preds.ko[id],r,psc);
     });
   }
   var greenChip={fontSize:9,fontWeight:800,background:'rgba(255,255,255,.08)',border:'1px solid rgba(255,255,255,.25)',borderRadius:4,padding:'0 4px',color:'#d6dae0',whiteSpace:'nowrap'};

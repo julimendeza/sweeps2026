@@ -3,7 +3,7 @@ function HomeView(p) {
   var lctx=useLang();var t=lctx.t;var lang=lctx.lang;
   var participants = p.participants, results = p.results, settings = p.settings, setView = p.setView;
 
-  var rC = useMemo(function(){ return cascadeKO(results.groups, results.ko||{}); }, [results]);
+  var rC = useMemo(function(){ return cascadeKO(results.groups, results.ko||{}, results.fairplay); }, [results]);
   var ranked = useMemo(function(){
     return participants
       .map(function(x){ return Object.assign({}, x, calcScore(x.preds, results, settings.scoring)); })
@@ -377,6 +377,7 @@ function BracketPage(p) {
         group=${activeG}
         preds=${displayPreds.groups}
         allPreds=${displayPreds.groups}
+        fairplay=${isActual ? (p.results && p.results.fairplay) : null}
       />`}
       ${displayPreds && html`<div style=${{marginTop:14}}>
         <div style=${{fontSize:10,fontWeight:700,color:"rgba(255,255,255,.3)",letterSpacing:".08em",marginBottom:8,textTransform:"uppercase"}}>
@@ -388,10 +389,10 @@ function BracketPage(p) {
           var hv=pred?pred.h:""; var av=pred?pred.a:"";
           var hasPred=pred&&pred.h!==''&&pred.h!==undefined;
           var hasRes=res&&res.h!==''&&res.h!==undefined;
-          var st=hasPred&&hasRes?mSt({h:hv,a:av},res):null;
+          var st=hasPred&&hasRes?mSt({h:hv,a:av},res,p.settings&&p.settings.scoring):null;
           var bg=st==="exact"?"rgba(34,197,94,.12)":st==="result"?"rgba(245,158,11,.1)":st==="partial"?"rgba(59,130,246,.08)":"rgba(255,255,255,.03)";
           var bd=st==="exact"?"rgba(34,197,94,.35)":st==="result"?"rgba(245,158,11,.25)":st==="partial"?"rgba(59,130,246,.2)":"rgba(255,255,255,.08)";
-          var pts=st?scoreMatch({h:hv,a:av},res):null;
+          var pts=st?scoreMatch({h:hv,a:av},res,p.settings&&p.settings.scoring):null;
           return html`<div key=${m.id} style=${{
             display:"flex",alignItems:"center",gap:8,padding:"7px 10px",
             borderRadius:10,border:"1.5px solid "+bd,marginBottom:5,

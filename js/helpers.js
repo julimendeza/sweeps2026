@@ -533,7 +533,7 @@ async function generateReportPDF(participant, results, settings, lang) {
   var preds  = participant.preds || {};
   var sc     = settings.scoring  || DEF.scoring;
   var scored = calcScore(preds, results, sc);
-  var rC     = cascadeKO(results.groups, results.ko || {});
+  var rC     = cascadeKO(results.groups, results.ko || {}, results.fairplay);
   var pC     = cascadeKO(preds.groups,   preds.ko   || {});
 
   // Pre-fetch all flags
@@ -680,7 +680,7 @@ async function generateReportPDF(participant, results, settings, lang) {
         GMS[g].slice(md*2,md*2+2).forEach(function(m){
           var pred=preds.groups&&preds.groups[m.id];
           var res=results.groups&&results.groups[m.id];
-          var pts=scoreMatch(pred,res);
+          var pts=scoreMatch(pred,res,settings&&settings.scoring);
           var pSc=(pred&&pred.h!==''&&pred.h!==undefined)?pred.h+"-"+pred.a:"?";
           var rSc=(res&&res.h!==''&&res.h!==undefined)?res.h+"-"+res.a:"?";
           matchRow(m.home,m.away,pSc,rSc,
@@ -713,7 +713,7 @@ async function generateReportPDF(participant, results, settings, lang) {
       ks.ids.forEach(function(fid){
         var pred=preds.ko&&preds.ko[fid];
         var res =results.ko&&results.ko[fid];
-        var pts=scoreMatch(pred,res);
+        var pts=scoreMatch(pred,res,settings&&settings.scoring);
         var teams=resolveKOMatch(fid,rC,pC);
         // For final/s3rd, orient the score so home team = teams.home
         var pSc, rSc;
