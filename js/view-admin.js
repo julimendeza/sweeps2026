@@ -937,6 +937,34 @@ function AdminStats(p) {
         </tbody>
       </table>
     </div>
+    <div style=${{display:"flex",alignItems:"center",justifyContent:"center",gap:12,flexWrap:"wrap",
+    marginTop:10,padding:"8px 14px",borderRadius:8,background:"rgba(255,255,255,.03)",border:"1px solid rgba(255,255,255,.07)"}}>
+    <span style=${{fontSize:9,fontWeight:700,color:"rgba(255,255,255,.45)",letterSpacing:".04em"}}>
+      ${lang==="es"?"LEYENDA":"LEGEND"}
+    </span>
+
+    <span style=${{display:"flex",alignItems:"center",gap:5}}>
+      <span style=${{fontWeight:700,color:"#60a5fa",fontSize:12}}>82</span>
+      <span style=${{fontSize:10,color:"rgba(255,255,255,.45)"}}>
+        ${lang==="es"?"total de la ronda":"round total"}
+      </span>
+    </span>
+
+    <span style=${{display:"flex",alignItems:"center",gap:5}}>
+      <span style=${{fontSize:9,color:"rgba(255,255,255,.55)"}}>25+57</span>
+      <span style=${{fontSize:10,color:"rgba(255,255,255,.45)"}}>
+        ${lang==="es"
+          ? "progresión (equipos que llegan a la ronda) + marcadores (puntos por partido)"
+          : "progression (teams reaching the round) + match scores (per-match points)"}
+      </span>
+    </span>
+
+    <span style=${{fontSize:10,color:"rgba(255,255,255,.3)"}}>
+      ${lang==="es"
+        ? "Aplica a R32–Final. Grupos, 3rd W y Champ no se dividen."
+        : "Applies to R32–Final. Groups, 3rd W & Champ have no split."}
+    </span>
+  </div>
   </div>`;
 }
 
