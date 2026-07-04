@@ -403,8 +403,8 @@ function BCol(p) {
             ${score&&html`<span style=${{flexShrink:0,fontSize:8,fontWeight:800,background:'rgba(245,158,11,.3)',
               border:'1px solid rgba(245,158,11,.6)',borderRadius:3,padding:'0 3px',
               color:'#fde68a',whiteSpace:'nowrap'}}>${score}</span>`}
-            ${teamPts[i]!=null&&html`<span style=${{flexShrink:0,fontSize:7,fontWeight:800,background:'rgba(74,222,128,.22)',
-              border:'1px solid rgba(74,222,128,.5)',borderRadius:3,padding:'0 2px',color:'#86efac',whiteSpace:'nowrap'}}>+${teamPts[i]}</span>`}
+            ${teamPts[i]!=null&&html`<span style=${{flexShrink:0,fontSize:7,fontWeight:800,background:'rgba(255,255,255,.08)',
+              border:'1px solid rgba(255,255,255,.25)',borderRadius:3,padding:'0 2px',color:'#d6dae0',whiteSpace:'nowrap'}}>+${teamPts[i]}</span>`}
           `
           : html`<span style=${{fontSize:8,color:'rgba(255,255,255,.18)',fontStyle:'italic',flex:1}}>TBD</span>`
         }
@@ -705,6 +705,25 @@ function BracketView(p) {
 
       </div>
     </div>
+    ${anyKoResult&&html`<div style=${{display:'flex',alignItems:'center',justifyContent:'center',gap:10,flexWrap:'wrap',
+      marginTop:10,padding:'7px 12px',borderRadius:8,background:'rgba(255,255,255,.03)',border:'1px solid rgba(255,255,255,.07)'}}>
+      <span style=${{fontSize:9,fontWeight:700,color:'rgba(255,255,255,.45)',letterSpacing:'.04em'}}>${lang==="es"?"LEYENDA":"LEGEND"}</span>
+      <span style=${{display:'flex',alignItems:'center',gap:4}}>
+        <span style=${{fontSize:8,fontWeight:800,background:'rgba(245,158,11,.3)',border:'1px solid rgba(245,158,11,.6)',borderRadius:3,padding:'0 3px',color:'#fde68a'}}>2-1</span>
+        <span style=${{fontSize:9,color:'rgba(255,255,255,.45)'}}>${lang==="es"?"tu marcador":"your predicted score"}</span>
+      </span>
+      <span style=${{display:'flex',alignItems:'center',gap:4}}>
+        <span style=${{fontSize:8,fontWeight:800,background:'rgba(255,255,255,.08)',border:'1px solid rgba(255,255,255,.25)',borderRadius:3,padding:'0 3px',color:'#d6dae0'}}>+1</span>
+        <span style=${{fontSize:9,color:'rgba(255,255,255,.45)'}}>${lang==="es"?"progresi\u00f3n (equipo lleg\u00f3 a la ronda)":"progression (team reached round)"}</span>
+      </span>
+      <span style=${{display:'flex',alignItems:'center',gap:4}}>
+        <span style=${koPtChipStyle(1)}>+1</span>
+        <span style=${koPtChipStyle(3)}>+3</span>
+        <span style=${koPtChipStyle(5)}>+5</span>
+        <span style=${koPtChipStyle(7)}>+7</span>
+        <span style=${{fontSize:9,color:'rgba(255,255,255,.45)'}}>${lang==="es"?"puntos del marcador (dorado = exacto)":"match score points (gold = exact)"}</span>
+      </span>
+    </div>`}
     <p style=${{fontSize:10,color:'rgba(255,255,255,.22)',marginTop:6,textAlign:'center'}}>${t.bracketSub}</p>
   </div>`;
 }

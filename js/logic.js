@@ -321,20 +321,30 @@ function calcScore(preds, results, sc) {
     detail.thirdWin   = { hits:twHit?1:0, earned:twHit?(sc.thirdWin||0):0 };
     ['r32','r16','qf','sf','thirdMatch','final','champion','thirdWin'].forEach(function(k){ pts+=detail[k].earned; });
 
-    // Per-match scoring for KO matches (result + goals + GD, same as group stage, up to 7 per match)
+    // Per-match scoring for KO matches (result + goals + GD, same as group stage, up to 7 per match).
+    // Attributed per round (detail[rd].mpts) so views can split "progression" vs "match scores" per stage.
+    var koRoundIds = {
+      r32:        R32_FIXTURES.map(function(f){return f.id;}),
+      r16:        KO_BRACKET.r16.map(function(f){return f.id;}),
+      qf:         KO_BRACKET.qf.map(function(f){return f.id;}),
+      sf:         KO_BRACKET.sf.map(function(f){return f.id;}),
+      thirdMatch: [KO_BRACKET.s3rd.id],
+      final:      [KO_BRACKET.final.id]
+    };
     var koMatchPts = 0;
-    var allKOIds = R32_FIXTURES.map(function(f){return f.id;})
-      .concat(KO_BRACKET.r16.map(function(f){return f.id;}))
-      .concat(KO_BRACKET.qf.map(function(f){return f.id;}))
-      .concat(KO_BRACKET.sf.map(function(f){return f.id;}))
-      .concat([KO_BRACKET.final.id, KO_BRACKET.s3rd.id]);
-    allKOIds.forEach(function(id){
-      koMatchPts += scoreMatch(preds.ko&&preds.ko[id], results.ko&&results.ko[id]);
+    Object.keys(koRoundIds).forEach(function(rd){
+      var mp = 0;
+      koRoundIds[rd].forEach(function(id){
+        mp += scoreMatch(preds.ko&&preds.ko[id], results.ko&&results.ko[id]);
+      });
+      detail[rd].mpts = mp;
+      koMatchPts += mp;
     });
+    detail.champion.mpts = 0; detail.thirdWin.mpts = 0;
     detail.koMatches = { earned: koMatchPts };
     pts += koMatchPts;
   } else {
-    ['r32','r16','qf','sf','thirdMatch','final','champion','thirdWin'].forEach(function(k){ detail[k]={hits:0,earned:0}; });
+    ['r32','r16','qf','sf','thirdMatch','final','champion','thirdWin'].forEach(function(k){ detail[k]={hits:0,earned:0,mpts:0}; });
   }
   return { pts:pts, detail:detail };
 }

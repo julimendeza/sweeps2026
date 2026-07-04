@@ -103,11 +103,17 @@ function LeaderboardView(p) {
                 <div style=${{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(155px,1fr))", gap:8 }}>
                   ${["groups","r32","r16","qf","sf","thirdMatch","final","champion","thirdWin"].map(function(rid){
                     var d = (px.detail && px.detail[rid]) || { hits:0, earned:0 };
+                    var mp = d.mpts || 0;
+                    var tot = (d.earned||0) + mp;
+                    var hasSplit = ["r32","r16","qf","sf","thirdMatch","final"].indexOf(rid) >= 0;
                     return html`<div key=${rid} style=${{ background:"rgba(255,255,255,.04)", borderRadius:10, padding:"9px 12px" }}>
                       <div style=${{ fontSize:11, color:"rgba(255,255,255,.35)", marginBottom:3 }}>${koLabels[rid] || rid}</div>
-                      <div style=${{ fontWeight:700, fontSize:15, color: d.earned>0 ? "#f59e0b" : "rgba(255,255,255,.28)" }}>
-                        ${d.earned} pts
+                      <div style=${{ fontWeight:700, fontSize:15, color: tot>0 ? "#f59e0b" : "rgba(255,255,255,.28)" }}>
+                        ${tot} pts
                       </div>
+                      ${hasSplit && tot>0 && html`<div style=${{ fontSize:9.5, color:"rgba(255,255,255,.38)", marginTop:2 }}>
+                        ${lang==="es"?"progresi\u00f3n":"progression"} ${d.earned||0} \u00b7 ${lang==="es"?"marcadores":"scores"} ${mp}
+                      </div>`}
                     </div>`;
                   })}
                 </div>
