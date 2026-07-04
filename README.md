@@ -87,7 +87,7 @@ sweeps2026/
     ├── nav.js              # Navigation bar
     ├── view-home.js        # Home page
     ├── view-predict.js     # Prediction form (group + KO stages)
-    ├── view-leaderboard.js # Leaderboard
+    ├── view-leaderboard.js # Leaderboard 
     ├── view-admin.js       # Admin panel (results, participants, email, data, access, settings)
     └── app.js              # Root App component + Firebase wiring
 ```
