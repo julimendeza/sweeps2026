@@ -631,46 +631,25 @@ async function generateReportPDF(participant, results, settings, lang) {
     y=40;
 
     // ── Summary boxes ──
-    // Use the same stage totals as the app: progression points + KO match-score points.
-    function reportHexToRgb(hex){
-      hex=(hex||"#000000").replace("#","");
-      return [parseInt(hex.slice(0,2),16),parseInt(hex.slice(2,4),16),parseInt(hex.slice(4,6),16)];
-    }
-    function reportBlendWithWhite(hex,alpha){
-      var rgb=reportHexToRgb(hex); alpha=Math.max(0,Math.min(1,alpha));
-      return [
-        Math.round(255-(255-rgb[0])*alpha),
-        Math.round(255-(255-rgb[1])*alpha),
-        Math.round(255-(255-rgb[2])*alpha)
-      ];
-    }
-    function reportStageTotal(key){
-      var d=scored.detail&&scored.detail[key]||{};
-      return (d.earned||0)+(d.mpts||0);
-    }
     var cats=[
-      {l:es?"Grupos":"Groups", v:reportStageTotal("groups"),     color:"#f59e0b"},
-      {l:"R32",                  v:reportStageTotal("r32"),        color:"#60a5fa"},
-      {l:"R16",                  v:reportStageTotal("r16"),        color:"#34d399"},
-      {l:es?"Cuartos":"QF",     v:reportStageTotal("qf"),         color:"#a78bfa"},
-      {l:es?"Semis":"SF",       v:reportStageTotal("sf"),         color:"#fb923c"},
-      {l:es?"3ro M":"3rd M",    v:reportStageTotal("thirdMatch"), color:"#f472b6"},
-      {l:"Final",                v:reportStageTotal("final"),      color:"#fbbf24"},
-      {l:es?"3ro W":"3rd W",    v:reportStageTotal("thirdWin"),   color:"#e879f9"},
-      {l:es?"Camp":"Champ",     v:reportStageTotal("champion"),   color:"#4ade80"}
+      {l:es?"Grupos":"Groups",  v:scored.detail.groups&&scored.detail.groups.earned||0},
+      {l:"R32",                 v:scored.detail.r32&&scored.detail.r32.earned||0},
+      {l:"R16",                 v:scored.detail.r16&&scored.detail.r16.earned||0},
+      {l:es?"Cuartos":"QF",     v:scored.detail.qf&&scored.detail.qf.earned||0},
+      {l:es?"Semis":"SF",       v:scored.detail.sf&&scored.detail.sf.earned||0},
+      {l:"Final",               v:scored.detail.final&&scored.detail.final.earned||0},
+      {l:es?"Campeon":"Champ",  v:scored.detail.champion&&scored.detail.champion.earned||0}
     ];
     var bw=(W-M*2)/cats.length, bx=M;
     cats.forEach(function(c){
-      var rgb=reportHexToRgb(c.color);
-      var fill=reportBlendWithWhite(c.color,c.v>0?0.18:0);
-      doc.setFillColor(c.v>0?fill[0]:248,c.v>0?fill[1]:248,c.v>0?fill[2]:248);
-      doc.setDrawColor(c.v>0?rgb[0]:210,c.v>0?rgb[1]:215,c.v>0?rgb[2]:220);
+      doc.setFillColor(c.v>0?255:248, c.v>0?248:248, c.v>0?228:248);
+      doc.setDrawColor(c.v>0?245:210, c.v>0?158:215, c.v>0?11:220);
       doc.roundedRect(bx,y,bw-1,14,2,2,"FD");
-      doc.setFontSize(6.2);doc.setFont("helvetica","normal");
-      doc.setTextColor(c.v>0?rgb[0]:160,c.v>0?rgb[1]:165,c.v>0?rgb[2]:170);
+      doc.setFontSize(6.5);doc.setFont("helvetica","normal");
+      doc.setTextColor(c.v>0?140:160,c.v>0?70:165,c.v>0?0:170);
       doc.text(c.l,bx+(bw-1)/2,y+5,{align:"center"});
-      doc.setFontSize(11);doc.setFont("helvetica","bold");
-      doc.setTextColor(c.v>0?rgb[0]:180,c.v>0?rgb[1]:185,c.v>0?rgb[2]:190);
+      doc.setFontSize(12);doc.setFont("helvetica","bold");
+      doc.setTextColor(c.v>0?200:180,c.v>0?100:185,c.v>0?0:190);
       doc.text(String(c.v),bx+(bw-1)/2,y+11,{align:"center"});
       bx+=bw;
     });
@@ -792,220 +771,132 @@ async function generateReportPDF(participant, results, settings, lang) {
 async function generateSummaryPDF(participants, results, settings, lang) {
   var jsPDF = window.jspdf && window.jspdf.jsPDF;
   if (!jsPDF) { alert("PDF library not loaded."); return; }
-  var es = lang === "es";
+  var es = lang==="es";
   var sc = settings.scoring || DEF.scoring;
 
-  function rgbFromHex(hex) {
-    hex = (hex || "#000000").replace("#", "");
-    return [parseInt(hex.slice(0,2),16), parseInt(hex.slice(2,4),16), parseInt(hex.slice(4,6),16)];
-  }
-
-  function blendWithWhite(hex, alpha) {
-    var rgb = rgbFromHex(hex);
-    alpha = Math.max(0, Math.min(1, alpha));
-    return [
-      Math.round(255 - (255 - rgb[0]) * alpha),
-      Math.round(255 - (255 - rgb[1]) * alpha),
-      Math.round(255 - (255 - rgb[2]) * alpha)
-    ];
-  }
-
-  function stageValue(px, key) {
-    var d = px.detail && px.detail[key] || {};
-    return (d.earned || 0) + (d.mpts || 0);
-  }
-
-  // Score all participants using the same calcScore object as the app.
+  // Score all participants
   var scored = participants.map(function(px){
     var s = calcScore(px.preds, results, sc);
     return Object.assign({}, px, s);
-  }).sort(function(a,b){ return b.pts - a.pts; });
+  }).sort(function(a,b){ return b.pts-a.pts; });
 
-  // Same round colours as AdminStats in view-admin.js.
-  var cols = [
-    {key:"groups",     label:es?"Grupos":"Groups", color:"#f59e0b", split:false},
-    {key:"r32",        label:"R32",                  color:"#60a5fa", split:true},
-    {key:"r16",        label:"R16",                  color:"#34d399", split:true},
-    {key:"qf",         label:es?"Cuartos":"QF",     color:"#a78bfa", split:true},
-    {key:"sf",         label:es?"Semis":"SF",       color:"#fb923c", split:true},
-    {key:"thirdMatch", label:es?"3ro M":"3rd M",    color:"#f472b6", split:true},
-    {key:"final",      label:"Final",                color:"#fbbf24", split:true},
-    {key:"thirdWin",   label:es?"3ro W":"3rd W",    color:"#e879f9", split:false},
-    {key:"champion",   label:es?"Camp":"Champ",     color:"#4ade80", split:false}
+  // Per-key fallback (older saved settings may miss keys)
+  function kv(k){ var x=sc[k]; return (x===undefined||x===null||x==="")?(DEF.scoring[k]||0):+x; }
+  var mm = kv("groupResult")+kv("groupGoalA")+kv("groupGoalB")+kv("groupDiff"); // max pts per match
+
+  // Column colors match the app's Stats tab; max = progression max + match-score max
+  var cols=[
+    {key:"groups",   label:es?"Grupos":"Groups",  rgb:[245,158,11], split:false, max: mm*72},
+    {key:"r32",      label:"R32",                 rgb:[96,165,250], split:true,  max: kv("r32")*32 + mm*16},
+    {key:"r16",      label:"R16",                 rgb:[52,211,153], split:true,  max: kv("r16")*16 + mm*8},
+    {key:"qf",       label:es?"Cuartos":"QF",     rgb:[167,139,250],split:true,  max: kv("qf")*8 + mm*4},
+    {key:"sf",       label:es?"Semis":"SF",       rgb:[251,146,60], split:true,  max: kv("sf")*4 + mm*2},
+    {key:"thirdMatch",label:es?"3ro M":"3rd M",   rgb:[244,114,182],split:true,  max: kv("thirdMatch")*2 + mm},
+    {key:"final",    label:"Final",               rgb:[251,191,36], split:true,  max: kv("final")*2 + mm},
+    {key:"thirdWin", label:es?"3ro W":"3rd W",    rgb:[232,121,249],split:false, max: kv("thirdWin")},
+    {key:"champion", label:es?"Camp":"Champ",     rgb:[74,222,128], split:false, max: kv("champion")},
   ];
 
-  // Match the app: intensity is based on each column's actual maximum stage total,
-  // where stage total = progression points + match-score points.
-  var maxVals = {};
-  cols.forEach(function(c){
-    maxVals[c.key] = Math.max.apply(null, scored.map(function(px){
-      return stageValue(px, c.key);
-    }).concat([1]));
-  });
-  var maxTotal = Math.max.apply(null, scored.map(function(px){ return px.pts || 0; }).concat([1]));
-
   try {
-    var doc = new jsPDF({unit:"mm", format:"a4", orientation:"landscape"});
-    var W = 297, H = 210, M = 12, y = 18;
-    var nameW = 42, totalW = 18;
-    var cellW = Math.floor((W - M*2 - nameW - totalW) / cols.length);
-    var tableLeft = M + nameW;
-    var totalLeft = W - M - totalW;
-    var rowH = 9.2;
+    var doc = new jsPDF({unit:"mm",format:"a4",orientation:"landscape"});
+    var W=297, H=210, M=12, y=18;
+    var nameW=42, cellW=Math.floor((W-M*2-nameW-18)/cols.length), totalW=18;
+    var tableLeft=M+nameW;
 
-    doc.setFillColor(255,255,255);
-    doc.rect(0,0,W,H,"F");
+    doc.setFillColor(255,255,255); doc.rect(0,0,W,H,"F");
 
     // Header
-    doc.setFillColor(245,158,11);
-    doc.rect(0,0,W,20,"F");
-    doc.setFontSize(14);
-    doc.setFont("helvetica","bold");
-    doc.setTextColor(255,255,255);
-    doc.text(es?"RESUMEN DE PREDICCIONES — TODOS LOS PARTICIPANTES":"PREDICTIONS SUMMARY — ALL PARTICIPANTS", M, 13);
-    doc.setFontSize(8);
-    doc.setFont("helvetica","normal");
-    doc.text(new Date().toLocaleString(), W-M, 13, {align:"right"});
-
-    y = 28;
-
-    // Helper note, matching AdminStats.
-    doc.setFontSize(7);
-    doc.setFont("helvetica","normal");
-    doc.setTextColor(110,118,130);
-    doc.text(
-      es ? "Celdas R32–Final: total (progresión + marcadores). Formato pequeño: progresión + marcadores." :
-           "R32–Final cells: total (progression + match scores). Small text: progression + match scores.",
-      M,
-      y - 3
-    );
-
-    function drawHeaderRow() {
-      doc.setFillColor(50,60,80);
-      doc.rect(M,y,W-M*2,8,"F");
-      doc.setFontSize(7.3);
-      doc.setFont("helvetica","bold");
-      doc.setTextColor(255,255,255);
-      doc.text(es?"#  PARTICIPANTE":"#  PARTICIPANT", M+1, y+5.3);
-      cols.forEach(function(c,i){
-        var rgb = rgbFromHex(c.color);
-        doc.setTextColor(rgb[0], rgb[1], rgb[2]);
-        doc.text(c.label, tableLeft+i*cellW+cellW/2, y+5.3, {align:"center"});
-      });
-      doc.setTextColor(245,158,11);
-      doc.text("TOTAL", totalLeft+totalW/2, y+5.3, {align:"center"});
-      y += 10;
-    }
+    doc.setFillColor(245,158,11); doc.rect(0,0,W,20,"F");
+    doc.setFontSize(14);doc.setFont("helvetica","bold");doc.setTextColor(255,255,255);
+    doc.text(es?"RESUMEN DE PREDICCIONES — TODOS LOS PARTICIPANTES":"PREDICTIONS SUMMARY — ALL PARTICIPANTS",M,13);
+    doc.setFontSize(8);doc.setFont("helvetica","normal");
+    doc.text(new Date().toLocaleString(),W-M,13,{align:"right"});
+    doc.setFontSize(6.5);doc.setFont("helvetica","normal");doc.setTextColor(85,105,170);
+    doc.text(es
+      ?"Celdas R32\u2013Final: total (progresi\u00f3n + marcadores). Texto peque\u00f1o: progresi\u00f3n + marcadores."
+      :"R32\u2013Final cells: total (progression + match scores). Small text: progression + match scores.",M,24.5);
+    y=31;
 
     // Column headers
-    drawHeaderRow();
-    var tableTop = 28;
+    doc.setFillColor(50,60,80); doc.rect(M,y-5,W-M*2,8,"F");
+    doc.setFontSize(7.5);doc.setFont("helvetica","bold");doc.setTextColor(255,255,255);
+    doc.text(es?"#  PARTICIPANTE":"#  PARTICIPANT",M+1,y);
+    cols.forEach(function(c,i){
+      doc.setTextColor(c.rgb[0],c.rgb[1],c.rgb[2]);
+      doc.text(c.label,tableLeft+i*cellW+cellW/2,y,{align:"center"});
+    });
+    doc.setTextColor(245,158,11);
+    doc.text("TOTAL",W-M-totalW/2,y,{align:"center"});
+    y+=8;
 
     // Rows
     scored.forEach(function(px,ri){
-      if (y > H - 22) {
-        doc.setDrawColor(200,205,215);
-        doc.rect(M,tableTop,W-M*2,y-tableTop);
-        doc.addPage();
-        y = 18;
-        tableTop = y;
-        drawHeaderRow();
-      }
-
-      var isBot = px.id === "claude_bot";
+      if(y>H-16){doc.addPage();y=18;}
+      var isBot=px.id==="claude_bot";
+      var rowH=9.5;
 
       // Alternating row background
-      doc.setFillColor(ri%2===0 ? 252 : 248, ri%2===0 ? 252 : 249, ri%2===0 ? 252 : 249);
-      doc.rect(M, y-5, W-M*2, rowH, "F");
+      doc.setFillColor(ri%2===0?252:248,ri%2===0?252:249,ri%2===0?252:249);
+      doc.rect(M,y-5,W-M*2,rowH,"F");
 
       // Rank + name
-      doc.setFontSize(7.4);
-      doc.setFont("helvetica","bold");
+      doc.setFontSize(7.5);doc.setFont("helvetica","bold");
       doc.setTextColor(ri===0?180:ri===1?100:ri===2?120:50,
                        ri===0?120:ri===1?105:ri===2?80:60,
                        ri===0?0:ri===1?110:ri===2?40:70);
-      doc.text((ri+1)+". "+pdfName(px.name).slice(0,18)+(isBot?" [BOT]":""), M+1, y+0.8);
+      doc.text((ri+1)+". "+pdfName(px.name).slice(0,18)+(isBot?" [BOT]":""),M+1,y);
 
-      // Per-category cells
+      // Per-category cells: total (progression + match scores), tinted in the column's app color
       cols.forEach(function(c,i){
-        var d = px.detail && px.detail[c.key] || {};
-        var earned = d.earned || 0;
-        var mp = d.mpts || 0;
-        var v = earned + mp;
-        var ratio = maxVals[c.key] > 0 ? v / maxVals[c.key] : 0;
-        var fill = blendWithWhite(c.color, v > 0 ? 0.20 + ratio * 0.58 : 0);
-        var rgb = rgbFromHex(c.color);
-        var x = tableLeft + i*cellW;
-
-        if (v > 0) {
-          doc.setFillColor(fill[0], fill[1], fill[2]);
-          doc.rect(x+0.5, y-4.5, cellW-1, rowH-1, "F");
+        var d=px.detail&&px.detail[c.key]||{};
+        var mp=d.mpts||0;
+        var v=(d.earned||0)+mp;
+        var ratio=c.max>0?Math.min(v/c.max,1):0;
+        var r=Math.round(255-(255-c.rgb[0])*ratio);
+        var g=Math.round(255-(255-c.rgb[1])*ratio);
+        var b=Math.round(255-(255-c.rgb[2])*ratio);
+        if(v>0){
+          doc.setFillColor(r,g,b);
+          doc.rect(tableLeft+i*cellW+0.5,y-4.5,cellW-1,rowH-1,"F");
         }
-
-        if (v > 0) {
-          doc.setFont("helvetica","bold");
-          doc.setFontSize(c.split ? 7.2 : 7.6);
-          doc.setTextColor(rgb[0], rgb[1], rgb[2]);
-          doc.text(String(v), x+cellW/2, c.split ? y-0.3 : y+0.8, {align:"center"});
-
-          // Show the same split used in the app: progression + match scores.
-          if (c.split) {
-            doc.setFont("helvetica","normal");
-            doc.setFontSize(5.2);
-            doc.setTextColor(85,90,100);
-            doc.text(String(earned)+"+"+String(mp), x+cellW/2, y+3.1, {align:"center"});
+        doc.setFontSize(7.5);doc.setFont("helvetica",v>0?"bold":"normal");
+        if(v>0){
+          doc.setTextColor(Math.round(c.rgb[0]*.45),Math.round(c.rgb[1]*.45),Math.round(c.rgb[2]*.45));
+          doc.text(String(v),tableLeft+i*cellW+cellW/2,y-0.6,{align:"center"});
+          if(c.split){
+            doc.setFontSize(5);doc.setFont("helvetica","normal");doc.setTextColor(110,115,125);
+            doc.text((d.earned||0)+"+"+mp,tableLeft+i*cellW+cellW/2,y+2.6,{align:"center"});
           }
-        } else {
-          doc.setFont("helvetica","normal");
-          doc.setFontSize(7.4);
-          doc.setTextColor(200,200,200);
-          doc.text("-", x+cellW/2, y+0.8, {align:"center"});
-        }
+        } else { doc.setTextColor(200,200,200); doc.text("-",tableLeft+i*cellW+cellW/2,y,{align:"center"}); }
       });
 
-      // Total column, using app accent colour rather than the old green scale.
-      var totalRatio = maxTotal > 0 ? (px.pts || 0) / maxTotal : 0;
-      var totalFill = blendWithWhite("#f59e0b", px.pts > 0 ? 0.22 + totalRatio * 0.55 : 0);
-      if (px.pts > 0) {
-        doc.setFillColor(totalFill[0], totalFill[1], totalFill[2]);
-        doc.rect(totalLeft+0.5, y-4.5, totalW-1, rowH-1, "F");
-      }
-      doc.setFontSize(8);
-      doc.setFont("helvetica","bold");
-      doc.setTextColor(150,75,0);
-      doc.text(String(px.pts), totalLeft+totalW/2, y+0.8, {align:"center"});
+      // Total
+      var maxTotal=cols.reduce(function(s,c){return s+c.max;},0);
+      var ratio2=maxTotal>0?Math.min(px.pts/maxTotal,1):0;
+      doc.setFillColor(Math.round(255-(255-245)*ratio2),Math.round(255-(255-158)*ratio2),Math.round(255-(255-11)*ratio2));
+      if(px.pts>0) doc.rect(W-M-totalW+0.5,y-4.5,totalW-1,rowH-1,"F");
+      doc.setFontSize(8);doc.setFont("helvetica","bold");
+      doc.setTextColor(px.pts>0?150:160,px.pts>0?90:165,px.pts>0?0:170);
+      doc.text(String(px.pts),W-M-totalW/2,y,{align:"center"});
 
-      y += rowH;
+      y+=rowH;
     });
 
     // Border around table
     doc.setDrawColor(200,205,215);
-    doc.rect(M,tableTop,W-M*2,y-tableTop);
+    doc.rect(M,26,W-M*2,y-26);
 
     // Legend
-    y += 5;
-    if (y < H - 16) {
-      doc.setFillColor(248,249,252);
-      doc.rect(M,y-4,W-M*2,10,"F");
-      doc.setFontSize(6.8);
-      doc.setFont("helvetica","bold");
-      doc.setTextColor(80,90,105);
-      doc.text(es?"LEYENDA":"LEGEND", M+2, y+2);
-      doc.setFont("helvetica","normal");
-      doc.setTextColor(100,110,125);
-      doc.text(
-        es ? "82 = total de la ronda. 25+57 = progresión + marcadores. Aplica a R32–Final; Grupos, 3rd W y Champ no se dividen." :
-             "82 = round total. 25+57 = progression + match scores. Applies to R32–Final; Groups, 3rd W & Champ have no split.",
-        M+23,
-        y+2
-      );
-    }
+    doc.setFontSize(6.5);doc.setFont("helvetica","bold");doc.setTextColor(90,95,110);
+    doc.text(es?"LEYENDA":"LEGEND",M,H-10);
+    doc.setFont("helvetica","normal");doc.setTextColor(85,105,170);
+    doc.text(es
+      ?"82 = total de la ronda \u00b7 25+57 = progresi\u00f3n + marcadores \u00b7 Aplica a R32\u2013Final; Grupos, 3ro W y Camp sin divisi\u00f3n."
+      :"82 = round total \u00b7 25+57 = progression + match scores \u00b7 Applies to R32\u2013Final; Groups, 3rd W & Champ have no split.",M+22,H-10);
 
     // Footer
-    doc.setFontSize(7);
-    doc.setFont("helvetica","italic");
-    doc.setTextColor(170,170,170);
-    doc.text("Quiniela Mundial 2026  |  "+scored.length+" participants  |  julimendeza.github.io/sweeps2026", M, H-5);
+    doc.setFontSize(7);doc.setFont("helvetica","italic");doc.setTextColor(170,170,170);
+    doc.text("Quiniela Mundial 2026  |  "+scored.length+" participants  |  julimendeza.github.io/sweeps2026",M,H-5);
 
     doc.save("WC2026_Predictions_Summary.pdf");
   } catch(e){ console.error("Summary PDF error:",e); alert("Summary failed: "+e.message); }
