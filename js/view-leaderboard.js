@@ -18,6 +18,10 @@ function LeaderboardView(p) {
   var human = participants.filter(function(x){ return x.id !== "claude_bot"; });
   var total = human.length * settings.entryFee;
 
+  // Prize ranks count humans only — the bot appears unranked and doesn't shift anyone's position
+  var rankOf = {};
+  (function(){ var n=0; ranked.forEach(function(px){ if(px.id!=="claude_bot"){ n++; rankOf[px.id]=n; } }); })();
+
   var koLabels = {
     groups:     t.groupStage,
     r32:        t.r32,
@@ -63,6 +67,7 @@ function LeaderboardView(p) {
 
           ${ranked.map(function(px, i){
             var isOpen = exp === px.id;
+            var rk = rankOf[px.id]; // undefined for the bot
             var pxC=cascadeKO(px.preds&&px.preds.groups,px.preds&&px.preds.ko||{}); var ch=pxC.champion;
             var chHit  = ch && rC.champion && ch === rC.champion;
 
@@ -71,11 +76,11 @@ function LeaderboardView(p) {
               <div onClick=${function(){ setExp(isOpen ? null : px.id); }} class="lb-grid" style=${{
                 padding:"13px 18px", borderBottom:"1px solid rgba(255,255,255,.05)",
                 alignItems:"center", cursor:"pointer", transition:"background .13s",
-                background: isOpen ? "rgba(245,158,11,.07)" : i===0 ? "rgba(245,158,11,.05)" : "transparent"
+                background: isOpen ? "rgba(245,158,11,.07)" : rk===1 ? "rgba(245,158,11,.05)" : "transparent"
               }}>
-                <span style=${{ textAlign:"center", fontWeight:800, fontSize:i<3?20:14,
-                  color: i===0?"#fbbf24":i===1?"#94a3b8":i===2?"#b45309":"rgba(255,255,255,.22)" }}>
-                  ${i===0?"\ud83e\udd47":i===1?"\ud83e\udd48":i===2?"\ud83e\udd49":i+1}
+                <span style=${{ textAlign:"center", fontWeight:800, fontSize:rk&&rk<=3?20:14,
+                  color: rk===1?"#fbbf24":rk===2?"#94a3b8":rk===3?"#b45309":"rgba(255,255,255,.22)" }}>
+                  ${!rk?"\ud83e\udd16":rk===1?"\ud83e\udd47":rk===2?"\ud83e\udd48":rk===3?"\ud83e\udd49":rk}
                 </span>
                 <div>
                   <div style=${{ fontWeight:600, fontSize:14, display:"flex", alignItems:"center", gap:6 }}>
