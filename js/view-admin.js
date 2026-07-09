@@ -661,18 +661,20 @@ function AdminPlayoffs(p) {
 function AdminPicks(p) {
   var lctx=useLang(); var lang=lctx.lang; var es=lang==="es";
   var filterState=useState(""); var filter=filterState[0], setFilter=filterState[1];
-  var sortState=useState("r32"); var sortCol=sortState[0], setSortCol=sortState[1];
+  var sortState=useState("r32qualifiers"); var sortCol=sortState[0], setSortCol=sortState[1];
 
   // Check actual results for highlighting
   var rC = useMemo(function(){
     return cascadeKO(p.results.groups, p.results.ko||{});
   }, [p.results]);
 
+  // Each column = teams REACHING that stage. Cascade keys "{rd}teams" are winners OF a round,
+  // so "reached R16" = r32teams (R32 winners), "reached QF" = r16teams, etc. — same mapping as calcScore.
   var cols=[
     {key:"r32qualifiers", label:"R32",   short:"R32"},
-    {key:"r16teams",      label:"R16",   short:"R16"},
-    {key:"qfteams",       label:es?"Cuartos":"QF",  short:"QF"},
-    {key:"sfteams",       label:es?"Semis":"SF",     short:"SF"},
+    {key:"r32teams",      label:"R16",   short:"R16"},
+    {key:"r16teams",      label:es?"Cuartos":"QF",  short:"QF"},
+    {key:"qfteams",       label:es?"Semis":"SF",     short:"SF"},
     {key:"finalTeams",    label:"Final", short:"Fin"},
     {key:"champion",      label:es?"Camp.":"Champ",  short:"Ch"},
     {key:"thirdTeams",    label:es?"3ro":"3rd",      short:"3rd"},
